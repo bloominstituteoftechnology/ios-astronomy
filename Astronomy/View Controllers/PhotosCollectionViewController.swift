@@ -9,7 +9,10 @@
 import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
-    
+	var imageCache:Cache<Int, UIImage> = Cache()
+	var fetchCache:Cache<Int, MarsImageFetchOperation> = Cache()
+	var imgLoadQueue:OperationQueue = OperationQueue()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -63,11 +66,39 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
-        // let photoReference = photoReferences[indexPath.item]
-        
-        // TODO: Implement image loading here
+        let photoReference = photoReferences[indexPath.item]
+		if let image = imageCache.retrieve(photoReference.id) {
+			cell.imageView.image = image
+			return
+		}
+
+		let imgOp = MarsImageFetchOperation(photoReference)
+		fetchCache.store(photoReference.id, imgOp)
+
+		let complOp = BlockOperation {
+			DispatchQueue.main.async {
+				if self.collectionView.indexPath(for: cell) == indexPath {
+					cell.imageView.image = imgOp.image
+				}
+			}
+		}
+
+		let cacheOp = BlockOperation {
+			if let img = imgOp.image {
+				self.imageCache.store(photoReference.id, img)
+			}
+		}
+
+		complOp.addDependency(imgOp)
+		cacheOp.addDependency(imgOp)
+
+		imgLoadQueue.addOperations([imgOp, complOp, cacheOp], waitUntilFinished:false)
     }
+
+	func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+		let ref = photoReferences[indexPath.item]
+		fetchCache.retrieve(ref.id)?.cancel()
+	}
     
     // Properties
     
