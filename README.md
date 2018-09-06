@@ -12,7 +12,7 @@ This project will help you practice the concepts learned in the Concurrency III 
 
 Watch the video below to see what the finished app should do:
 
-<!--<video src="Astronomy.mp4" width="411" height="820" controls preload></video>-->
+<video src="Astronomy.mp4" width="411" height="820" controls preload></video>
 
 ## Part 0 - Fork and Clone Project Start
 
