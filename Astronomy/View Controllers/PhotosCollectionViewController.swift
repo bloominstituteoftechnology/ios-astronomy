@@ -36,21 +36,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
         
-        loadImage(forCell: cell, forItemAt: indexPath) { (image, error) in
-            if let error = error {
-                NSLog("Error fetching image: \(error)")
-                return
-            }
-            
-            DispatchQueue.main.async {
-                if self.collectionView.indexPath(for: cell) != indexPath {
-                    NSLog("Cell instance has been reused for a different indexPath")
-                    return
-                }
-                cell.imageView?.image = image
-            }
-        }
-        
+        loadImage(forCell: cell, forItemAt: indexPath)
         
         return cell
     }
@@ -76,37 +62,54 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // MARK: - Private
     
-    private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath, completion: @escaping (UIImage?, Error?) -> Void) {
+    private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
         
-        let imageUrl = photoReference.imageURL.usingHTTPS!
-        
         if let cachedImage = cache.value(for: photoReference.id) {
-            completion(UIImage(data: cachedImage), nil)
-            return
+            cell.imageView?.image = UIImage(data: cachedImage)
         }
         
-        URLSession.shared.dataTask(with: imageUrl) { (data, _, error) in
-            if let error = error {
-                NSLog("Error fetching images: \(error)")
-                completion(nil, error)
+        let imageFetchOperation = PhotoFetchOperation(for: photoReference)
+        imageFetchOperation.start()
+        
+        let cacheImageOperation = BlockOperation { [weak self] in
+            if let fetchedImageData = imageFetchOperation.imageData {
+                self?.cache.cache(value: fetchedImageData, for: photoReference.id)
+            }
+        }
+        
+        let updateImageOperation = BlockOperation { [weak self] in
+            if self?.collectionView.indexPath(for: cell) != indexPath {
+                NSLog("Cell instance has been reused for a different indexPath")
                 return
             }
             
-            guard let data = data else {
-                NSLog("Could load data from API")
-                completion(nil, NSError())
-                return
+            if let fetchedImageData = imageFetchOperation.imageData {
+                cell.imageView?.image = UIImage(data: fetchedImageData)
             }
-            
-            self.cache.cache(value: data, for: photoReference.id)
-            completion(UIImage(data: data), nil)
-            
-        }.resume()
+        }
+        
+        cacheImageOperation.addDependency(imageFetchOperation)
+        updateImageOperation.addDependency(imageFetchOperation)
+        
+        photoFetchQueue.addOperation(cacheImageOperation)
+        
+        DispatchQueue.main.async {
+            self.photoFetchQueue.addOperation(updateImageOperation)
+        }
+        
+        if let fetchedImageData = imageFetchOperation.imageData {
+            fetchedPhotos[photoReference.id] = fetchedImageData
+        }
+        
     }
     
     // Properties
+    
+    var fetchedPhotos: [Int : Data] = [:]
+    
+    private var photoFetchQueue: OperationQueue = OperationQueue.main
     
     private var cache: Cache<Int, Data> = Cache<Int, Data>()
     
