@@ -67,11 +67,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         guard let url = photoReference.imageURL.usingHTTPS else { return }
         
-        if let image = cache[photoReference.id] {
+        if let image = cache.value(for: photoReference.id) {
             cell.imageView.image = image
         } else {
             URLSession.shared.dataTask(with: url) { (data, _, error) in
-                if let error =  error {
+                if let error = error {
                     NSLog("Error finding image at url: \(error)")
                     return
                 }
