@@ -11,18 +11,26 @@ import Foundation
 class Cache<Key, Value> where Key: Hashable {
     
     private var store: [Key : Value] = [:]
+    private var queue = DispatchQueue(label: "com.Stefano.Astronomy.Cache")
     
     func cache(value: Value, for key: Key) {
-        store[key] = value
+        queue.sync {
+            store[key] = value
+        }
     }
     
     func value(for key: Key) -> Value? {
-        for cache in store {
-            if cache.key == key {
-                return cache.value
+        var value: Value?
+        
+        queue.sync {
+            for cache in store {
+                if cache.key == key {
+                    value = cache.value
+                }
             }
         }
-        return nil
+        
+        if let value = value { return value } else { return nil }
     }
     
 }
