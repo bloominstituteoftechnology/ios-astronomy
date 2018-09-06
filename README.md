@@ -10,9 +10,7 @@ This project will help you practice the concepts learned in the Concurrency III 
 - cancel an operation
 - set up dependencies between operations
 
-Watch the video below to see what the finished app should do:
-
-<video src="Astronomy.mp4" width="411" height="820" controls preload></video>
+Watch [this video](https://youtu.be/nbn5tLIZktU) to see what the finished app should do.
 
 ## Part 0 - Fork and Clone Project Start
 
