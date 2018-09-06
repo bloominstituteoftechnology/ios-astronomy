@@ -68,7 +68,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         guard let url = photoReference.imageURL.usingHTTPS else { return }
         
         // Check if the cache already has the image with the id, tthe key is the image's id from MarsPhotoReference
-        if let image = cache.value(for: photoReference.id) {
+        if let image = cache.value(for: photoReference.id) { // Subscript: cache[photoReference.id]
             cell.imageView.image = image
         } else {
             URLSession.shared.dataTask(with: url) { (data, _, error) in
@@ -80,13 +80,17 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 guard let data = data else { return }   // No completion handler to deal with here
                 guard let image = UIImage(data: data) else { return }   // data might not actually be an image
                 
+                // If calling cache is out here, then we would run into a thread-safe problem.
+                // Put this code inside DispatchQueue.main.async will fix the problem for this case. However, when we have a more complexed app, we should use GCD or NSOperation to make it more thread-safe that way we can call it anywhere we want and not have to worry about it.
+                self.cache.cache(value: image, for: photoReference.id)
+                
                 DispatchQueue.main.async {  // modifying a property here
 //                    if indexPath == self.collectionView.indexPath(for: cell) {
 //                        cell.imageView.image = image
 //                    }
                     
                     // save the image to the cache
-                    self.cache.cache(value: image, for: photoReference.id)
+//                    self.cache.cache(value: image, for: photoReference.id)
                     
                     // Get the cell at the indexPath we loaded the image for
                     guard let cell = self.collectionView.cellForItem(at: indexPath) as? ImageCollectionViewCell else { return }
