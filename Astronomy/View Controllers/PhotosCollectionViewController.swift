@@ -83,8 +83,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 NSLog("Could not retrieve image from URL: \(imageURL) - \(error)")
             }
 
-            if let data = data {
-                let image = UIImage(data: data)
+            if let data = data, let image = UIImage(data: data) {
+                
                 self.cache?.cache(value: data, for: photoReference.id)
 
                 DispatchQueue.main.async {
