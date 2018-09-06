@@ -67,7 +67,17 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 
         let photoReference = photoReferences[indexPath.item]
         guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
-
+        
+        let isCached = cache?.cachedItems.contains(where: { (key, value) -> Bool in
+            key == photoReference.id
+        })
+        
+        if let _ = isCached {
+            guard let imageData = cache?.cachedItems[photoReference.id] else { return }
+            cell.imageView.image = UIImage(data: imageData)
+            return
+        }
+        
         imageTask = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
             if let error = error {
                 NSLog("Could not retrieve image from URL: \(imageURL) - \(error)")
@@ -75,11 +85,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 
             if let data = data {
                 let image = UIImage(data: data)
+                self.cache?.cache(value: data, for: photoReference.id)
 
                 DispatchQueue.main.async {
-                    if self.collectionView.indexPath(for: cell) == indexPath {
+//                    if self.collectionView.indexPath(for: cell) == indexPath {
                         cell.imageView.image = image
-                    }
+//                    }
                 }
             }
         }
@@ -114,4 +125,5 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 
     @IBOutlet var collectionView: UICollectionView!
     var imageTask: URLSessionDataTask!
+    var cache: Cache<Int, Data>?
 }

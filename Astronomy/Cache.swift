@@ -7,3 +7,15 @@
 //
 
 import Foundation
+
+class Cache<Key: Hashable, Value> {
+    func cache(value: Value, for key: Key) {
+        cachedItems[key] = value
+    }
+    
+    func value(for key: Key) {
+        cachedItems[key] = nil
+    }
+    
+    internal var cachedItems: [Key : Value] = [:]
+}
