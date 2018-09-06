@@ -74,6 +74,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             URLSession.shared.dataTask(with: url) { (data, _, error) in
                 if let error = error {
                     NSLog("Error retrieving url data: \(error)")
+                    return  // Bail out if there is an error
                     // No completion handler to deal with here
                 }
                 
