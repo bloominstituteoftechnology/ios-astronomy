@@ -36,7 +36,22 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
         
-        loadImage(forCell: cell, forItemAt: indexPath)
+        loadImage(forCell: cell, forItemAt: indexPath) { (image, error) in
+            if let error = error {
+                NSLog("Error fetching image: \(error)")
+                return
+            }
+            
+            if self.collectionView.indexPath(for: cell) != indexPath {
+                NSLog("Cell instance has been reused for different indexPath")
+                return
+            }
+            
+            DispatchQueue.main.async {
+                cell.imageView?.image = image
+            }
+        }
+        
         
         return cell
     }
@@ -62,11 +77,28 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // MARK: - Private
     
-    private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+    private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath, completion: @escaping (UIImage?, Error?) -> Void) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        let imageUrl = photoReference.imageURL.usingHTTPS!
+        
+        URLSession.shared.dataTask(with: imageUrl) { (data, _, error) in
+            if let error = error {
+                NSLog("Error fetching images: \(error)")
+                completion(nil, error)
+                return
+            }
+            
+            guard let data = data else {
+                NSLog("Could load data from API")
+                completion(nil, NSError())
+                return
+            }
+            
+            completion(UIImage(data: data), nil)
+            
+        }.resume()
     }
     
     // Properties
