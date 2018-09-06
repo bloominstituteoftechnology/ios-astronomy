@@ -42,12 +42,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 return
             }
             
-            if self.collectionView.indexPath(for: cell) != indexPath {
-                NSLog("Cell instance has been reused for different indexPath")
-                return
-            }
-            
             DispatchQueue.main.async {
+                if self.collectionView.indexPath(for: cell) != indexPath {
+                    NSLog("Cell instance has been reused for a different indexPath")
+                    return
+                }
                 cell.imageView?.image = image
             }
         }
@@ -83,6 +82,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let imageUrl = photoReference.imageURL.usingHTTPS!
         
+        if let cachedImage = cache.value(for: photoReference.id) {
+            completion(UIImage(data: cachedImage), nil)
+            return
+        }
+        
         URLSession.shared.dataTask(with: imageUrl) { (data, _, error) in
             if let error = error {
                 NSLog("Error fetching images: \(error)")
@@ -96,12 +100,15 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 return
             }
             
+            self.cache.cache(value: data, for: photoReference.id)
             completion(UIImage(data: data), nil)
             
         }.resume()
     }
     
     // Properties
+    
+    private var cache: Cache<Int, Data> = Cache<Int, Data>()
     
     private let client = MarsRoverClient()
     
