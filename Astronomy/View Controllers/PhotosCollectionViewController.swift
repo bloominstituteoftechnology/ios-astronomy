@@ -64,10 +64,47 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
         
+        let photoReference = photoReferences[indexPath.item]
+        
+        if (cache.value(key: photoReference.id) != nil)
+        {
+            
+        }
         // TODO: Implement image loading here
+        
+        guard let url = photoReference.imageURL.usingHTTPS else {return}
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        URLSession.shared.dataTask(with: request) { (data, _, error) in
+            if let error = error
+            {
+                NSLog("error fetching images from server \(error)")
+                
+                return
+            }
+            
+            guard let data = data else { return }
+            
+            DispatchQueue.main.async() {
+                if self.collectionView.indexPath(for: cell) == indexPath
+                {
+                   cell.imageView.image = UIImage(data: data)
+                }
+                
+            }
+        }
+        .resume()
     }
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath)
+    {
+        
+    }
+    
+    
     
     // Properties
     
@@ -75,7 +112,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[105]
         }
     }
     private var solDescription: SolDescription? {
@@ -96,4 +133,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     @IBOutlet var collectionView: UICollectionView!
+    
+    var cache = Cache<Int, Data>()
 }
