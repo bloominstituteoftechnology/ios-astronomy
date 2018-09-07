@@ -8,7 +8,7 @@
 
 import UIKit
 
-class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout {
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -60,6 +60,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    // UICollectionViewDelegate
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        let fetchPhotoOperation = fetchOperationDictionary[photoReference.id]
+        fetchPhotoOperation?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
@@ -71,36 +79,60 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         if let image = cache.value(for: photoReference.id) { // Subscript: cache[photoReference.id]
             cell.imageView.image = image
         } else {
-            URLSession.shared.dataTask(with: url) { (data, _, error) in
-                if let error = error {
-                    NSLog("Error retrieving url data: \(error)")
-                    return  // Bail out if there is an error
-                    // No completion handler to deal with here
-                }
-                
-                guard let data = data else { return }   // No completion handler to deal with here
-                guard let image = UIImage(data: data) else { return }   // data might not actually be an image
-                
-                // If calling cache is out here, then we would run into a thread-safe problem.
-                // Put this code inside DispatchQueue.main.async will fix the problem for this case. However, when we have a more complexed app, we should use GCD or NSOperation to make it more thread-safe that way we can call it anywhere we want and not have to worry about it.
-                self.cache.cache(value: image, for: photoReference.id)
-                
-                DispatchQueue.main.async {  // modifying a property here
-                    // If the currentIndexPath is nil, then we ignore the fact that the index paths don't match and set the image anyways. If it isn't nil, then we make sure the index paths match, otherwise we don't set the image
-                    if let currentIndexPath = self.collectionView.indexPath(for: cell), currentIndexPath != indexPath {
-                        return
-                    }
-                    
-                    cell.imageView.image = image
-                    
-                    // save the image to the cache
-//                    self.cache.cache(value: image, for: photoReference.id)
-                    
-                    // Get the cell at the indexPath we loaded the image for
-//                    guard let cell = self.collectionView.cellForItem(at: indexPath) as? ImageCollectionViewCell else { return }
+//            URLSession.shared.dataTask(with: url) { (data, _, error) in
+//                if let error = error {
+//                    NSLog("Error retrieving url data: \(error)")
+//                    return  // Bail out if there is an error
+//                    // No completion handler to deal with here
+//                }
+//
+//                guard let data = data else { return }   // No completion handler to deal with here
+//                guard let image = UIImage(data: data) else { return }   // data might not actually be an image
+//
+//                // If calling cache is out here, then we would run into a thread-safe problem.
+//                // Put this code inside DispatchQueue.main.async will fix the problem for this case. However, when we have a more complexed app, we should use GCD or NSOperation to make it more thread-safe that way we can call it anywhere we want and not have to worry about it.
+//                self.cache.cache(value: image, for: photoReference.id)
+//
+//                DispatchQueue.main.async {  // modifying a property here
+//                    // If the currentIndexPath is nil, then we ignore the fact that the index paths don't match and set the image anyways. If it isn't nil, then we make sure the index paths match, otherwise we don't set the image
+//                    if let currentIndexPath = self.collectionView.indexPath(for: cell), currentIndexPath != indexPath {
+//                        return
+//                    }
+//
 //                    cell.imageView.image = image
+//
+//                    // save the image to the cache
+////                    self.cache.cache(value: image, for: photoReference.id)
+//
+//                    // Get the cell at the indexPath we loaded the image for
+////                    guard let cell = self.collectionView.cellForItem(at: indexPath) as? ImageCollectionViewCell else { return }
+////                    cell.imageView.image = image
+//                }
+//            }.resume()
+            
+            let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+            let storeInCacheOperation = BlockOperation { [weak self] in
+                guard let data = fetchPhotoOperation.imageData else { return }
+                guard let image = UIImage(data: data) else { return }
+                self?.cache.cache(value: image, for: fetchPhotoOperation.marsPhotoReference.id)
+            }
+            let updateCellOperation = BlockOperation { [weak self] in
+                guard let image = self?.cache.value(for: fetchPhotoOperation.marsPhotoReference.id) else { return }
+                
+                if let currentIndexPath = self?.collectionView.indexPath(for: cell), currentIndexPath != indexPath {
+                    return
                 }
-            }.resume()
+                cell.imageView.image = image
+            }
+            
+            storeInCacheOperation.addDependency(fetchPhotoOperation)    // using fetchPhotoOperation to get the image
+            updateCellOperation.addDependency(storeInCacheOperation)    // using storeInCache to save the image
+           
+            photoFetchQueue.addOperations([fetchPhotoOperation, storeInCacheOperation], waitUntilFinished: false)
+            OperationQueue.main.addOperation(updateCellOperation)
+            
+            // saving this fetchPhotoOperation to the dictionary with the id key
+            fetchOperationDictionary[photoReference.id] = fetchPhotoOperation
         }
     }
     
@@ -110,7 +142,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var cache: Cache<Int, UIImage> = Cache()
     
-    private var photoFetchQueue: OperationQueue?
+    private var photoFetchQueue = OperationQueue()
+    private var fetchOperationDictionary: [Int : FetchPhotoOperation] = [:]
     
     private var roverInfo: MarsRover? {
         didSet {

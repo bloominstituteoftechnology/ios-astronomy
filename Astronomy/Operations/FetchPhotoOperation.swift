@@ -14,7 +14,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     var imageData: Data?
     
     // Store the task so we can use it to cancel it if need be
-    private var dataTask = URLSessionDataTask()
+    private var dataTask: URLSessionDataTask?
     
     init(marsPhotoReference: MarsPhotoReference) {
         self.marsPhotoReference = marsPhotoReference
@@ -39,9 +39,11 @@ class FetchPhotoOperation: ConcurrentOperation {
                 self.state = .isFinished
             }
         }
+        
+        dataTask?.resume()
     }
     
     override func cancel() {
-        dataTask.cancel()
+        dataTask?.cancel()
     }
 }
