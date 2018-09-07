@@ -14,9 +14,9 @@ class PhotoFetchOperation: ConcurrentOperation
     var imageData: Data?
     private var dataTask: URLSessionDataTask?
     
-    init(reference: MarsPhotoReference, imageData: Data)
+    init(marsReference: MarsPhotoReference)
     {
-        self.imageData = imageData
+        self.marsPhotoReference = marsReference
     }
     
     override func start()

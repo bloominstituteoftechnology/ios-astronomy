@@ -76,38 +76,38 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
         // TODO: Implement image loading here
         
-        guard let url = photoReference.imageURL.usingHTTPS else {return}
+        let url = photoReference
         
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        let fetchQueue = PhotoFetchOperation(marsReference: url)
+        fetchQueue.start()
         
-        URLSession.shared.dataTask(with: request) { (data, _, error) in
-            if let error = error
-            {
-                NSLog("error fetching images from server \(error)")
-                
-                return
-            }
-            
-            guard let data = data else { return }
-            
+        let cacheOperation = OperationQueue()
+        cacheOperation.name = "com.leastudios.Astronomy.StoreQueue"
+        let operation1 = BlockOperation
+        {
+            guard let fetchedImage = fetchQueue.imageData else {return}
+            self.cache.cache(value: fetchedImage, key: photoReference.id)
+        }
+        
+        let operation2 = BlockOperation
+        {
             DispatchQueue.main.async() {
 //                if self.collectionView.indexPath(for: cell) == indexPath
 //                {
-//                   cell.imageView.image = UIImage(data: data)
+                    cell.imageView.image = UIImage(data: fetchQueue.imageData!)
 //                }
-                cell.imageView.image = UIImage(data: data)
             }
         }
-        .resume()
+        operation1.addDependency(fetchQueue)
+        operation2.addDependency(fetchQueue)
+        cacheOperation.addOperations([operation1, operation2], waitUntilFinished: false)
+
     }
     
     func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath)
     {
-        
+        photoFetchQueue.cancelAllOperations()
     }
-    
-    
     
     // Properties
     
@@ -138,4 +138,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     @IBOutlet var collectionView: UICollectionView!
     
     var cache = Cache<Int, Data>()
+    
+    private let photoFetchQueue: OperationQueue = OperationQueue.main
+    
+    var fetchedPhotos: [Int : Data] = [:]
+    
 }
