@@ -86,16 +86,19 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 self.cache.cache(value: image, for: photoReference.id)
                 
                 DispatchQueue.main.async {  // modifying a property here
-//                    if indexPath == self.collectionView.indexPath(for: cell) {
-//                        cell.imageView.image = image
-//                    }
+                    // If the currentIndexPath is nil, then we ignore the fact that the index paths don't match and set the image anyways. If it isn't nil, then we make sure the index paths match, otherwise we don't set the image
+                    if let currentIndexPath = self.collectionView.indexPath(for: cell), currentIndexPath != indexPath {
+                        return
+                    }
+                    
+                    cell.imageView.image = image
                     
                     // save the image to the cache
 //                    self.cache.cache(value: image, for: photoReference.id)
                     
                     // Get the cell at the indexPath we loaded the image for
-                    guard let cell = self.collectionView.cellForItem(at: indexPath) as? ImageCollectionViewCell else { return }
-                    cell.imageView.image = image
+//                    guard let cell = self.collectionView.cellForItem(at: indexPath) as? ImageCollectionViewCell else { return }
+//                    cell.imageView.image = image
                 }
             }.resume()
         }
@@ -106,6 +109,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private let client = MarsRoverClient()
     
     private var cache: Cache<Int, UIImage> = Cache()
+    
+    private var photoFetchQueue: OperationQueue?
     
     private var roverInfo: MarsRover? {
         didSet {
