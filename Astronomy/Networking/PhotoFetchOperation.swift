@@ -28,11 +28,12 @@ class PhotoFetchOperation: ConcurrentOperation {
             }
             
             guard let data = data else {
-                NSLog("Could load data from API")
+                NSLog("Could not load data from API")
                 return
             }
             
             self.imageData = data
+            NSLog("Fetching image \(self.photoReference.id) complete")
             self.state = .isFinished
         }
         dataTask?.resume()

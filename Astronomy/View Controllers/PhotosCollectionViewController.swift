@@ -60,10 +60,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    // Cancel image fetch operation when cell didEndDisplaying
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
         let photoReference = photoReferences[indexPath.item]
-        let imageFetchOperation = PhotoFetchOperation(for: photoReference)
-        imageFetchOperation.cancel()
+        let imageFetchOperation = fetchedPhotoOperations[photoReference.id]
+        NSLog("Image \(photoReference.id) operation canceled")
+        imageFetchOperation?.cancel()
     }
     
     // MARK: - Private
@@ -73,25 +75,29 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         
         if let cachedImage = cache.value(for: photoReference.id) {
+            NSLog("Image \(photoReference.id) fetched from cache")
             cell.imageView?.image = UIImage(data: cachedImage)
+            return
         }
         
         let imageFetchOperation = PhotoFetchOperation(for: photoReference)
-        imageFetchOperation.start()
+        fetchedPhotoOperations[photoReference.id] = imageFetchOperation
         
         let cacheImageOperation = BlockOperation { [weak self] in
             if let fetchedImageData = imageFetchOperation.imageData {
+                NSLog("Image \(photoReference.id) cached in store")
                 self?.cache.cache(value: fetchedImageData, for: photoReference.id)
             }
         }
         
         let updateImageOperation = BlockOperation { [weak self] in
-            if self?.collectionView.indexPath(for: cell) != indexPath {
+            if let currentIndexPath = self?.collectionView.indexPath(for: cell), currentIndexPath != indexPath {
                 NSLog("Cell instance has been reused for a different indexPath")
                 return
             }
             
             if let fetchedImageData = imageFetchOperation.imageData {
+                NSLog("Image \(photoReference.id) loaded in UI")
                 cell.imageView?.image = UIImage(data: fetchedImageData)
             }
         }
@@ -99,23 +105,18 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         cacheImageOperation.addDependency(imageFetchOperation)
         updateImageOperation.addDependency(imageFetchOperation)
         
+        photoFetchQueue.addOperation(imageFetchOperation)
         photoFetchQueue.addOperation(cacheImageOperation)
-        
-        DispatchQueue.main.async {
-            self.photoFetchQueue.addOperation(updateImageOperation)
-        }
-        
-        if let fetchedImageData = imageFetchOperation.imageData {
-            fetchedPhotos[photoReference.id] = fetchedImageData
-        }
+        // UI operations need to run on the main queue
+        OperationQueue.main.addOperation(updateImageOperation)
         
     }
     
     // Properties
     
-    var fetchedPhotos: [Int : Data] = [:]
+    var fetchedPhotoOperations: [Int : PhotoFetchOperation] = [:]
     
-    private var photoFetchQueue: OperationQueue = OperationQueue.main
+    private var photoFetchQueue: OperationQueue = OperationQueue()
     
     private var cache: Cache<Int, Data> = Cache<Int, Data>()
     
@@ -126,6 +127,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             solDescription = roverInfo?.solDescriptions[3]
         }
     }
+    
     private var solDescription: SolDescription? {
         didSet {
             if let rover = roverInfo,
@@ -137,6 +139,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
         }
     }
+    
     private var photoReferences = [MarsPhotoReference]() {
         didSet {
             DispatchQueue.main.async { self.collectionView?.reloadData() }
