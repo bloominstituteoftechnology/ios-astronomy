@@ -66,35 +66,40 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
 
         let photoReference = photoReferences[indexPath.item]
-        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
-        
+
         let isCached = cache?.cachedItems.contains(where: { (key, value) -> Bool in
             key == photoReference.id
         })
-        
+
         if let _ = isCached {
             guard let imageData = cache?.cachedItems[photoReference.id] else { return }
             cell.imageView.image = UIImage(data: imageData)
             return
         }
         
-        imageTask = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
-            if let error = error {
-                NSLog("Could not retrieve image from URL: \(imageURL) - \(error)")
-            }
+        photoFetchQueue.name = "PhotoFetchQueue"
 
-            if let data = data, let image = UIImage(data: data) {
-                
-                self.cache?.cache(value: data, for: photoReference.id)
-
-                DispatchQueue.main.async {
-//                    if self.collectionView.indexPath(for: cell) == indexPath {
-                        cell.imageView.image = image
-//                    }
+        let fetchPhoto = FetchPhotoOperation(photo: photoReference)
+        
+        let cacheOperation = BlockOperation {
+            guard let imageData = fetchPhoto.imageData else { return }
+            self.cache?.cache(value: imageData, for: photoReference.id)
+        }
+        
+        let imageSetOperation = BlockOperation {
+            guard let imageData = fetchPhoto.imageData else { return }
+            DispatchQueue.main.async {
+                if self.collectionView.indexPath(for: cell) == indexPath {
+                    cell.imageView.image = UIImage(data: imageData)
                 }
             }
         }
-        imageTask.resume()
+        
+        cacheOperation.addDependency(fetchPhoto)
+        imageSetOperation.addDependency(fetchPhoto)
+        
+        
+        self.photoFetchQueue.addOperations([fetchPhoto, cacheOperation, imageSetOperation], waitUntilFinished: false)
     }
 
     // Properties
@@ -125,5 +130,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 
     @IBOutlet var collectionView: UICollectionView!
     var imageTask: URLSessionDataTask!
+    private var photoFetchQueue: OperationQueue = OperationQueue()
     var cache: Cache<Int, Data>?
 }
