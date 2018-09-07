@@ -71,7 +71,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        guard let url = photoReference.imageURL.usingHTTPS else { return }
         
         if let image = cache.value(for: photoReference.id) {
             cell.imageView.image = image
