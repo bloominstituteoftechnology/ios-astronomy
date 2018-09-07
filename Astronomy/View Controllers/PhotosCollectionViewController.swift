@@ -67,9 +67,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoReference = photoReferences[indexPath.item]
         
-        if (cache.value(key: photoReference.id) != nil)
+        if let cached = cache.value(key: photoReference.id)
         {
-            
+            DispatchQueue.main.async() {
+                cell.imageView.image = UIImage(data: cached)
+                return
+            }
         }
         // TODO: Implement image loading here
         
@@ -89,11 +92,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             guard let data = data else { return }
             
             DispatchQueue.main.async() {
-                if self.collectionView.indexPath(for: cell) == indexPath
-                {
-                   cell.imageView.image = UIImage(data: data)
-                }
-                
+//                if self.collectionView.indexPath(for: cell) == indexPath
+//                {
+//                   cell.imageView.image = UIImage(data: data)
+//                }
+                cell.imageView.image = UIImage(data: data)
             }
         }
         .resume()
@@ -112,7 +115,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[105]
+            solDescription = roverInfo?.solDescriptions[3]
         }
     }
     private var solDescription: SolDescription? {

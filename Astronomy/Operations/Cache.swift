@@ -17,6 +17,7 @@ class Cache<Key, Value> where Key: Hashable
     func cache(value: Value, key: Key)
     {
         queue.async {
+            
             self.dictionary[key] = value
         }
     }
@@ -25,15 +26,10 @@ class Cache<Key, Value> where Key: Hashable
         
     {
         return queue.sync {
+            
             dictionary[key]
         }
     }
     
-    func checkIfCached()
-    {
-        if dictionary.con
-        {
-            
-        }
-    }
+    
 }
