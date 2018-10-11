@@ -10,16 +10,17 @@ import Foundation
 
 class Cache <Key: Hashable, Value> {
     
+    let queue = DispatchQueue(label: "com.ilqarilyasov.astronomyApp.searialCacheQueue")
     private var cacheItems: [Key: Value] = [:]
     
     // Add new pair
     func cache(value: Value, forKey: Key) {
-        cacheItems[forKey] = value
+        queue.async { self.cacheItems[forKey] = value }
     }
     
-    // Remove a pair
+    // Return the value
     func value(forKey: Key) -> Value? {
-        return cacheItems[forKey]
+        return queue.sync { self.cacheItems[forKey] }
     }
     
 }
