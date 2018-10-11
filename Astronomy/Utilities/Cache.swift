@@ -18,8 +18,8 @@ class Cache <Key: Hashable, Value> {
     }
     
     // Remove a pair
-    func value(forKey: Key) {
-        cacheItems[forKey] = nil
+    func value(forKey: Key) -> Value? {
+        return cacheItems[forKey]
     }
     
 }

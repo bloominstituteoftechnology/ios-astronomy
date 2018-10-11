@@ -68,25 +68,32 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let marsPhoto = photoReferences[indexPath.item]
         let photoURL = marsPhoto.imageURL.usingHTTPS!
         
-        URLSession.shared.dataTask(with: photoURL) { (data, _, error) in
-            if error != nil {
-                NSLog("Error performing data task")
-                return
-            }
-            
-            guard let data = data else {
-                NSLog("No data reurned")
-                return
-            }
-            
-            let image = UIImage(data: data)!
-            
+        if let data = cache.value(forKey: marsPhoto.id) {
             DispatchQueue.main.async {
-                if self.collectionView.indexPath(for: cell) == indexPath {
-                    cell.imageView.image = image
-                }
+                cell.imageView.image = UIImage(data: data)
             }
-        }.resume()
+        } else {
+            URLSession.shared.dataTask(with: photoURL) { (data, _, error) in
+                if error != nil {
+                    NSLog("Error performing data task")
+                    return
+                }
+                
+                guard let data = data else {
+                    NSLog("No data reurned")
+                    return
+                }
+                
+                self.cache.cache(value: data, forKey: indexPath.item)
+                let image = UIImage(data: data)!
+                
+                DispatchQueue.main.async {
+                    if self.collectionView.indexPath(for: cell) == indexPath {
+                        cell.imageView.image = image
+                    }
+                }
+            }.resume()
+        }
     }
     
     // Properties
@@ -114,6 +121,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    
+    let cache = Cache<Int, Data>()
     
     @IBOutlet var collectionView: UICollectionView!
 }
