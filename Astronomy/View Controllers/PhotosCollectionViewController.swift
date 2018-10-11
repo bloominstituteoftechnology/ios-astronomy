@@ -84,7 +84,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async {
                 if self.collectionView.indexPath(for: cell) == indexPath {
                     cell.imageView.image = image
-                    self.collectionView.reloadData()
                 }
             }
         }.resume()
