@@ -34,7 +34,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as! ImageCollectionViewCell //?? ImageCollectionViewCell()
         
         loadImage(forCell: cell, forItemAt: indexPath)
         
@@ -64,9 +64,41 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+//        print("\(collectionView.indexPath(for: cell))")
+        if let imageData = cache.value(for: photoReference.id) {
+            let image = UIImage(data: imageData)
+                cell.imageView.image = image
+            return
+        }
+        guard let url = photoReference.imageURL.usingHTTPS else { return }
+        
+        URLSession.shared.dataTask(with: url) { (data, response, error) in
+            if let error = error {
+                NSLog("Error GETing image for \(photoReference.id): \(error)")
+                if let response = response {
+                    NSLog("Response: \(response)")
+                }
+                return
+            }
+            
+            guard let data = data else {
+                NSLog("No data was returned")
+                return
+            }
+            
+            self.cache.cache(value: data, for: photoReference.id)
+            let image = UIImage(data: data)
+            
+            DispatchQueue.main.async {
+                
+                //if let currentIndexPath = self.collectionView.indexPath(for: cell), currentIndexPath == indexPath {
+                    cell.imageView.image = image
+                //}
+            }
+            
+        }.resume()
     }
     
     // Properties
@@ -75,7 +107,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
@@ -94,6 +126,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    
+    private var cache = Cache<Int, Data>()
     
     @IBOutlet var collectionView: UICollectionView!
 }
