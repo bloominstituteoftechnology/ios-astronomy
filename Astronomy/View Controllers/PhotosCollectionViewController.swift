@@ -36,7 +36,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
         
-        loadImage(forCell: cell, forItemAt: indexPath)
+        DispatchQueue.main.async {
+            self.loadImage(forCell: cell, forItemAt: indexPath)
+        }
         
         return cell
     }
@@ -61,15 +63,46 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     // MARK: - Private
-    
+    // TODO: Implement image loading here
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        if cache.value(for: photoReference.id) != nil {
+            cell.imageView.image = cache.value(for: photoReference.id)
+            return
+        }
+    
+        URLSession.shared.dataTask(with: photoReference.imageURL) { (data, _, error) in
+            
+            if let error = error {
+                NSLog("Could not GET image: \(error)")
+                return
+            }
+            
+            guard let data = data else {
+                NSLog("Data corrupted")
+                return
+            }
+            
+            self.cache.cache(value: UIImage(data: data)!, key: photoReference.id)
+            
+            DispatchQueue.main.sync {
+                if self.collectionView.indexPathsForVisibleItems.contains(indexPath){
+                    let marsImage = UIImage(data: data)
+                    cell.imageView.image = marsImage
+                } else {
+                   return
+                }
+            }
+            
+        }.resume()
+        
     }
     
     // Properties
+    
+    private var cache = Cache<Int, UIImage>()
     
     private let client = MarsRoverClient()
     
