@@ -16,7 +16,7 @@ class Cache <Key: Hashable, Value> {
     private var cacheItems: [Key: Value] = [:]
     
     // Add new pair
-    func cache(value: Value, forKey: Key) {
+    func cache(value: Value?, forKey: Key) {
         queue.async { self.cacheItems[forKey] = value }
     }
     

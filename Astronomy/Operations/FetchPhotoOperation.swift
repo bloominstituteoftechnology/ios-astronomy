@@ -20,10 +20,12 @@ class FetchPhotoOperation: ConcurrentOperation {
     }
     
     override func start() {
-        super.start()
         state = .isExecuting
+        guard let url = marsPhoto.imageURL.usingHTTPS else { return }
         
-        task = URLSession.shared.dataTask(with: marsPhoto.imageURL.usingHTTPS!) { (data, _, error) in
+        task = URLSession.shared.dataTask(with: url) { (data, _, error) in
+            defer { self.state = .isFinished }
+
             if error != nil {
                 NSLog("Error performing data task")
                 return
@@ -35,8 +37,6 @@ class FetchPhotoOperation: ConcurrentOperation {
             }
             
             self.imageData = data
-            defer { self.state = .isFinished }
-            self.cancel()
         }
         task?.resume()
     }

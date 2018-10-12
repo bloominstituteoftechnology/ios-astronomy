@@ -78,8 +78,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let fetchOperation = FetchPhotoOperation(marsPhotoReference: marsPhoto)
         
         if let imageData = cache.value(forKey: marsPhoto.id) {
-            let image = UIImage(data: imageData)
-            cell.imageView.image = image
+            cell.imageView.image = UIImage(data: imageData)
         }
         
         guard let data = fetchOperation.imageData else { return }
@@ -90,8 +89,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let uiOperation = BlockOperation {
             if let imageData = fetchOperation.imageData {
-                let image = UIImage(data: imageData)
-                cell.imageView.image = image
+                cell.imageView.image = UIImage(data: imageData)
             }
         }
         cacheOperation.addDependency(fetchOperation)
