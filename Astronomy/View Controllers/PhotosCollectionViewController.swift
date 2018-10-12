@@ -40,6 +40,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             self.loadImage(forCell: cell, forItemAt: indexPath)
         }
         
+        
         return cell
     }
     
@@ -55,6 +56,15 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         totalUsableWidth -= CGFloat(numberOfItemsInOneRow - 1) * flowLayout.minimumInteritemSpacing
         let width = totalUsableWidth / CGFloat(numberOfItemsInOneRow)
         return CGSize(width: width, height: width)
+    }
+    
+    // When the view has scrolled past the cell
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+        
+        let photoReference = photoReferences[indexPath.item]
+        guard let operation = operations[photoReference.id] else {return}
+        operation.cancel()
+        
     }
     
     // Add margins to the left and right side
