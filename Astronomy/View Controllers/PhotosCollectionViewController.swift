@@ -78,10 +78,15 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 return
             }
             
-            let image = UIImage(data: data)
             DispatchQueue.main.async {
-                    cell.imageView.image = image
+                if self.collectionView.indexPathsForVisibleItems.contains(indexPath) {
+                    cell.imageView.image = UIImage(data: data)
+                } else if !self.collectionView.indexPathsForVisibleItems.contains(indexPath){
+                    //print("returning")
+                    return
+                }
             }
+   
         }.resume()
     }
     
