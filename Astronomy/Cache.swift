@@ -23,7 +23,7 @@ class Cache<Key, Value> where Key: Hashable {
     
     func value(for key: Key) -> Value? {
         return queue.sync {
-            self.cachedImages[key]
+            return self.cachedImages[key]
         }
     }
 }

@@ -60,34 +60,53 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        guard let fetchPhotoOperation = operations[photoReferences[indexPath.item].id] else { return }
+        fetchPhotoOperation.cancel()
+    }
+    
     // MARK: - Private
+    
+    
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        guard let url = photoReference.imageURL.usingHTTPS else { return }
-        // TODO: Implement image loading here
-        URLSession.shared.dataTask(with: url) { (data, _, error) in
-            if let error = error {
-                NSLog("Error getting image \(error)")
-                return
-            }
-            
-            guard let data = data else {
-                NSLog("Error getting data \(error)")
-                return
-            }
-            
+        if let image = cache.value(for: photoReference.id) {
+            cell.imageView.image = UIImage(data: image)
+            print("This image is cached")
+            return
+        }
+
+    
+        let fetchPhotoOperation = FetchPhotoOperation(photo: photoReference)
+        
+        let cacheOperation = BlockOperation {
+            guard let imageData = fetchPhotoOperation.imageData else { return }
+            self.cache.cache(value: imageData, for: photoReference.id)
+        }
+        
+        let setImageAndUpdateUIOperation = BlockOperation {
+
             DispatchQueue.main.async {
-                if self.collectionView.indexPathsForVisibleItems.contains(indexPath) {
-                    cell.imageView.image = UIImage(data: data)
-                } else if !self.collectionView.indexPathsForVisibleItems.contains(indexPath){
-                    //print("returning")
-                    return
+                guard let imageData = fetchPhotoOperation.imageData else { return }
+                print("image is fetched")
+                if self.collectionView.indexPath(for: cell)?.item == indexPath.item {
+                    let image = UIImage(data: imageData)
+                    cell.imageView.image = image
                 }
             }
-   
-        }.resume()
+        }
+        
+        cacheOperation.addDependency(fetchPhotoOperation)
+        setImageAndUpdateUIOperation.addDependency(fetchPhotoOperation)
+        
+        operations[photoReference.id] = fetchPhotoOperation
+        
+        
+        photoFetchQueue.addOperations([fetchPhotoOperation, cacheOperation], waitUntilFinished: false)
+        OperationQueue.main.addOperation(setImageAndUpdateUIOperation)
+
     }
     
     // Properties
@@ -117,4 +136,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     @IBOutlet var collectionView: UICollectionView!
+    
+    private let photoFetchQueue = OperationQueue()
+    private var cache = Cache<Int, Data>()
+    private var operations = [Int : FetchPhotoOperation]()
 }

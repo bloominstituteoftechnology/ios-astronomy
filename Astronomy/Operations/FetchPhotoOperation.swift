@@ -9,23 +9,23 @@
 import Foundation
 
 class FetchPhotoOperation: ConcurrentOperation {
-    var photo: MarsPhotoReference
+    var photoReference: MarsPhotoReference
     var task: URLSessionDataTask = URLSessionDataTask()
     var imageData: Data?
     
     init(photo: MarsPhotoReference) {
-        self.photo = photo
+        self.photoReference = photo
     }
     
     override func start() {
         state = .isExecuting
-        guard let imageUrl = photo.imageURL.usingHTTPS else { return }
+        guard let imageUrl = photoReference.imageURL.usingHTTPS else { return }
         task = URLSession.shared.dataTask(with: imageUrl) { (data, _, error) in
+            defer { self.state = .isFinished }
             if let error = error {
-                NSLog("Error getting image \(error)")
+                NSLog("Fetch Operation Error with image Data Request: \(error)")
                 return
             }
-            
             guard let data = data else {
                 NSLog("Error returning data \(error)")
                 return
