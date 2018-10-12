@@ -13,7 +13,6 @@ struct MarsPhotoReference: Codable {
     let sol: Int
     let camera: Camera
     let earthDate: Date
-    
     let imageURL: URL
     
     enum CodingKeys: String, CodingKey {

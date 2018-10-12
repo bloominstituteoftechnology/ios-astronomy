@@ -10,6 +10,8 @@ import Foundation
 
 class Cache <Key: Hashable, Value> {
     
+    // Create a queue especially for Cache.
+    // So it makes Cache thread-safe to be shared between two different threads
     let queue = DispatchQueue(label: "com.ilqarilyasov.astronomyApp.searialCacheQueue")
     private var cacheItems: [Key: Value] = [:]
     
