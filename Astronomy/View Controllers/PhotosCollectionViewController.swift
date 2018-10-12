@@ -64,35 +64,60 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
+        photoFetchQueue.name = "com.ilqarilyasov.astronomyApp.FetchPhotoQueue"
         let marsPhoto = photoReferences[indexPath.item]
-        let photoURL = marsPhoto.imageURL.usingHTTPS!
+        let fetchPhoto = FetchPhotoOperation(marsPhotoReference: marsPhoto)
         
-        if let data = cache.value(forKey: marsPhoto.id) {
-            DispatchQueue.main.async {
+        let op1 = BlockOperation {
+            fetchPhoto.start()
+        }
+        
+        guard let data = fetchPhoto.imageData else { return }
+        
+        let op2 = BlockOperation {
+            self.cache.cache(value: data, forKey: marsPhoto.id)
+        }
+        
+        fetchOperations[marsPhoto.id] = op1
+        
+        DispatchQueue.main.async {
+            if self.collectionView.indexPath(for: cell) == indexPath {
                 cell.imageView.image = UIImage(data: data)
             }
-        } else {
-            URLSession.shared.dataTask(with: photoURL) { (data, _, error) in
-                if error != nil {
-                    NSLog("Error performing data task")
-                    return
-                }
-                
-                guard let data = data else {
-                    NSLog("No data reurned")
-                    return
-                }
-                
-                self.cache.cache(value: data, forKey: indexPath.item)
-                let image = UIImage(data: data)!
-                
-                DispatchQueue.main.async {
-                    if self.collectionView.indexPath(for: cell) == indexPath {
-                        cell.imageView.image = image
-                    }
-                }
-            }.resume()
         }
+        op2.addDependency(op1)
+        photoFetchQueue.addOperation(op1)
+        photoFetchQueue.addOperation(op2)
+        photoFetchQueue.waitUntilAllOperationsAreFinished()
+        
+//        let photoURL = marsPhoto.imageURL.usingHTTPS!
+        
+//        if let data = cache.value(forKey: marsPhoto.id) {
+//            DispatchQueue.main.async {
+//                cell.imageView.image = UIImage(data: data)
+//            }
+//        } else {
+//            URLSession.shared.dataTask(with: photoURL) { (data, _, error) in
+//                if error != nil {
+//                    NSLog("Error performing data task")
+//                    return
+//                }
+//
+//                guard let data = data else {
+//                    NSLog("No data reurned")
+//                    return
+//                }
+//
+//                self.cache.cache(value: data, forKey: indexPath.item)
+//                let image = UIImage(data: data)!
+//
+//                DispatchQueue.main.async {
+//                    if self.collectionView.indexPath(for: cell) == indexPath {
+//                        cell.imageView.image = image
+//                    }
+//                }
+//            }.resume()
+//        }
     }
     
     // Properties
@@ -122,6 +147,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     let cache = Cache<Int, Data>()
+    private var photoFetchQueue = OperationQueue()
+    var fetchOperations: [Int: BlockOperation] = [:]
     
     @IBOutlet var collectionView: UICollectionView!
 }

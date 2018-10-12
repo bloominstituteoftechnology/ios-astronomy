@@ -12,7 +12,6 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     // Properties
     var marsPhoto: MarsPhotoReference!
-    var image: UIImage!
     var imageData: Data?
     
     init(marsPhotoReference: MarsPhotoReference) {
@@ -23,7 +22,7 @@ class FetchPhotoOperation: ConcurrentOperation {
         super.start()
         state = .isExecuting
         
-        URLSession.shared.dataTask(with: marsPhoto.imageURL) { (data, _, error) in
+        URLSession.shared.dataTask(with: marsPhoto.imageURL.usingHTTPS!) { (data, _, error) in
             if error != nil {
                 NSLog("Error performing data task")
                 return
