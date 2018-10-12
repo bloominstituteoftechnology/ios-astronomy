@@ -67,40 +67,64 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        
-        if cache.value(for: photoReference.id) != nil {
-            cell.imageView.image = cache.value(for: photoReference.id)
-            return
-        }
     
-        URLSession.shared.dataTask(with: photoReference.imageURL) { (data, _, error) in
-            
-            if let error = error {
-                NSLog("Could not GET image: \(error)")
+        let fetchOperation = FetchPhotoOperation(photoReference: photoReference)
+        let cacheOperation = BlockOperation {
+            self.cache.cache(value: UIImage(data: fetchOperation.imageData!)!, key: photoReference.id)
+        }
+        let setOperation = BlockOperation {
+            // ATTEMPTS TO SET FROM CACHE
+            if self.cache.value(for: photoReference.id) != nil {
+                cell.imageView.image = self.cache.value(for: photoReference.id)
                 return
             }
-            
-            guard let data = data else {
-                NSLog("Data corrupted")
-                return
-            }
-            
-            self.cache.cache(value: UIImage(data: data)!, key: photoReference.id)
-            
-            DispatchQueue.main.sync {
-                if self.collectionView.indexPathsForVisibleItems.contains(indexPath){
-                    let marsImage = UIImage(data: data)
-                    cell.imageView.image = marsImage
-                } else {
-                   return
-                }
-            }
-            
-        }.resume()
+        }
+        
+        cacheOperation.addDependency(fetchOperation)
+        setOperation.addDependency(fetchOperation)
+        
+        photoFetchQueue.addOperation(fetchOperation)
+        photoFetchQueue.addOperation(cacheOperation)
+        
+        OperationQueue.main.addOperation(setOperation)
+        
+        operations.updateValue(fetchOperation, forKey: photoReference.id)
+        
+//        DispatchQueue.main.async(execute: setOperation)
+        
+        //DEPRECATE BECAUSE WE ARE USING NSOPERATION INSTEAD
+//        URLSession.shared.dataTask(with: photoReference.imageURL) { (data, _, error) in
+//
+//            if let error = error {
+//                NSLog("Could not GET image: \(error)")
+//                return
+//            }
+//
+//            guard let data = data else {
+//                NSLog("Data corrupted")
+//                return
+//            }
+//
+//            self.cache.cache(value: UIImage(data: data)!, key: photoReference.id)
+//
+//            DispatchQueue.main.sync {
+//                if self.collectionView.indexPathsForVisibleItems.contains(indexPath){
+//                    let marsImage = UIImage(data: data)
+//                    cell.imageView.image = marsImage
+//                } else {
+//                   return
+//                }
+//            }
+//
+//        }.resume()
         
     }
     
     // Properties
+    
+    private var operations = [Int: Operation]()
+    
+    private var photoFetchQueue = OperationQueue()
     
     private var cache = Cache<Int, UIImage>()
     
