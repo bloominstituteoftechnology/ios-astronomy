@@ -60,35 +60,49 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    // Cancelling operrations in-flight
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        
+        let marsPhoto = photoReferences[indexPath.item]
+        if let operation = fetchOperations[marsPhoto.id] {
+            operation.cancel()
+        }
+        
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        photoFetchQueue.name = "com.ilqarilyasov.astronomyApp.FetchPhotoQueue"
         let marsPhoto = photoReferences[indexPath.item]
-        let fetchPhoto = FetchPhotoOperation(marsPhotoReference: marsPhoto)
+        let fetchOperation = FetchPhotoOperation(marsPhotoReference: marsPhoto)
         
-        let op1 = BlockOperation {
-            fetchPhoto.start()
+        if let imageData = cache.value(forKey: marsPhoto.id) {
+            let image = UIImage(data: imageData)
+            cell.imageView.image = image
         }
         
-        guard let data = fetchPhoto.imageData else { return }
-        
-        let op2 = BlockOperation {
+        guard let data = fetchOperation.imageData else { return }
+
+        let cacheOperation = BlockOperation {
             self.cache.cache(value: data, forKey: marsPhoto.id)
         }
         
-        fetchOperations[marsPhoto.id] = op1
-        
-        DispatchQueue.main.async {
-            if self.collectionView.indexPath(for: cell) == indexPath {
-                cell.imageView.image = UIImage(data: data)
+        let uiOperation = BlockOperation {
+            if let imageData = fetchOperation.imageData {
+                let image = UIImage(data: imageData)
+                cell.imageView.image = image
             }
         }
-        op2.addDependency(op1)
-        photoFetchQueue.addOperation(op1)
-        photoFetchQueue.addOperation(op2)
-        photoFetchQueue.waitUntilAllOperationsAreFinished()
+        cacheOperation.addDependency(fetchOperation)
+        uiOperation.addDependency(fetchOperation)
+        
+        fetchOperations[marsPhoto.id] = fetchOperation
+
+        photoFetchQueue.addOperation(fetchOperation)
+        photoFetchQueue.addOperation(cacheOperation)
+        
+        OperationQueue.main.addOperation(uiOperation)
         
 //        let photoURL = marsPhoto.imageURL.usingHTTPS!
         
@@ -148,7 +162,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     let cache = Cache<Int, Data>()
     private var photoFetchQueue = OperationQueue()
-    var fetchOperations: [Int: BlockOperation] = [:]
+    var fetchOperations: [Int: Operation] = [:]
     
     @IBOutlet var collectionView: UICollectionView!
 }
