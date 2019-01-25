@@ -10,15 +10,16 @@ import Foundation
 
 class Cache<Key: Hashable, Value> {
     
-     private var items: [Key: Value] = [:]
-
+    private var items: [Key: Value] = [:]
+    private var queue = DispatchQueue(label: "threadSafeCacheQueue")
+    
     // Add + Remove Update
     func cache(value: Value, for key: Key){
-        items[key] = value
+        queue.async { self.items[key] = value }
     }
     
     func value(for key: Key) -> Value?{
-        return items[key]
+        return queue.sync { items[key] }
     }
     
 }

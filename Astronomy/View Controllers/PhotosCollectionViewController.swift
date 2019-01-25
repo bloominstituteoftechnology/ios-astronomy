@@ -41,6 +41,15 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        
+        if let fetchPhotoOperation = fetchOperations[photoReference.id] {
+            fetchPhotoOperation.cancel()
+            print("Cancelled photo operation")
+        }
+    }
+    
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -66,51 +75,37 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
-        guard let cellImageURL = photoReference.imageURL.usingHTTPS else { return }
-        
-        if let cachedData = cache.value(for: photoReference.id) {
-            let image = UIImage(data: cachedData)
-                
+        if let imageData = cache.value(for: photoReference.id) {
+            let image = UIImage(data: imageData)
             cell.imageView.image = image
-            print("Found Cached Image to use")
-            
-        } else {
-            // make a url request to get the item
-            URLSession.shared.dataTask(with: cellImageURL) { (data, response, error) in
-                if let error = error {
-                    NSLog("Error GETing image for \(photoReference.id): \(error)")
-                    if let response = response {
-                        NSLog("Response: \(response)")
-                    }
-                    return
-                }
-                
-                guard let data = data else {
-                    NSLog("No data was returned")
-                    return
-                }
-                
-                // save the data into 'cache' dictionary
-                // with key of indexPath.item and value of data
-                self.cache.cache(value: data, for: photoReference.id)
-                let image = UIImage(data: data)
-                
-                DispatchQueue.main.async {
-                    
-                    if indexPath == self.collectionView.indexPath(for: cell) {
-                        cell.imageView.image = image
-                    } else {
-                        return
-                    }
-                }
-                
-            }.resume()
+            return
         }
         
+        let fetchPhotoOperation = FetchPhotoOperation(photoReference: photoReference)
+        guard let imageData = fetchPhotoOperation.imageData else { return }
+        let cachePhotoOperation = BlockOperation {
+            self.cache.cache(value: imageData, for: photoReference.id)
+        }
         
+        let updateUIOpteration = BlockOperation {
+            if let imageData = fetchPhotoOperation.imageData {
+                let image = UIImage(data: imageData)
+                cell.imageView.image = image
+            }
+        }
         
+        cachePhotoOperation.addDependency(fetchPhotoOperation)
+        updateUIOpteration.addDependency(fetchPhotoOperation)
+        
+        fetchOperations[photoReference.id] = fetchPhotoOperation
+        
+        photoFetchQueue.addOperation(fetchPhotoOperation)
+        photoFetchQueue.addOperation(cachePhotoOperation)
+        OperationQueue.main.addOperation(updateUIOpteration)
+            
     }
+        
+    
     
     // Properties
     
@@ -140,5 +135,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     @IBOutlet var collectionView: UICollectionView!
     var cache = Cache<Int,Data>()
+    private var photoFetchQueue =  OperationQueue()
+    private var fetchOperations: [Int: FetchPhotoOperation] = [:]
     
 }
