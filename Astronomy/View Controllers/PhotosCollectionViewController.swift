@@ -69,33 +69,46 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // TODO: Implement image loading here
         guard let cellImageURL = photoReference.imageURL.usingHTTPS else { return }
         
-        URLSession.shared.dataTask(with: cellImageURL) { (data, response, error) in
-            if let error = error {
-                NSLog("Error GETing image for \(photoReference.id): \(error)")
-                if let response = response {
-                    NSLog("Response: \(response)")
-                }
-                return
-            }
-            
-            guard let data = data else {
-                NSLog("No data was returned")
-                return
-            }
-            
-            
-            let image = UIImage(data: data)
-            
-            DispatchQueue.main.async {
+        if let cachedData = cache.value(for: photoReference.id) {
+            let image = UIImage(data: cachedData)
                 
-                if indexPath == self.collectionView.indexPath(for: cell) {
-                    cell.imageView.image = image
-                } else {
+            cell.imageView.image = image
+            print("Found Cached Image to use")
+            
+        } else {
+            // make a url request to get the item
+            URLSession.shared.dataTask(with: cellImageURL) { (data, response, error) in
+                if let error = error {
+                    NSLog("Error GETing image for \(photoReference.id): \(error)")
+                    if let response = response {
+                        NSLog("Response: \(response)")
+                    }
                     return
                 }
-            }
-            
-        }.resume()
+                
+                guard let data = data else {
+                    NSLog("No data was returned")
+                    return
+                }
+                
+                // save the data into 'cache' dictionary
+                // with key of indexPath.item and value of data
+                self.cache.cache(value: data, for: photoReference.id)
+                let image = UIImage(data: data)
+                
+                DispatchQueue.main.async {
+                    
+                    if indexPath == self.collectionView.indexPath(for: cell) {
+                        cell.imageView.image = image
+                    } else {
+                        return
+                    }
+                }
+                
+            }.resume()
+        }
+        
+        
         
     }
     
@@ -126,6 +139,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     @IBOutlet var collectionView: UICollectionView!
-    var marsRoverClient = MarsRoverClient()
+    var cache = Cache<Int,Data>()
     
 }
