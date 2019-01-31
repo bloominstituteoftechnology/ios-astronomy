@@ -1,10 +1,3 @@
-//
-//  PhotosCollectionViewController.swift
-//  Astronomy
-//
-//  Created by Andrew R Madsen on 9/5/18.
-//  Copyright © 2018 Lambda School. All rights reserved.
-//
 
 import UIKit
 
@@ -64,9 +57,38 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
+        
+        let photoReferenceImageURL = photoReference.imageURL.usingHTTPS!
+        
+        URLSession.shared.dataTask(with: photoReferenceImageURL) { (data, _, error) in
+            if let error = error {
+                NSLog("Error loading image: \(error)")
+                return
+            }
+            
+            guard let data = data else { return }
+            
+            // create UIImage from received data
+            let newImage = UIImage(data: data)
+            
+            DispatchQueue.main.async {
+                
+                // if index path is visibly on screen
+                if self.collectionView.visibleCells.contains(cell) {
+                    cell.imageView.image = newImage
+                }
+                
+                // Alternative
+                // if indexPath == self.collectionView.indexPath(for: cell)
+                
+                // Alternative that didn't work
+                // if self.collectionView.indexPathsForVisibleItems.contains(indexPath)
+                
+            }
+        }.resume()
     }
     
     // Properties
@@ -75,7 +97,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[3] //3
         }
     }
     private var solDescription: SolDescription? {
