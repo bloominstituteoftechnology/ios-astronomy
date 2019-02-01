@@ -7,8 +7,11 @@
 //
 
 import Foundation
+import UIKit
 
 class MarsRoverClient {
+    
+    var photo: UIImage?
     
     func fetchMarsRover(named name: String,
                         using session: URLSession = URLSession.shared,
@@ -36,6 +39,7 @@ class MarsRoverClient {
                 return
             }
             completion(photos, nil)
+            print(photos)
         }
     }
     

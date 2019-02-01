@@ -10,6 +10,9 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    
+    let cache = Cache<Int, Data>()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -38,6 +41,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         loadImage(forCell: cell, forItemAt: indexPath)
         
+       //cell.imageView.image =
+        
+        
         return cell
     }
     
@@ -64,9 +70,37 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
+        
+        if let value = cache.value(forKey: photoReference.id) {
+            
+            let imageData = value
+            cell.imageView.image = UIImage(data: imageData)
+        } else {
+        
+        let url = photoReference.imageURL.usingHTTPS
+        URLSession.shared.dataTask(with: url!) { (data, _, error) in
+            
+            if let error = error {
+                NSLog("\(error)")
+                return
+            }
+            
+            guard let photoData = data else { return }
+            
+            self.cache.cache(value: photoData, forKey: photoReference.id)
+            
+           let image = UIImage(data: photoData)
+            DispatchQueue.main.async {
+                if indexPath == self.collectionView.indexPath(for: cell) {
+                cell.imageView.image = image
+            }
+            }
+        }.resume()
+        }
+        
     }
     
     // Properties
