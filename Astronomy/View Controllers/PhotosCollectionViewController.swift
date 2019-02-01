@@ -71,33 +71,37 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             cell.imageView.image = UIImage(data: imageData)
             
         } else {
+            
+            
+            
+            
             URLSession.shared.dataTask(with: photoReferenceImageURL) { (data, _, error) in
                 if let error = error {
                     NSLog("Error loading image: \(error)")
                     return
                 }
-                
+
                 guard let data = data else { return }
-                
+
                 // Save retrieved image data to cache
                 self.cache.cache(value: data, forKey: photoReference.id)
-                
+
                 // create UIImage from received data
                 let newImage = UIImage(data: data)
-                
+
                 DispatchQueue.main.async {
-                    
+
                     // if index path is visibly on screen
                     if self.collectionView.visibleCells.contains(cell) {
                         cell.imageView.image = newImage
                     }
-                    
+
                     // Alternative
                     // if indexPath == self.collectionView.indexPath(for: cell)
-                    
+
                     // Alternative that didn't work
                     // if self.collectionView.indexPathsForVisibleItems.contains(indexPath)
-                    
+
                 }
             }.resume()
         }
@@ -106,6 +110,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // Properties
     
     var cache = Cache<Int, Data>()
+    
+    private var photoFetchQueue: OperationQueue
     
     private let client = MarsRoverClient()
     
