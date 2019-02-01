@@ -65,29 +65,53 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-         let photoReference = photoReferences[indexPath.item]
-        
-        // TODO: Implement image loading here
-        
+        let photoReference = photoReferences[indexPath.item]
         let photoURL = photoReference.imageURL.usingHTTPS
-        let task = URLSession.shared.dataTask(with: photoURL!) { (data, _, error) in
-            //unwrap the data
-            guard error == nil, let data = data else {
-                if let error = error {
-                    NSLog("Error unwarapping data: \(error)")
+        let indexPathAtCall = indexPath
+        
+        //test
+        let dummyOutside = self.cache.value(forKey: photoReference.id)
+        print(dummyOutside)
+        
+        // TODO: Implement image loading
+        if (cache.value(forKey: photoReference.id) != nil) {
+            guard indexPath == indexPathAtCall else { return }
+            print("image from cache!")
+            cell.imageView.image = cache.value(forKey: photoReference.id)
+        }else {
+            
+            let task = URLSession.shared.dataTask(with: photoURL!) {
+                
+                data, _, error in
+                //unwrap the data
+                guard error == nil, let data = data else {
+                    if let error = error {
+                        NSLog("Error unwarapping data: \(error)")
+                        return
+                    }
+                    NSLog("Unable to fetch data")
                     return
                 }
-                NSLog("Unable to fetch data")
-                return
+                //test
+                print("no error and have data: \(data)")
+                
+                //test
+                print("image from URL: \(photoReference.id), \(UIImage(data: data)!)")
+                
+                let imageToCache = UIImage(data: data)!
+                self.cache.cache(value: imageToCache, forKey: photoReference.id)
+                
+                //test
+                let dummyInside = self.cache.value(forKey: photoReference.id)
+                print(dummyInside)
             }
-            print("no error and have data: \(data)")
+            task.resume()
             
+            guard indexPath == indexPathAtCall else { return }
+            cell.imageView.loadImageFrom(url: photoURL!)
             
         }
-        task.resume()
-        cell.imageView.loadImageFrom(url: photoURL!)
     }
-    
     // Properties
     
     private let client = MarsRoverClient()
@@ -113,6 +137,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    
+    
+    private var cache = Cache<Int, UIImage>()
+    
+    
     
     @IBOutlet var collectionView: UICollectionView!
 }
