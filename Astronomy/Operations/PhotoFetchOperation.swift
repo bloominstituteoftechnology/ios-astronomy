@@ -9,30 +9,42 @@
 import Foundation
 
 class FetchPhotoOperation: ConcurrentOperation {
-    
-    let marsPhotoReference: MarsPhotoReference
-    var url: URL
+    private var photoReferences: MarsPhotoReference
+    var imageData: Data?
     private var task: URLSessionDataTask?
+  
     
-    init(marsPhotoReference: MarsPhotoReference, url: URL) {
-        self.marsPhotoReference = marsPhotoReference
-        self.url = url
+    init(photoReferences: MarsPhotoReference) {
+        
+        self.photoReferences = photoReferences
         super.init()
+        
     }
-    
+   
     
     override func start() {
         super.start()
-        state = .isExecuting
-//        task = URLSessionDataTask(with: url, complition: { (data, _, error) in
-//
-//
-//
-//        state = .isFinished
-//
-//        })
-//        task?.resume()
-    }
+        self.state = .isExecuting
+        let url = photoReferences.imageURL.usingHTTPS!
+        task = URLSession.shared.dataTask(with: url) { (data, _, error) in
+            
+            if let error = error {
+                self.cancel()
+                NSLog("\(error)")
+                return
+            }
+            
+            guard let photoData = data else { return }
+            self.imageData = photoData
+        }
+
+         
+
+        self.state = .isFinished
+        task?.resume()
+        }
+    
+    
     
     override func cancel() {
         task?.cancel()
