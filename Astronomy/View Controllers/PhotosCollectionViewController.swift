@@ -69,36 +69,45 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         let photoURL = photoReference.imageURL.usingHTTPS
         
-        let dataTask = URLSession.shared.dataTask(with: photoURL!) { (photoData, _, error) in
-            if let error = error {
-                print("Error: \(error)")
-                return
-            }
+        if let cacheImage = cache.value(for: photoReference.id) {
             
-            guard let photoData = photoData else { return }
+            cell.imageView = UIImageView(image: UIImage(data: cacheImage))
             
-            let photo = UIImage(data: photoData)
+        } else {
             
-            DispatchQueue.main.async {
-                guard let currentIndex = self.collectionView.indexPath(for: cell) else {
-                    print("No index")
-                    return }
+            let dataTask = URLSession.shared.dataTask(with: photoURL!) { (photoData, _, error) in
                 
-                if currentIndex == indexPath {
-                    
-                    cell.imageView = UIImageView(image: photo)
-                    
-                } else {
+                if let error = error {
+                    print("Error: \(error)")
                     return
                 }
+                
+                guard let photoData = photoData else { return }
+                
+                let photo = UIImage(data: photoData)
+                
+                self.cache.cache(value: photoData, for: photoReference.id)
+                
+                DispatchQueue.main.async {
+                    guard let currentIndex = self.collectionView.indexPath(for: cell) else { return }
+                    
+                    if currentIndex == indexPath {
+                        
+                        cell.imageView.image = photo
+                        
+                    } else {
+                        return
+                    }
+                }
             }
+            dataTask.resume()
         }
-        dataTask.resume()
-        
      
     }
     
     // Properties
+    
+    let cache = Cache<Int, Data>()
     
     private let client = MarsRoverClient()
     
