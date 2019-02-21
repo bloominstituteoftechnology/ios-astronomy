@@ -36,6 +36,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     
+    //Add a cache proeprty to PhotosCollectionViewController. Its keys should be Ints as you'll use MarsPhotoReference ids for the keys. Its values should be Data objects, as you'll be caching image data. (You could also cache UIImages directly.)
+    var cache = Cache<Int, Data>()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -96,6 +99,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         guard let imageUrl = photoReference.imageURL.usingHTTPS else {return}
         
+        //In your PhotosCollectionViewController.loadImage(forCell:, forItemAt:) method, before starting a data task, first check to see if the cache already contains data for the given photo reference's id. If it exists, set the cell's image immediately without doing a network request.
+        
+        if let imageData = cache.value(for: photoReference.id) {
+                        DispatchQueue.main.async {
+                            cell.imageView.image = UIImage(data: imageData)
+                        }
+                    } else {
+        
         URLSession.shared.dataTask(with: imageUrl) { (data, _, error) in
             if let error = error {
                 print("Error with data task: \(error)")
@@ -106,6 +117,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 print("There is no data")
                 return
             }
+            
+            //In your network request completion handler, save the just-received image data to the cache so it is available later.
+            self.cache.cache(value: data, for: indexPath.item)
             
             let image = UIImage(data: data)
             
@@ -118,6 +132,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
             
             }.resume()
+        }
     }
     
    
