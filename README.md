@@ -44,7 +44,9 @@ Test your app. It should load images and display them.
 
 ## Part 2 - Test Scrolling Performance
 
-Your app should work at this point, however, you should evaulate its performance, especially with a slow network. Apple provides a tool called Network Link Conditioner that you can install on your Mac and use to simulate a slow or unreliable network for the purposes of testing your apps. You can download it (along with a number of other supplemental Apple developer tools) here: [Download Additional Tools for Xcode](https://developer.apple.com/download/more/?q=Additional%20Tools) (Make sure you download the correct tools for your version of Xcode). You can read a good article on the Network Link Conditioner on [NSHipster](https://nshipster.com/network-link-conditioner/).
+Your app should work at this point, however, you should evaulate its performance, especially with a slow network. Apple provides a tool called *Network Link Conditioner* that you can install on your Mac and use to simulate a slow or unreliable network for the purposes of testing your apps. 
+
+You can download it (along with a number of other supplemental Apple developer tools) here: [Download Additional Tools for Xcode](https://developer.apple.com/download/more/?q=Additional%20Tools) (Make sure you download the correct tools for your version of Xcode). You can read a good article on the Network Link Conditioner on [NSHipster](https://nshipster.com/network-link-conditioner/).
 
 Install Network Link Conditioner, enable it, and select the DSL setting. This is a good choice for testing with a working but relatively slow network connection.
 
