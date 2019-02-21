@@ -10,6 +10,32 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    // Properties
+    
+    private let client = MarsRoverClient()
+    
+    private var roverInfo: MarsRover? {
+        didSet {
+            solDescription = roverInfo?.solDescriptions[3]
+        }
+    }
+    private var solDescription: SolDescription? {
+        didSet {
+            if let rover = roverInfo,
+                let sol = solDescription?.sol {
+                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
+                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
+                    self.photoReferences = photoRefs ?? []
+                }
+            }
+        }
+    }
+    private var photoReferences = [MarsPhotoReference]() {
+        didSet {
+            DispatchQueue.main.async { self.collectionView?.reloadData() }
+        }
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -64,36 +90,37 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
-    }
-    
-    // Properties
-    
-    private let client = MarsRoverClient()
-    
-    private var roverInfo: MarsRover? {
-        didSet {
-            solDescription = roverInfo?.solDescriptions[3]
-        }
-    }
-    private var solDescription: SolDescription? {
-        didSet {
-            if let rover = roverInfo,
-                let sol = solDescription?.sol {
-                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
-                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
-                    self.photoReferences = photoRefs ?? []
+        
+        guard let imageUrl = photoReference.imageURL.usingHTTPS else {return}
+        
+        URLSession.shared.dataTask(with: imageUrl) { (data, _, error) in
+            if let error = error {
+                print("Error with data task: \(error)")
+                return
+            }
+            
+            guard let data = data else {
+                print("There is no data")
+                return
+            }
+            
+            let image = UIImage(data: data)
+            
+            DispatchQueue.main.async {
+                if self.collectionView.indexPath(for: cell) == indexPath {
+                    
+                    cell.imageView.image = image
+                    
                 }
             }
-        }
+            
+            }.resume()
     }
-    private var photoReferences = [MarsPhotoReference]() {
-        didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
-        }
-    }
+    
+   
     
     @IBOutlet var collectionView: UICollectionView!
 }
