@@ -33,6 +33,9 @@ class FetchPhotoOperation: ConcurrentOperation {
         
         dataTask = URLSession.shared.dataTask(with: imageUrl, completionHandler: { (data, _, error) in
             
+            //Make sure you set state to .isFinished before exiting the completion closure. This is a good use case for defer.
+            defer { self.state = .isFinished }
+            
             //In the data task's completion handler, check for an error and bail out if one occurs. Otherwise, set imageData with the received data.
             
             if let error = error {
@@ -45,8 +48,7 @@ class FetchPhotoOperation: ConcurrentOperation {
             }
             
             self.imageData = data
-            //Make sure you set state to .isFinished before exiting the completion closure. This is a good use case for defer.
-            defer { self.state = .isFinished }
+           
            
             
         })

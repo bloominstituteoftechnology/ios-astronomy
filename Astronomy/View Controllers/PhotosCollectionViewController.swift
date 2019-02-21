@@ -14,6 +14,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private let client = MarsRoverClient()
     
+    //Add a private property called photoFetchQueue, which is an instance of OperationQueue
+    private var photoFetchQueue = OperationQueue()
+    
+    //Add a dictionary property that you'll use to store fetch operations by the associated photo reference id.
+    private var fetchOperations: [Int: FetchPhotoOperation] = [:]
+    
     private var roverInfo: MarsRover? {
         didSet {
             solDescription = roverInfo?.solDescriptions[3]
@@ -97,42 +103,83 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         // TODO: Implement image loading here
         
-        guard let imageUrl = photoReference.imageURL.usingHTTPS else {return}
+       // guard let imageUrl = photoReference.imageURL.usingHTTPS else {return}
         
-        //In your PhotosCollectionViewController.loadImage(forCell:, forItemAt:) method, before starting a data task, first check to see if the cache already contains data for the given photo reference's id. If it exists, set the cell's image immediately without doing a network request.
+        //One should be a PhotoFetchOperation to fetch the image data from the network.
+        let photoFetchOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
         
-        if let imageData = cache.value(for: photoReference.id) {
-                        DispatchQueue.main.async {
-                            cell.imageView.image = UIImage(data: imageData)
-                        }
-                    } else {
-        
-        URLSession.shared.dataTask(with: imageUrl) { (data, _, error) in
-            if let error = error {
-                print("Error with data task: \(error)")
-                return
-            }
-            
-            guard let data = data else {
-                print("There is no data")
-                return
-            }
-            
-            //In your network request completion handler, save the just-received image data to the cache so it is available later.
-            self.cache.cache(value: data, for: indexPath.item)
-            
-            let image = UIImage(data: data)
-            
-            DispatchQueue.main.async {
-                if self.collectionView.indexPath(for: cell) == indexPath {
-                    
-                    cell.imageView.image = image
-                    
-                }
-            }
-            
-            }.resume()
+    
+        //One should be used to store received data in the cache.
+        if let imgData = cache.value(for: photoReference.id) {
+            let image = UIImage(data: imgData)
+            cell.imageView.image = image
+            return
         }
+        
+        let cachePhotoOperation = BlockOperation {
+            self.cache.cache(value: photoFetchOperation.imageData, for: photoReference.id)
+        }
+        
+        // check if the cell has been reused, and if not, set its image view's image.
+        let updateUIImageCellOperation = BlockOperation {
+            if let imgData = photoFetchOperation.imageData {
+                cell.imageView.image = UIImage(data: imgData)
+            }
+        }
+        
+        
+        //Make the cache and completion operations both depend on completion of the fetch operation.
+        cachePhotoOperation.addDependency(photoFetchOperation)
+        updateUIImageCellOperation.addDependency(photoFetchOperation)
+        
+        fetchOperations[photoReference.id] = photoFetchOperation
+        
+        
+        photoFetchQueue.addOperation(photoFetchOperation)
+        photoFetchQueue.addOperation(cachePhotoOperation)
+        
+        
+        //UIKit API and must run on the main queue.
+        OperationQueue.main.addOperation(updateUIImageCellOperation)
+    
+        //Below not needed anymore.
+        
+//        //In your PhotosCollectionViewController.loadImage(forCell:, forItemAt:) method, before starting a data task, first check to see if the cache already contains data for the given photo reference's id. If it exists, set the cell's image immediately without doing a network request.
+//
+//        if let imageData = cache.value(for: photoReference.id) {
+//                        DispatchQueue.main.async {
+//                            cell.imageView.image = UIImage(data: imageData)
+//                        }
+//                    } else {
+        
+            
+//In PhotosCollectionViewController.loadImage(forCell:, forItemAt:), delete the code that creates a data task.
+//        URLSession.shared.dataTask(with: imageUrl) { (data, _, error) in
+//            if let error = error {
+//                print("Error with data task: \(error)")
+//                return
+//            }
+//
+//            guard let data = data else {
+//                print("There is no data")
+//                return
+//            }
+//
+//            //In your network request completion handler, save the just-received image data to the cache so it is available later.
+//            self.cache.cache(value: data, for: indexPath.item)
+//
+//            let image = UIImage(data: data)
+//
+//            DispatchQueue.main.async {
+//                if self.collectionView.indexPath(for: cell) == indexPath {
+//
+//                    cell.imageView.image = image
+//
+//                }
+//            }
+//
+//            }.resume()
+      //  }
     }
     
    
