@@ -37,6 +37,8 @@ class FetchPhotoOperation: ConcurrentOperation {
             //Make sure you set state to .isFinished before exiting the completion closure. This is a good use case for defer.
             defer { self.state = .isFinished }
             
+            if self.isCancelled { return }
+            
             //In the data task's completion handler, check for an error and bail out if one occurs. Otherwise, set imageData with the received data.
             
             if let error = error {
