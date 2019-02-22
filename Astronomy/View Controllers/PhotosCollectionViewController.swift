@@ -66,30 +66,44 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoReference = photoReferences[indexPath.item]
         
-        guard let url = photoReference.imageURL.usingHTTPS else { return }
-        
-        let dataTask = URLSession.shared.dataTask(with: url) { (data, _, error) in
-            if let error = error {
-                NSLog("Error getting image: \(error)")
-                return
-            }
+        if let image = cache.value(for: photoReference.id) {
             
-            guard let data = data else {
-                NSLog("No data found")
-                return }
+            cell.imageView.image = image
+        } else {
             
-            let image = UIImage(data: data)
+            guard let url = photoReference.imageURL.usingHTTPS else { return }
             
-            DispatchQueue.main.async {
-                if self.collectionView.indexPath(for: cell) == indexPath {
-                    cell.imageView.image = image
+            let dataTask = URLSession.shared.dataTask(with: url) { (data, _, error) in
+                if let error = error {
+                    NSLog("Error getting image: \(error)")
+                    return
+                }
+                
+                guard let data = data else {
+                    NSLog("No data found")
+                    return
+                }
+                
+                guard let image = UIImage(data: data) else {
+                    NSLog("Unable to construct image from data")
+                    return
+                }
+                
+                self.cache.cache(value: image, for: photoReference.id)
+                
+                DispatchQueue.main.async {
+                    if self.collectionView.indexPath(for: cell) == indexPath {
+                        cell.imageView.image = image
+                    }
                 }
             }
+            dataTask.resume()
         }
-        dataTask.resume()
     }
     
     // Properties
+    
+    private var cache: Cache<Int, UIImage> = Cache()
     
     private let client = MarsRoverClient()
     

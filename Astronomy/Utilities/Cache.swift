@@ -10,17 +10,13 @@ import UIKit
 
 class Cache<Key: Hashable, Value> {
     
-    func cache(value: Value, for: Key) {
-        
+    func cache(value: Value, for key: Key) {
+        cachedItems[key] = value
     }
     
-    func value(for: Key) {
-        
+    func value(for key: Key) -> Value? {
+        return cachedItems[key]
     }
-    
-    
-    
-    
     
     private var cachedItems: [Key : Value] = [:]
 }
