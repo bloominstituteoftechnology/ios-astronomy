@@ -71,37 +71,39 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             cell.imageView.image = image
         } else {
             
-            guard let url = photoReference.imageURL.usingHTTPS else { return }
+            let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
             
-            let dataTask = URLSession.shared.dataTask(with: url) { (data, _, error) in
-                if let error = error {
-                    NSLog("Error getting image: \(error)")
-                    return
-                }
-                
-                guard let data = data else {
-                    NSLog("No data found")
-                    return
-                }
-                
-                guard let image = UIImage(data: data) else {
-                    NSLog("Unable to construct image from data")
-                    return
-                }
+            let cacheOperation = BlockOperation {
+                guard let data = fetchPhotoOperation.imageData,
+                    let image = UIImage(data: data) else { return }
                 
                 self.cache.cache(value: image, for: photoReference.id)
+            }
+            
+            let cellReusedOperation = BlockOperation {
+                guard let data = fetchPhotoOperation.imageData,
+                    let image = UIImage(data: data) else { return }
                 
-                DispatchQueue.main.async {
-                    if self.collectionView.indexPath(for: cell) == indexPath {
-                        cell.imageView.image = image
-                    }
+                if self.collectionView.indexPath(for: cell) == indexPath {
+                    cell.imageView.image = image
                 }
             }
-            dataTask.resume()
+            
+            cacheOperation.addDependency(fetchPhotoOperation)
+            cellReusedOperation.addDependency(fetchPhotoOperation)
+            
+            photoFetchQueue.addOperations([fetchPhotoOperation, cacheOperation], waitUntilFinished: false)
+            OperationQueue.main.addOperation(cellReusedOperation)
+            
+            storedFetchedOperations[photoReference.id] = fetchPhotoOperation
         }
     }
     
     // Properties
+    
+    private var storedFetchedOperations: [Int : FetchPhotoOperation] = [:]
+    
+    private let photoFetchQueue = OperationQueue()
     
     private var cache: Cache<Int, UIImage> = Cache()
     
