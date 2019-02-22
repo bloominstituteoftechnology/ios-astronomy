@@ -69,13 +69,41 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         let photoURL = photoReference.imageURL.usingHTTPS
         
-        if let cacheImage = cache.value(for: photoReference.id) {
+        if let cacheImage = cache.value(for: photoReference.id){
             
             cell.imageView = UIImageView(image: UIImage(data: cacheImage))
             
         } else {
             
-            let dataTask = URLSession.shared.dataTask(with: photoURL!) { (photoData, _, error) in
+            let fetchPhotoOp = FetchPhotoOperation(marsPR: photoReference)
+            
+            let storeDataOp = BlockOperation {
+                self.cache.cache(value: fetchPhotoOp.imageData!, for: photoReference.id)
+            }
+            
+            let reuseOp = BlockOperation {
+                guard let currentIndex = self.collectionView.indexPath(for: cell) else { return }
+                
+                
+                if currentIndex == indexPath {
+                    
+                    cell.imageView.image = UIImage(data: fetchPhotoOp.imageData!)
+                    
+                } else {
+                    return
+                }
+            }
+            
+            storeDataOp.addDependency(fetchPhotoOp)
+            reuseOp.addDependency(fetchPhotoOp)
+            
+            photoFetchQueue.addOperation(fetchPhotoOp)
+            photoFetchQueue.addOperation(storeDataOp)
+            OperationQueue.main.addOperation(reuseOp)
+            
+            
+            
+           /* let dataTask = URLSession.shared.dataTask(with: photoURL!) { (photoData, _, error) in
                 
                 if let error = error {
                     print("Error: \(error)")
@@ -100,12 +128,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                     }
                 }
             }
-            dataTask.resume()
+            dataTask.resume()*/
         }
      
     }
     
     // Properties
+    
+    let photoFetchQueue = OperationQueue()
     
     let cache = Cache<Int, Data>()
     
