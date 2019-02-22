@@ -66,6 +66,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         guard let url = photoReference.imageURL.usingHTTPS else { return }
         
+        if let image = cache.value(for: photoReference.id) { //grab image that corresponds with this image
+            cell.imageView.image = image
+        } else {
+        
+        
         //Create and run a data task to load the image data from the imageURL
         //Create a UIImage from the received data
         URLSession.shared.dataTask(with: url) { (data, _, error) in
@@ -85,6 +90,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 return
             }
             
+            self.cache.cache(value: image, for: photoReference.id)
+            
             DispatchQueue.main.async {
                 guard let currentIndexPath = self.collectionView.indexPath(for: cell) else { return }
 
@@ -95,6 +102,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 }
             }
         }.resume()
+        }
     }
     
     // Properties
@@ -121,6 +129,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    
+    var cache: Cache<Int, UIImage> = Cache()
     
     @IBOutlet var collectionView: UICollectionView!
 }
