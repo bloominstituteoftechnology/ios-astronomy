@@ -8,7 +8,7 @@
 
 import UIKit
 
-class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout{
     
     // Properties
     
@@ -76,6 +76,17 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
+    //Implement the UICollectionViewDelegate method collectionView(_:, didEndDisplaying:, forItemAt:), which is called when a given item scrolls off screen.
+ 
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        
+        //In your implementation, get the associated fetch operation and cancel it.
+        let photoImg = photoReferences[indexPath.item]
+        if let operation = fetchOperations[photoImg.id] {
+            operation.cancel()
+        }
+    }
+    
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -94,6 +105,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
+    
+    
     
     // MARK: - Private
     
@@ -129,6 +142,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         
         //Make the cache and completion operations both depend on completion of the fetch operation.
+       
         cachePhotoOperation.addDependency(photoFetchOperation)
         updateUIImageCellOperation.addDependency(photoFetchOperation)
         

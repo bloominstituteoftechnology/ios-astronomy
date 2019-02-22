@@ -20,6 +20,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     //Implement an initializer that takes a MarsPhotoReference
     init(marsPhotoReference: MarsPhotoReference) {
         self.marsPhotoReference = marsPhotoReference
+        super.init()
     }
     
     
@@ -48,9 +49,7 @@ class FetchPhotoOperation: ConcurrentOperation {
             }
             
             self.imageData = data
-           
-           
-            
+   
         })
         
         dataTask?.resume()
@@ -59,5 +58,6 @@ class FetchPhotoOperation: ConcurrentOperation {
     //Override cancel(), which will be called if the operation is cancelled. In your implementation, call cancel() on the dataTask.
     override func cancel() {
         dataTask?.cancel()
+        super.cancel()
     }
 }
