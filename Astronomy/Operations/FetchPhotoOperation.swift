@@ -14,6 +14,9 @@ class FetchPhotoOperation: ConcurrentOperation {
     var marsPhotoReference: MarsPhotoReference
     var imageData: Data?
     
+    //Create a data task to load the image. You should store the task itself in a private property so you can cancel it if need be
+    private var dataTask: URLSessionDataTask?
+    
     //Implement an initializer that takes a MarsPhotoReference
     init(marsPhotoReference: MarsPhotoReference) {
         self.marsPhotoReference = marsPhotoReference
@@ -41,8 +44,14 @@ class FetchPhotoOperation: ConcurrentOperation {
                 return
             }
             
+            //set imageData with the received data
             self.imageData = data
+            
         }
         dataTask.resume()
+    }
+    
+    override func cancel() {
+        dataTask?.cancel()
     }
 }
