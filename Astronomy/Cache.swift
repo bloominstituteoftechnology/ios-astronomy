@@ -10,16 +10,23 @@ import Foundation
 
 class Cache<Key: Hashable, Value> {
     
+    //Create a private queue property and initialize it with a serial DispatchQueue.
+    private var qCache = DispatchQueue(label: "com.Frulwinn.Astronomy.Cache")
+    
     private var items: [Key: Value] = [:]
     
     //Implement cache(value:, for:) and value(for:) methods to add items to the cache and remove them, respectively.
     //I don't really understand this.
-    //add
+    
     func cache(value: Value, for key: Key) {
-        items[key] = value
+        qCache.async {
+            self.items[key] = value
+        }
     }
     //remove
     func value(for key: Key) -> Value?{
-        return items[key]
+        return qCache.sync {
+            items[key]
+        }
     }
 }

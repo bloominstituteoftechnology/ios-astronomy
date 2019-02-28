@@ -63,7 +63,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
+        //Get the MarsPhotoReference instance for the passed in indexPath from the photoReferences array property.
         let photoReference = photoReferences[indexPath.item]
+        
+        //Get the URL for the associated image using the imageURL property. 
         guard let url = photoReference.imageURL.usingHTTPS else { return }
         
         if let image = cache.value(for: photoReference.id) { //grab image that corresponds with this image
@@ -92,6 +95,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             
             self.cache.cache(value: image, for: photoReference.id)
             
+            //Check to see if the current index path for cell is the same one you were asked to load
             DispatchQueue.main.async {
                 guard let currentIndexPath = self.collectionView.indexPath(for: cell) else { return }
 
@@ -130,7 +134,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     
+    //Add a cache proeprty to PhotosCollectionViewController. Its keys should be Ints as you'll use MarsPhotoReference ids for the keys. Its values should be Data objects, as you'll be caching image data.
     var cache: Cache<Int, UIImage> = Cache()
-    private var photofetchQueue = PhotoQueue()
     @IBOutlet var collectionView: UICollectionView!
 }
