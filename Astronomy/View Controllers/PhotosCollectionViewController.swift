@@ -131,6 +131,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     var cache: Cache<Int, UIImage> = Cache()
-    
+    private var photofetchQueue = PhotoQueue()
     @IBOutlet var collectionView: UICollectionView!
 }
