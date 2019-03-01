@@ -25,6 +25,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // UICollectionViewDataSource/Delegate
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        guard let fetchOpToCancel = operations[photoReference.id] else { return }
+        fetchOpToCancel.cancel()
+    }
+    
+    
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         return 1
     }
@@ -64,12 +71,63 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        // TODO: Load the image
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        // Check for image in cache
+        if let cachedImageData = imageDataCache.value(for: photoReference.id),
+            let image = UIImage(data: cachedImageData!) {
+            cell.imageView.image = image
+            print("image found in cache")
+            return
+        }
+        
+        // Start an operation to fetch image data
+        
+        // 1.
+        let fetchOp = FetchPhotoOperation(photoRef: photoReference)
+        
+        
+        //2.
+        let cacheOp = BlockOperation {
+            if let data = fetchOp.imageData {
+                self.imageDataCache.cache(value: data, for: photoReference.id)
+            }
+        }
+
+        //3.
+        let completionOp = BlockOperation {
+            defer { self.operations.removeValue(forKey: photoReference.id) }
+            
+            if let currentIndexPath = self.collectionView?.indexPath(for: cell),
+                currentIndexPath != indexPath {
+                print("Got image for now-reused cell")
+                return // Cell has been reused
+            }
+            
+            if let data = fetchOp.imageData {
+                cell.imageView.image = UIImage(data: data)
+            }
+        }
+        
+        let photoFetchQueue = OperationQueue()
+        
+        cacheOp.addDependency(fetchOp)
+        completionOp.addDependency(fetchOp)
+        
+        photoFetchQueue.addOperation(fetchOp)
+        photoFetchQueue.addOperation(cacheOp)
+        
+        OperationQueue.main.addOperation(completionOp)
+        
+        operations[photoReference.id] = fetchOp
     }
     
     // Properties
+    
+    var operations: [Int : FetchPhotoOperation] = [:]
+    
+    private let imageDataCache = Cache<Int, Data?>()
     
     private let client = MarsRoverClient()
     
