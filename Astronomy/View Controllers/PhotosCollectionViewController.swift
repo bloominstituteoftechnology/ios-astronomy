@@ -65,7 +65,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        
+        let operation = FetchPhotoOperation(marsPhotoReference: photoReference)
         guard let url = photoReference.imageURL.usingHTTPS else { return }
         
         if let image = cache.value(for: photoReference.id) {
