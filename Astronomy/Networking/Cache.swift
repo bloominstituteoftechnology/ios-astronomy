@@ -11,18 +11,18 @@ import Foundation
 class Cache<Key, Value> where Key: Hashable {
 
     func cache(value: Value, for key: Key) {
-        cachedItems[key] = value
+        queue.async {
+            self.cachedItems[key] = value
+        }
     }
 
-    func value(for key: Key) {
-        guard let index = cachedItems.index(forKey: key) else { return }
-        cachedItems.remove(at: index)
-    }
-    
-    subscript(_ key: Key) -> Value? {
-        return cachedItems[key] ?? nil
+    func value(for key: Key) ->Value? {
+        return queue.sync {
+            return cachedItems[key]
+        }
     }
     
     private var cachedItems: [Key: Value] = [:]
+    private let queue = DispatchQueue(label: "com.PaulYi.ThreadSafeSerialQueue")
     
 }

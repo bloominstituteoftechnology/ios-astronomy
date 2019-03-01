@@ -67,8 +67,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         
         guard let url = photoReference.imageURL.usingHTTPS else { return }
-        // Before starting a data task, check to see if the cache already contains data for the given photo reference's id
-        if let image = cache[photoReference.id] {
+        
+        if let image = cache.value(for: photoReference.id) {
             cell.imageView.image = image
         } else {
             URLSession.shared.dataTask(with: url) { (data, _, error) in
