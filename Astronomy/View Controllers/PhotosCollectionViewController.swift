@@ -18,7 +18,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 NSLog("Error fetching info for curiosity: \(error)")
                 return
             }
-            
             self.roverInfo = rover
         }
     }
@@ -65,8 +64,30 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
+        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
+        
+        URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+            if let error = error {
+                NSLog("Error getting data from server: \(error)")
+                return
+            }
+            
+            guard let data = data else {
+                NSLog("\(NSError(domain: "No Data recieved", code: -1, userInfo: nil))")
+                return
+            }
+            
+            let image = UIImage(data: data)
+            
+            if self.collectionView.indexPath(for: cell) == indexPath {
+                DispatchQueue.main.async {
+                    cell.imageView.image = image
+                }
+            }
+        }
     }
     
     // Properties

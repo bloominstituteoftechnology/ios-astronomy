@@ -16,7 +16,7 @@ class MarsRoverClient {
         
         let url = self.url(forInfoForRover: name)
         fetch(from: url, using: session) { (dictionary: [String : MarsRover]?, error: Error?) in
-            guard let rover = dictionary?["photoManifest"] else {
+            guard let rover = dictionary?["photo_manifest"] else {
                 completion(nil, error)
                 return
             }
@@ -24,27 +24,21 @@ class MarsRoverClient {
         }
     }
     
-    func fetchPhotos(from rover: MarsRover,
-                     onSol sol: Int,
-                     using session: URLSession = URLSession.shared,
-                     completion: @escaping ([MarsPhotoReference]?, Error?) -> Void) {
-        
-        let url = self.url(forPhotosfromRover: rover.name, on: sol)
-        fetch(from: url, using: session) { (dictionary: [String : [MarsPhotoReference]]?, error: Error?) in
-            guard let photos = dictionary?["photos"] else {
-                completion(nil, error)
-                return
-            }
-            completion(photos, nil)
+    func fetchPhotos(from rover: MarsRover, onSol sol: Int, using session: URLSession = URLSession.shared, completion: @escaping ([MarsPhotoReference]?, Error?) -> Void) {
+    
+    let url = self.url(forPhotosfromRover: rover.name, on: sol)
+    fetch(from: url, using: session) { (dictionary: [String : [MarsPhotoReference]]?, error: Error?) in
+        guard let photos = dictionary?["photos"] else {
+            completion(nil, error)
+            return
         }
+        completion(photos, nil)
     }
+}
     
     // MARK: - Private
     
-    private func fetch<T: Codable>(from url: URL,
-                           using session: URLSession = URLSession.shared,
-                           completion: @escaping (T?, Error?) -> Void) {
-        session.dataTask(with: url) { (data, response, error) in
+    private func fetch<T: Codable>(from url: URL, using session: URLSession = URLSession.shared, completion: @escaping (T?, Error?) -> Void) { session.dataTask(with: url) { (data, response, error) in
             if let error = error {
                 completion(nil, error)
                 return
