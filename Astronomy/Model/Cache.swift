@@ -10,7 +10,7 @@ import Foundation
 
 
 struct Cache<Key: Hashable, Value> {
-	let cache: [Cache] = [:]
+	var cache: [Key: Value] = [:]
 	
 	
 	
