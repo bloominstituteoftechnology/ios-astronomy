@@ -11,7 +11,7 @@ import UIKit
 class ImageCollectionViewCell: UICollectionViewCell {
     
     override func prepareForReuse() {
-        imageView.image = UIImage(named: "MarsPlaceholder")
+        imageView.image = UIImage(named: "background")
         
         super.prepareForReuse()
     }
