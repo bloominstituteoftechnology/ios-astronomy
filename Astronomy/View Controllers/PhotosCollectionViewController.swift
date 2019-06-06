@@ -18,13 +18,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 NSLog("Error fetching info for curiosity: \(error)")
                 return
             }
-			if let rover = rover {
-            	self.roverInfo = rover
-			} else {
-				print("rover is nil")
-			}
+			self.roverInfo = rover
+			
         }
-		print(photoReferences.count)
     }
     
     // UICollectionViewDataSource/Delegate
@@ -41,8 +37,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
 		
 		loadImage(forCell: cell, forItemAt: indexPath)
-		
-//		cell.imageView?.image = #imageLiteral(resourceName: "MarsPlaceholder")
+
         return cell
     }
     
@@ -98,7 +93,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 	
     private var photoReferences = [MarsPhotoReference]() {
         didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
+            DispatchQueue.main.async { self.collectionView?.reloadData()
+				print(self.photoReferences.count)
+			}
         }
     }
     
