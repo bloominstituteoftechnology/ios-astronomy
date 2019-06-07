@@ -14,15 +14,24 @@ import UIKit
 
 struct Cache<Key: Hashable, Value> {
 	private (set) var cache: [Key: Value] = [:]
+	let q = DispatchQueue(label: "Cashe")
 	
 	/// append to cache
 	mutating func cache(value: Value, for key: Key) {
-		if let _ = cache[key] { return }
-		cache[key] = value
+		q.sync {
+			if let _ = cache[key] { return }
+			cache[key] = value
+		}
 	}
 	
 	/// return cache for key
 	mutating func value(for key: Key) -> Value? {
-		return cache[key]
+		var c: Value?
+		
+		q.sync {
+			c = cache[key]
+		}
+		
+		return c
 	}
 }
