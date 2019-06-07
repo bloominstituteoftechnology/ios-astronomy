@@ -153,10 +153,16 @@ extension PhotosCollectionViewController {
 }
 
 class ImageViewConcurrentOperation: ConcurrentOperation {
-	var marsPhotoReference: MarsPhotoReference
-	var imageData: Data?
-	
 	init(marsPhotoReference: MarsPhotoReference) {
 		self.marsPhotoReference = marsPhotoReference
 	}
+	
+	override func start() {
+		super.start()
+		
+		state = .isExecuting
+	}
+	
+	var marsPhotoReference: MarsPhotoReference
+	var imageData: Data?
 }
