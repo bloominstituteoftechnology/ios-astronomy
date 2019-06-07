@@ -129,4 +129,5 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     @IBOutlet var collectionView: UICollectionView!
+	var cache = Cache<Int, Data>()
 }

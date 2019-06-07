@@ -9,18 +9,20 @@
 import Foundation
 
 
+import UIKit
+
+
 struct Cache<Key: Hashable, Value> {
 	private (set) var cache: [Key: Value] = [:]
-
 	
-	
+	/// append to cache
 	mutating func cache(value: Value, for key: Key) {
-		if let _ = cache[key] {
-			return
-		}
-		
+		if let _ = cache[key] { return }
 		cache[key] = value
 	}
 	
-	//value(for:)
+	/// return cache for key
+	mutating func value(for key: Key) -> Value? {
+		return cache[key]
+	}
 }
