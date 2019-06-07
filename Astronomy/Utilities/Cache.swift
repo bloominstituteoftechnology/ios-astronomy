@@ -10,14 +10,19 @@ import Foundation
 
 class Cache<Key: Hashable, Value> {
     private var cache: [Key : Value] = [:]
+    private var queue = DispatchQueue(label: "cacheQueue", qos: .background)
     
     func cache(value: Value, for key: Key) {
-        cache.updateValue(value, forKey: key)
+        queue.sync {
+            _ = cache.updateValue(value, forKey: key)
+        }
     }
     
     func value(for key: Key) -> Value? {
-        guard let value = cache[key] else { return nil }
-        
-        return value
+        return queue.sync { () -> Value? in
+            guard let value = cache[key] else { return nil }
+            
+            return value
+        }
     }
 }
