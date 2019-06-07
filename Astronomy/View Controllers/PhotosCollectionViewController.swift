@@ -10,6 +10,37 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    // Properties
+    var fetchedPhotoOperations: [Int : PhotoFetchOperation] = [:]
+    
+    private var photoFetchQueue: OperationQueue = OperationQueue()
+    
+    private var cache: Cache<Int, Data> = Cache<Int, Data>()
+    
+    private let client = MarsRoverClient()
+    
+    private var roverInfo: MarsRover? {
+        didSet {
+            solDescription = roverInfo?.solDescriptions[3]
+        }
+    }
+    private var solDescription: SolDescription? {
+        didSet {
+            if let rover = roverInfo,
+                let sol = solDescription?.sol {
+                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
+                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
+                    self.photoReferences = photoRefs ?? []
+                }
+            }
+        }
+    }
+    private var photoReferences = [MarsPhotoReference]() {
+        didSet {
+            DispatchQueue.main.async { self.collectionView?.reloadData() }
+        }
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -63,35 +94,24 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
-        // let photoReference = photoReferences[indexPath.item]
-        
         // TODO: Implement image loading here
-    }
-    
-    // Properties
-    
-    private let client = MarsRoverClient()
-    
-    private var roverInfo: MarsRover? {
-        didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+        
+        let photoReference = photoReferences[indexPath.item]
+        
+        if let cachedImage = cache.value(for: photoReference.id) {
+            NSLog("Image \(photoReference.id) fetched from cache")
+            cell.imageView?.image = UIImage(data: cachedImage)
+            return
         }
-    }
-    private var solDescription: SolDescription? {
-        didSet {
-            if let rover = roverInfo,
-                let sol = solDescription?.sol {
-                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
-                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
-                    self.photoReferences = photoRefs ?? []
-                }
+        
+        let imageFetchOperation = PhotoFetchOperation(for: photoReference)
+        fetchedPhotoOperations[photoReference.id] = imageFetchOperation
+        
+        let cacheImageOperation = BlockOperation { [weak self] in
+            if let fetchedImageData = imageFetchOperation.imageData {
+                NSLog("Image \(photoReference.id) cached in store")
+                self?.cache.cache(value: fetchedImageData, for: photoReference.id)
             }
-        }
-    }
-    private var photoReferences = [MarsPhotoReference]() {
-        didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
     
