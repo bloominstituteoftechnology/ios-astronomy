@@ -63,14 +63,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-		
-		
-		
+		// MARK: - check your on the right cell
 		
 		
 		if let getData = cache.value(for: indexPath.row) {
 			cell.imageView.image = UIImage(data: getData)
-			print("Found cache")
+			//print("Found cache")
 			return
 		}
 		
@@ -79,7 +77,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 		
 		URLSession.shared.dataTask(with: photoReference.imageURL.usingHTTPS!) { (data, response, error) in
 			
-			if let response = response as? HTTPURLResponse{
+			
+			if let response = response as? HTTPURLResponse , response.statusCode != 200{
 				print("Response code: \(response.statusCode)")
 			}
 			
@@ -98,7 +97,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 			DispatchQueue.main.async {
 				cell.imageView.image = image
 				self.cache.cache(value: data, for: indexPath.item)
-				print("cashed \(indexPath.item)")
+				//print("cashed \(indexPath.item)")
 			}
 		}.resume()
 		
@@ -131,7 +130,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private var photoReferences = [MarsPhotoReference]() {
         didSet {
             DispatchQueue.main.async { self.collectionView?.reloadData()
-				print(self.photoReferences.count)
+				//print(self.photoReferences.count)
 			}
         }
     }
