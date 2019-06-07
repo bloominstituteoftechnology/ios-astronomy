@@ -65,19 +65,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
 		// MARK: - check your on the right cell
 		
-		
-		if let getData = cache.value(for: indexPath.row) {
-			cell.imageView.image = UIImage(data: getData)
-			//print("Found cache")
-			return
-		}
-		
+
+
+		iscached(indexPath.item, cell)
 		
         let photoReference = photoReferences[indexPath.item]
 		
 		URLSession.shared.dataTask(with: photoReference.imageURL.usingHTTPS!) { (data, response, error) in
-			
-			
 			if let response = response as? HTTPURLResponse , response.statusCode != 200{
 				print("Response code: \(response.statusCode)")
 			}
@@ -137,4 +131,15 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     @IBOutlet var collectionView: UICollectionView!
 	var cache = Cache<Int, Data>()
+}
+
+extension PhotosCollectionViewController {
+	func iscached(_ item: Int, _ cell: ImageCollectionViewCell) {
+		if let getData = cache.value(for: item) {
+			cell.imageView.image = UIImage(data: getData)
+			//print("Found cache")
+			return
+		}
+		
+	}
 }
