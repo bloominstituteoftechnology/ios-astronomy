@@ -69,24 +69,29 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // TODO: Implement image loading here
         guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
         
-        URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
-            if let error = error {
-                NSLog("Error getting data from server: \(error)")
-                return
-            }
+        if let cachedImageData = cache.value(for: photoReference.id) {
+            cell.imageView.image = UIImage(data: cachedImageData)
+        } else {
             
-            guard let data = data else {
-                NSLog("\(NSError(domain: "No Data recieved", code: -1, userInfo: nil))")
-                return
-            }
-            
-            let image = UIImage(data: data)
-            
-            if self.collectionView.indexPath(for: cell) == indexPath {
+            URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+                if let error = error {
+                    NSLog("Error getting data from server: \(error)")
+                    return
+                }
+                
+                guard let data = data else {
+                    NSLog("\(NSError(domain: "No Data recieved", code: -1, userInfo: nil))")
+                    return
+                }
+                
+                self.cache.cache(value: data, for: photoReference.id)
+                
+                let image = UIImage(data: data)
+                
                 DispatchQueue.main.async {
                     cell.imageView.image = image
                 }
-            }
+                }.resume()
         }
     }
     
@@ -96,7 +101,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[666]
         }
     }
     private var solDescription: SolDescription? {
@@ -115,6 +120,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    private var cache = Cache<Int, Data>()
     
     @IBOutlet var collectionView: UICollectionView!
 }
