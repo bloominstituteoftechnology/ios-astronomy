@@ -64,8 +64,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
 		
-		if let index = collectionView.indexPath(for: cell) {
-			print(index.item, " - ", indexPath.item)
+		
+		
+		
+		
+		if let getData = cache.value(for: indexPath.row) {
+			cell.imageView.image = UIImage(data: getData)
+			print("Found cache")
+			return
 		}
 		
 		
@@ -91,6 +97,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 			let image = UIImage(data: data)
 			DispatchQueue.main.async {
 				cell.imageView.image = image
+				self.cache.cache(value: data, for: indexPath.item)
+				print("cashed \(indexPath.item)")
 			}
 		}.resume()
 		
