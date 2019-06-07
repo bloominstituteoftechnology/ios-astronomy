@@ -40,6 +40,7 @@
 		9DBD20332140DF1D0047905E /* PhotosCollectionViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotosCollectionViewController.swift; sourceTree = "<group>"; };
 		9DBD20362140E46E0047905E /* ConcurrentOperation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConcurrentOperation.swift; sourceTree = "<group>"; };
 		E8D2CC0D22A9DAC80010F959 /* Cache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cache.swift; sourceTree = "<group>"; };
+		E8D2CC0F22AA04EA0010F959 /* mp.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = mp.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +57,7 @@
 		9DBD1FFC2140D1300047905E = {
 			isa = PBXGroup;
 			children = (
+				E8D2CC0F22AA04EA0010F959 /* mp.playground */,
 				9DBD20072140D1300047905E /* Astronomy */,
 				9DBD20062140D1300047905E /* Products */,
 			);
