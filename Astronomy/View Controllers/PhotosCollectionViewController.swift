@@ -63,18 +63,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-		// MARK: - check your on the right cell
 		
-//		let lock = NSLock()
-//		lock.lock()
+		let op = OperationQueue()
+		op.name = "Network Operation"
 		
-		if let imageIndexPath = self.collectionView.indexPath(for: cell), imageIndexPath.item != indexPath.item {
-			return
-		}
 		
-//		print("\(imageIndexPath.item) \(imageIndexPath.item == indexPath.item) \(indexPath.item)")
-		
-//		lock.unlock()
+		if let imageIndexPath = self.collectionView.indexPath(for: cell),
+			imageIndexPath.item != indexPath.item { return }
 		
 		if iscached(indexPath.item, cell) { return }
 		
@@ -95,12 +90,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 				return
 			}
 			
-			//print(data)
 			let image = UIImage(data: data)
 			DispatchQueue.main.sync {
 				cell.imageView.image = image
 				self.cache.cache(value: data, for: indexPath.item)
-				//print("cashed \(indexPath.item)")
 			}
 		}
 		
@@ -141,6 +134,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     @IBOutlet var collectionView: UICollectionView!
 	var cache = Cache<Int, Data>()
+	
+	
+	
 }
 
 extension PhotosCollectionViewController {
@@ -154,6 +150,13 @@ extension PhotosCollectionViewController {
 		return false
 	}
 	
+}
+
+class ImageViewConcurrentOperation: ConcurrentOperation {
+	var marsPhotoReference: MarsPhotoReference
+	var imageData: Data?
 	
-	
+	init(marsPhotoReference: MarsPhotoReference) {
+		self.marsPhotoReference = marsPhotoReference
+	}
 }
