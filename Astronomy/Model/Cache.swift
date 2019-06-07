@@ -10,12 +10,12 @@ import Foundation
 
 
 struct Cache<Key: Hashable, Value> {
-	var cache: [Key: Value] = [:]
+	private (set) var cache: [Key: Value] = [:]
 
 	
 	
-	func cache(value: Value, for: Int) {
-		
+	mutating func cache(value: Value, for key: Key) {
+		cache[key] = value
 	}
 	
 	//value(for:)
