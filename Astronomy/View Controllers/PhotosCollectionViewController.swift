@@ -65,13 +65,21 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
 		// MARK: - check your on the right cell
 		
-
-
+		let lock = NSLock()
+		lock.lock()
+			
+		if let imageIndexPath = self.collectionView.indexPath(for: cell), imageIndexPath.item != indexPath.item {
+			return
+		}
+//		print("\(imageIndexPath.item) \(imageIndexPath.item == indexPath.item) \(indexPath.item)")
+		
+		lock.unlock()
+		
 		iscached(indexPath.item, cell)
 		
         let photoReference = photoReferences[indexPath.item]
-		
-		URLSession.shared.dataTask(with: photoReference.imageURL.usingHTTPS!) { (data, response, error) in
+		lock.lock()
+		let task = URLSession.shared.dataTask(with: photoReference.imageURL.usingHTTPS!) { (data, response, error) in
 			if let response = response as? HTTPURLResponse , response.statusCode != 200{
 				print("Response code: \(response.statusCode)")
 			}
@@ -93,8 +101,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 				self.cache.cache(value: data, for: indexPath.item)
 				//print("cashed \(indexPath.item)")
 			}
-		}.resume()
-		
+		}
+		task.resume()
 		
         // TODO: Implement image loading here
     }
@@ -142,4 +150,7 @@ extension PhotosCollectionViewController {
 		}
 		
 	}
+	
+	
+	
 }
