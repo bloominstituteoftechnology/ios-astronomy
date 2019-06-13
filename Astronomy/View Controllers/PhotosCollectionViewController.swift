@@ -67,6 +67,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
         
+        if let cacheData = cache.value(for: photoReference.id),
+            let cachedImage = UIImage(data: cacheData) {
+            cell.imageView.image = cachedImage
+            return
+        }
+        
         URLSession.shared.dataTask(with: imageURL) { data, _, error in
             if let error = error {
                 NSLog("Error loading imageURL: \(error)")
@@ -91,6 +97,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // Properties
     
+    private let cache = Cache<Int, Data>()
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
