@@ -50,21 +50,31 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 	// MARK: - Private
 	
 	private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-	
-		DispatchQueue.main.async {
-			
-			guard let cellIndexPath = self.collectionView.indexPath(for: cell) else { return }
-			print("cellIndexPath: \(cellIndexPath.row) \t foun cell at: \(indexPath.row)")
-			
+		
+		
+		
+//		DispatchQueue.main.async {
+//
+//			guard let cellIndexPath = self.collectionView.indexPath(for: cell) else { return }
+//			print("cellIndexPath: \(cellIndexPath.row) \t foun cell at: \(indexPath.row)")
+//
+//		}
+//
+//
+		
+		
+		let photoReference = photoReferences[indexPath.item]
+		//print(photoReference.id - 508896) //508896
+		
+		if let  dataCache = imageCache.value(for: photoReference.id) {
+			cell.imageView.image = UIImage(data: dataCache)
+			print("found data")
+			return
 		}
-		
-	
-		
-		//print(photoReference.imageURL)
 		
 		
 		// TODO: Implement image loading here
-		let photoReference = photoReferences[indexPath.item]
+		
 		guard let url = photoReference.imageURL.usingHTTPS else { return }
 
 		URLSession.shared.dataTask(with: url) { data, response, error in
@@ -80,6 +90,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 			guard let data = data else { return }
 
 			DispatchQueue.main.async {
+				self.imageCache.cache(value: data, for: photoReference.id)
 				cell.imageView.image = UIImage(data: data)
 			}
 			
@@ -136,4 +147,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     @IBOutlet var collectionView: UICollectionView!
+	
+	var imageCache = Cache<Int, Data>()
 }
