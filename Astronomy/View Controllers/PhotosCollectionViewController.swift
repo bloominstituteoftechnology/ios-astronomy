@@ -18,15 +18,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 NSLog("Error fetching info for curiosity: \(error)")
                 return
             }
-			if let rover = rover {
-				print("Found Rover: \(rover)")
-			} else {
-				print("Rover is nil")
-			}
-			
             self.roverInfo = rover
 
         }
+		
     }
     
     // UICollectionViewDataSource/Delegate
@@ -36,7 +31,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-		return photoReferences.count//photoReferences.isEmpty ? 8 : photoReferences.count
+		return photoReferences.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -69,7 +64,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 		
 		// TODO: Implement image loading here
 
-		URLSession.shared.dataTask(with: photoReference.imageURL) { data, response, error in
+		guard let url = photoReference.imageURL.usingHTTPS else { return }
+		URLSession.shared.dataTask(with: url) { data, response, error in
 			if let response = response as? HTTPURLResponse {
 				NSLog("loadImage Response Code: ", response.statusCode)
 			}
@@ -133,7 +129,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     private var photoReferences = [MarsPhotoReference]() {
         didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
+			DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
     
