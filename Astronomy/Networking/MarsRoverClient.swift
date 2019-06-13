@@ -6,9 +6,11 @@
 //  Copyright © 2018 Lambda School. All rights reserved.
 //
 
-import Foundation
+import UIKit
 
 class MarsRoverClient {
+
+    
     
     func fetchMarsRover(named name: String,
                         using session: URLSession = URLSession.shared,
@@ -16,7 +18,7 @@ class MarsRoverClient {
         
         let url = self.url(forInfoForRover: name)
         fetch(from: url, using: session) { (dictionary: [String : MarsRover]?, error: Error?) in
-            guard let rover = dictionary?["photoManifest"] else {
+            guard let rover = dictionary?["photo_manifest"] else {
                 completion(nil, error)
                 return
             }
