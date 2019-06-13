@@ -18,8 +18,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 NSLog("Error fetching info for curiosity: \(error)")
                 return
             }
-            
+			if let rover = rover {
+				print("Found Rover: \(rover)")
+			} else {
+				print("Rover is nil")
+			}
+			
             self.roverInfo = rover
+
         }
     }
     
@@ -30,9 +36,42 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-		return photoReferences.isEmpty ? 10 : photoReferences.count
+		return photoReferences.count	//photoReferences.isEmpty ? 8 : photoReferences.count
     }
     
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
+        
+        loadImage(forCell: cell, forItemAt: indexPath)
+        
+        return cell
+    }
+	
+	// MARK: - Private
+	
+	private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+		print("foun cell at: \(indexPath.row)")
+		let photoReference = photoReferences[indexPath.item]
+		print(photoReference.imageURL)
+		// TODO: Implement image loading here
+		
+		URLSession.shared.dataTask(with: photoReference.imageURL) { data, response, error in
+			if let response = response as? HTTPURLResponse {
+				NSLog("loadImage Response Code: ", response.statusCode)
+			}
+			
+			if let error = error {
+				NSLog("Error grabbing image data: \(error)")
+			}
+			
+			guard let data = data else { return }
+			print(data)
+			
+			
+		}
+		
+		
+	}
 	
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -40,35 +79,20 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         var totalUsableWidth = collectionView.frame.width
         let inset = self.collectionView(collectionView, layout: collectionViewLayout, insetForSectionAt: indexPath.section)
         totalUsableWidth -= inset.left + inset.right
-		
+        
         let minWidth: CGFloat = 150.0
         let numberOfItemsInOneRow = Int(totalUsableWidth / minWidth)
         totalUsableWidth -= CGFloat(numberOfItemsInOneRow - 1) * flowLayout.minimumInteritemSpacing
         let width = totalUsableWidth / CGFloat(numberOfItemsInOneRow)
         return CGSize(width: width, height: width)
     }
-	
-	func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-		let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
-		
-		loadImage(forCell: cell, forItemAt: indexPath)
-		
-		return cell
-	}
     
     // Add margins to the left and right side
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
-    // MARK: - Private
-    
-    private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
-        // let photoReference = photoReferences[indexPath.item]
-        
-        // TODO: Implement image loading here
-    }
+	
     
     // Properties
     
