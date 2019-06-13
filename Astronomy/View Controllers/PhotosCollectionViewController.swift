@@ -36,39 +36,56 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-		return photoReferences.count	//photoReferences.isEmpty ? 8 : photoReferences.count
+		return photoReferences.count//photoReferences.isEmpty ? 8 : photoReferences.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
+      //  let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
+		
+		let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath)
+		guard let imageCell = cell as? ImageCollectionViewCell else { return cell}
+		
+		
+		
+        loadImage(forCell: imageCell, forItemAt: indexPath)
         
-        loadImage(forCell: cell, forItemAt: indexPath)
-        
-        return cell
+        return imageCell
     }
 	
 	// MARK: - Private
 	
 	private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+		
+		
+		
+		
+		print(indexPath.item)
 		print("foun cell at: \(indexPath.row)")
+		
+		
 		let photoReference = photoReferences[indexPath.item]
 		print(photoReference.imageURL)
-		// TODO: Implement image loading here
 		
+		
+		// TODO: Implement image loading here
+
 		URLSession.shared.dataTask(with: photoReference.imageURL) { data, response, error in
 			if let response = response as? HTTPURLResponse {
 				NSLog("loadImage Response Code: ", response.statusCode)
 			}
-			
+
 			if let error = error {
 				NSLog("Error grabbing image data: \(error)")
+				return
 			}
-			
+
 			guard let data = data else { return }
 			print(data)
-			
-			
-		}
+
+			DispatchQueue.main.async {
+				cell.imageView.image = UIImage(data: data)
+			}
+		}.resume()
 		
 		
 	}
