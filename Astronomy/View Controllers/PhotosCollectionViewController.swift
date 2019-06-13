@@ -71,8 +71,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 		
 		fetchImage.addDependency(storeToCache)
 		fetchImage.addDependency(cellReusedCheck)
-
-
+		cellReusedCheck.addDependency(storeToCache)
+		
+		photoFetchQueue.addOperations([fetchImage, storeToCache, cellReusedCheck], waitUntilFinished: false)
 
 		
 		
