@@ -66,7 +66,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 		
 		
 		let photoReference = photoReferences[indexPath.item]
-		//print(photoReference.id - 508896) //508896
 		
 		if let  dataCache = imageCache.value(for: photoReference.id) {
 			cell.imageView.image = UIImage(data: dataCache)

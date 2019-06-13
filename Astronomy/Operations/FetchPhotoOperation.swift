@@ -13,34 +13,34 @@ class FetchPhotoOperation: ConcurrentOperation {
 	
 	override func start() {
 		state = .isExecuting
-	}
-	
-	let fetchImageOperatopm = BlockOperation {
-//		let url = marsPhotoReference.imageURL.usingHTTPS
-//		URLSession.shared.dataTask(with: "") { data, response, error in
-//			if let response = response as? HTTPURLResponse {
-//				NSLog("loadImage Response Code: ", response.statusCode)
-//			}
-//			
-//			if let error = error {
-//				NSLog("Error grabbing image data: \(error)")
-//				return
-//			}
-//			
-//			guard let data = data else { return }
-////			self.imageData = data
-//		}.resume()
+		guard let url = marsPhotoReference.imageURL.usingHTTPS else { return }
 		
+		task = URLSession.shared.dataTask(with: url) { data, response, error in
+			if let response = response as? HTTPURLResponse {
+				NSLog("loadImage Response Code: ", response.statusCode)
+			}
+			
+			if let error = error {
+				NSLog("Error grabbing image data: \(error)")
+				return
+			}
+			
+			guard let data = data else { return }
+			self.imageData = data
+		}
+		defer { self.state = .isFinished }
+		task?.resume()
 	}
 	
+	override func cancel() {
+		task?.cancel()
+	}
 	
-	
-	
-	init(marsPhotoReference: MarsPhotoReference, imageData: Data? = nil ) {
+	init(marsPhotoReference: MarsPhotoReference ) {
 		self.marsPhotoReference = marsPhotoReference
-		self.imageData = imageData
 	}
 	
 	let marsPhotoReference: MarsPhotoReference
-	let imageData: Data?
+	var imageData: Data?
+	private var task: URLSessionDataTask?
 }
