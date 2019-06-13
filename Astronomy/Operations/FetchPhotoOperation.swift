@@ -10,7 +10,7 @@ import Foundation
 
 class FetchPhotoOperation: ConcurrentOperation {
  
-    private var imageData: Data?
+    private(set) var imageData: Data?
     private var dataTask: URLSessionDataTask?
     private let session: URLSession
     
@@ -21,7 +21,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     let earthDate: Date
     let imageURL: URL
     
-    init(marsPhotoReference: MarsPhotoReference, session: URLSession) {
+    init(marsPhotoReference: MarsPhotoReference, session: URLSession = URLSession.shared) {
         self.id = marsPhotoReference.id
         self.sol = marsPhotoReference.sol
         self.camera = marsPhotoReference.camera
@@ -33,6 +33,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     
     override func start() {
+        super.start()
         state = .isExecuting
         
         let url = imageURL.usingHTTPS!
@@ -53,6 +54,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     
     override func cancel() {
+        super.cancel()
         dataTask?.cancel()
     }
     
