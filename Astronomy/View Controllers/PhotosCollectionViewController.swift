@@ -55,12 +55,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 		
 //		DispatchQueue.main.async {
 //
-//			guard let cellIndexPath = self.collectionView.indexPath(for: cell) else { return }
-//			print("cellIndexPath: \(cellIndexPath.row) \t foun cell at: \(indexPath.row)")
+//			guard let cellIndexPath = self.collectionView.indexPath(for: cell) else {
+//				print("cellIndexPath: \(cellIndexPath.row) \t foun cell at: \(indexPath.row)")
+//				return
+//			}
 //
 //		}
-//
-//
+
+
 		
 		
 		let photoReference = photoReferences[indexPath.item]
@@ -68,7 +70,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 		
 		if let  dataCache = imageCache.value(for: photoReference.id) {
 			cell.imageView.image = UIImage(data: dataCache)
-			print("found data")
 			return
 		}
 		
