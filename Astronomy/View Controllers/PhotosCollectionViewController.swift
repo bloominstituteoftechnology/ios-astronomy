@@ -59,36 +59,45 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
+
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let fetchOperation = fetchOperations[indexPath.item]
+        fetchOperation?.cancel()
+    }
     
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
+
         let photoReference = photoReferences[indexPath.item]
-        let imageURL = photoReference.imageURL
-        let https = imageURL.usingHTTPS!
-        var request = URLRequest(url: https)
-        request.httpMethod = "GET"
+        let photoFetchOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
 
-        URLSession.shared.dataTask(with: request) { (data, _, error) in
-            if let error = error {
-                NSLog("error fetching image: \(error)")
-                return
+        if let imageData = cache.value(for: photoReference.id) {
+            let image = UIImage(data: imageData)
+            cell.imageView.image = image
+            return
+        }
+
+        let cacheImageOperation = BlockOperation {
+            guard let imageData = photoFetchOperation.imageData else { return }
+            self.cache.cache(value: imageData, for: photoReference.id)
+        }
+
+        let checkIfReusedOperation = BlockOperation {
+            if let imageData = photoFetchOperation.imageData {
+                cell.imageView.image = UIImage(data: imageData)
             }
-            guard let data = data else {
-                NSLog("No data returned")
-                return
-            }
-            DispatchQueue.main.async {
-                if self.collectionView.indexPath(for: cell) == indexPath {
-                cell.imageView.image = UIImage(data: data)
-                }
-            }
-        }.resume()
+        }
+
+        cacheImageOperation.addDependency(photoFetchOperation)
+        checkIfReusedOperation.addDependency(photoFetchOperation)
+        photoFetchQueue.addOperation(photoFetchOperation)
+        photoFetchQueue.addOperation(cacheImageOperation)
+        OperationQueue.main.addOperation(checkIfReusedOperation)
+        fetchOperations[photoReference.id] = photoFetchOperation
 
 
-        
-        // TODO: Implement image loading here
+
     }
     
     // Properties
@@ -116,6 +125,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
-    
+    var cache = Cache<Int, Data>()
     @IBOutlet var collectionView: UICollectionView!
+    private var photoFetchQueue = OperationQueue()
+    private var fetchOperations: [Int: FetchPhotoOperation] = [:]
+
 }
