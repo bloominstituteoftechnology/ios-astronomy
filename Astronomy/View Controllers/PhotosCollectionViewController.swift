@@ -21,7 +21,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             self.roverInfo = rover
 
         }
-		
+		photoFetchQueue.name = "com.Astronomy.PhotoFetchQueue"
     }
     
     // UICollectionViewDataSource/Delegate
@@ -51,50 +51,29 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 	
 	private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
 		
-		
-		
-//		DispatchQueue.main.async {
-//
-//			guard let cellIndexPath = self.collectionView.indexPath(for: cell) else {
-//				print("cellIndexPath: \(cellIndexPath.row) \t foun cell at: \(indexPath.row)")
-//				return
-//			}
-//
-//		}
-
-
-		
-		
 		let photoReference = photoReferences[indexPath.item]
 		
-		if let  dataCache = imageCache.value(for: photoReference.id) {
-			cell.imageView.image = UIImage(data: dataCache)
-			return
+		let fetchImage = FetchPhotoOperation(marsPhotoReference: photoReference)
+	
+		let storeToCache = BlockOperation {
+			if let imageDate = fetchImage.imageData {
+				self.imageCache.cache(value: imageDate, for: photoReference.id)
+			}
 		}
 		
-		
-		// TODO: Implement image loading here
-		
-		guard let url = photoReference.imageURL.usingHTTPS else { return }
-
-		URLSession.shared.dataTask(with: url) { data, response, error in
-//			if let response = response as? HTTPURLResponse {
-//				NSLog("loadImage Response Code: ", response.statusCode)
-//			}
-
-			if let error = error {
-				NSLog("Error grabbing image data: \(error)")
-				return
+		let cellReusedCheck = BlockOperation {
+			if let dataCache = self.imageCache.value(for: photoReference.id) {
+				DispatchQueue.main.async {
+					cell.imageView.image = UIImage(data: dataCache)
+				}
 			}
+		}
+		
+		fetchImage.addDependency(storeToCache)
+		fetchImage.addDependency(cellReusedCheck)
 
-			guard let data = data else { return }
 
-			DispatchQueue.main.async {
-				self.imageCache.cache(value: data, for: photoReference.id)
-				cell.imageView.image = UIImage(data: data)
-			}
-			
-		}.resume()
+
 		
 		
 	}
@@ -149,4 +128,5 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     @IBOutlet var collectionView: UICollectionView!
 	
 	var imageCache = Cache<Int, Data>()
+	private let photoFetchQueue = OperationQueue()
 }

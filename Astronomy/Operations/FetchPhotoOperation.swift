@@ -15,11 +15,7 @@ class FetchPhotoOperation: ConcurrentOperation {
 		state = .isExecuting
 		guard let url = marsPhotoReference.imageURL.usingHTTPS else { return }
 		
-		task = URLSession.shared.dataTask(with: url) { data, response, error in
-			if let response = response as? HTTPURLResponse {
-				NSLog("loadImage Response Code: ", response.statusCode)
-			}
-			
+		task = URLSession.shared.dataTask(with: url) { data, _, error in
 			if let error = error {
 				NSLog("Error grabbing image data: \(error)")
 				return
@@ -28,6 +24,7 @@ class FetchPhotoOperation: ConcurrentOperation {
 			guard let data = data else { return }
 			self.imageData = data
 		}
+		
 		defer { self.state = .isFinished }
 		task?.resume()
 	}
