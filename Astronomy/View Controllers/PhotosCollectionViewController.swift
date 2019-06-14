@@ -86,6 +86,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let checkIfReusedOperation = BlockOperation {
             if let imageData = photoFetchOperation.imageData {
                 cell.imageView.image = UIImage(data: imageData)
+                defer {
+                    self.fetchOperations.removeValue(forKey: photoReference.id) }
+                    if let currentIndexPath = self.collectionView?.indexPath(for: cell), currentIndexPath != indexPath {
+                        print("Got image for now-reused cell")
+                        return
+                }
             }
         }
 
@@ -106,7 +112,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[100]
+            solDescription = roverInfo?.solDescriptions[105]
         }
     }
     private var solDescription: SolDescription? {
