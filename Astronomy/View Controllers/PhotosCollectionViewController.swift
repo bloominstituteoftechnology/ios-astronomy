@@ -71,7 +71,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 		
 		fetchImage.addDependency(storeToCache)
 		fetchImage.addDependency(cellReusedCheck)
-		cellReusedCheck.addDependency(storeToCache)
+//		cellReusedCheck.addDependency(storeToCache)
 		
 		photoFetchQueue.addOperations([fetchImage, storeToCache, cellReusedCheck], waitUntilFinished: false)
 
@@ -130,4 +130,5 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 	
 	var imageCache = Cache<Int, Data>()
 	private let photoFetchQueue = OperationQueue()
+	let fetchPhotoOperations: [Int: FetchPhotoOperation] = [:]
 }
