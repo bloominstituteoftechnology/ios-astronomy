@@ -50,34 +50,44 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 	// MARK: - Private
 	
 	private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-		
 		let photoReference = photoReferences[indexPath.item]
 		
-		let fetchImage = FetchPhotoOperation(marsPhotoReference: photoReference)
-	
+		if let imageData = imageCache.value(for: photoReference.id) {
+			cell.imageView.image = UIImage(data: imageData)
+			return
+		}
+		
+		let fetchImageOP = FetchPhotoOperation(marsPhotoReference: photoReference)
+
 		let storeToCache = BlockOperation {
-			if let imageDate = fetchImage.imageData {
+			if let imageDate = fetchImageOP.imageData {
 				self.imageCache.cache(value: imageDate, for: photoReference.id)
 			}
 		}
 		
 		let cellReusedCheck = BlockOperation {
-			if let dataCache = self.imageCache.value(for: photoReference.id) {
-				DispatchQueue.main.async {
-					cell.imageView.image = UIImage(data: dataCache)
-				}
+			if  self.collectionView.indexPath(for: cell)  == indexPath {
+				print("here \(indexPath.item)")
+				guard let imageData = fetchImageOP.imageData else { return }
+				cell.imageView.image = UIImage(data: imageData)
 			}
 		}
 		
-		fetchImage.addDependency(storeToCache)
-		fetchImage.addDependency(cellReusedCheck)
-//		cellReusedCheck.addDependency(storeToCache)
+		storeToCache.addDependency(fetchImageOP)
+		cellReusedCheck.addDependency(fetchImageOP)
 		
-		photoFetchQueue.addOperations([fetchImage, storeToCache, cellReusedCheck], waitUntilFinished: false)
-
-		
-		
+		photoFetchQueue.addOperations([fetchImageOP, storeToCache], waitUntilFinished: false)
+		OperationQueue.main.addOperation(cellReusedCheck)
+		fetchPhotoOperations[photoReference.id] = fetchImageOP
 	}
+	
+	
+	func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+		let photoReference = photoReferences[indexPath.item]
+		fetchPhotoOperations[photoReference.id]?.cancel()
+	}
+	
+	
 	
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -130,5 +140,5 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 	
 	var imageCache = Cache<Int, Data>()
 	private let photoFetchQueue = OperationQueue()
-	let fetchPhotoOperations: [Int: FetchPhotoOperation] = [:]
+	var fetchPhotoOperations: [Int: FetchPhotoOperation] = [:]
 }
