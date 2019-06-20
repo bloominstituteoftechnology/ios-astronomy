@@ -10,13 +10,18 @@ import Foundation
 
 class Cache<Key: Hashable, Value> {
     
+    private var queue = DispatchQueue(label: "CacheQueue")
     private var cachedImages: [Key : Value] = [:]
     
-//    func cache(value: Value, for: Key) {
-//
-//    }
-//
-//    func value(for: Key) {
-//        return cachedImages.values(for: Key)
-//    }
+    func cache(value: Value, for key: Key) {
+        queue.async {
+            self.cachedImages.updateValue(value, forKey: key)
+        }
+    }
+
+    func value(for key: Key) -> Value? {
+        return queue.sync {
+            cachedImages[key]
+        }
+    }
 }

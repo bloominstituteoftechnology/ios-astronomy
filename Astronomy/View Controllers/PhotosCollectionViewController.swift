@@ -69,6 +69,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // TODO: Implement image loading here
         let request = URLRequest(url: url!)
         
+        if let cache = cache {
+            guard let data = cache.value(for: indexPath.row) else { return }
+            cell.imageView.image = UIImage(data: data)
+        } else {
+        
         URLSession.shared.dataTask(with: request) { (data, response, error) in
             if let error = error {
                 NSLog("Error fetching image: \(error)")
@@ -96,9 +101,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async {
                 if self.collectionView.indexPath(for: cell) == indexPath {
                     cell.imageView.image = image
+                    self.cache?.cache(value: data, for: indexPath.row)
                 }
             }
         }.resume()
+        }
     }
     
     // Properties
@@ -126,6 +133,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    
+    var cache: Cache<Int, Data>?
     
     @IBOutlet var collectionView: UICollectionView!
 }
