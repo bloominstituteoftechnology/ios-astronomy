@@ -18,7 +18,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 NSLog("Error fetching info for curiosity: \(error)")
                 return
             }
-            
             self.roverInfo = rover
         }
     }
@@ -36,9 +35,17 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
         
+        
         loadImage(forCell: cell, forItemAt: indexPath)
         
         return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        
+        let fetch = fetchDictionary[photoReferences[indexPath.item].id]
+        
+        fetch?.task.cancel()
     }
     
     // Make collection view cells fill as much available width as possible
@@ -64,9 +71,48 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
-        
+        let photoReference = photoReferences[indexPath.item]
+        var imageData: Data?
+        let indexLock = NSLock()
+        let indexPatchForCell = indexPath
         // TODO: Implement image loading here
+        
+        if let imageData = cache.value(for: photoReference.id) {
+            cell.imageView.image = UIImage(data: imageData)
+        } else {
+            
+            let fetchImageDataOp = FetchPhotoOperation(marsPhotoReference: photoReference)
+            
+            fetchImageDataOp.completionBlock = {
+                self.fetchDictionary.updateValue(fetchImageDataOp, forKey: photoReference.id)
+            }
+            
+            let getDataOp = BlockOperation {
+                imageData = fetchImageDataOp.outputImageData
+            }
+            
+            let cacheImageOp = BlockOperation {
+                guard let data = imageData else { return }
+                self.cache.cache(value: data, for: photoReference.id)
+            }
+            
+            let displayOp = BlockOperation {
+                indexLock.lock()
+                if indexPatchForCell == indexPath {
+                    DispatchQueue.main.async {
+                        guard let data = imageData else { return }
+                        cell.imageView.image = UIImage(data: data)
+                    }
+                }
+                indexLock.unlock()
+            }
+            
+            getDataOp.addDependency(fetchImageDataOp)
+            cacheImageOp.addDependency(getDataOp)
+            displayOp.addDependency(getDataOp)
+            
+            photoFetchQueue.addOperations([fetchImageDataOp, getDataOp, cacheImageOp, displayOp], waitUntilFinished: false)
+        }
     }
     
     // Properties
@@ -75,7 +121,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[666]
         }
     }
     private var solDescription: SolDescription? {
@@ -94,6 +140,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    private var cache = Cache<Int, Data>()
+    private var photoFetchQueue = OperationQueue()
+    private var fetchDictionary: [Int : FetchPhotoOperation] = [:]
     
     @IBOutlet var collectionView: UICollectionView!
 }
