@@ -60,24 +60,105 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    //implement cancellation
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        //get the associated fetch operaton and cancel it
+        let photoReference = photoReferences[indexPath.item]
+        storedFetchOperations[photoReference.id]?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
+        //check to see if the cache already contains data for the given photo reference's id. if it exists, set the cell's image immediately without doing a network request.
+        if let image = cache.value(for: photoReference.id){
+            cell.imageView.image = image
+            return
+        } else {
+            
+            //create three operations
+            //one should be a photoFEtchOperation to fetch the image data from the network
+            let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+            
+            //one should be used to store the received data in the cache
+            let cacheOperation = BlockOperation {
+                guard let data = fetchPhotoOperation.imageData,
+                    let image = UIImage(data: data) else { print("cacheOperation: Error unwrapping data"); return }
+                self.cache.cache(value: image, forKey: photoReference.id)
+            }
+            
+            //one should check if the cell has been reused, and if not, set its image veiws image
+            let cellReuseOperation = BlockOperation {
+                guard let data = fetchPhotoOperation.imageData,
+                    let image = UIImage(data: data) else { print("cacheOperation: Error unwrapping data"); return }
+                
+                if self.collectionView.indexPath(for: cell) == indexPath {
+                    cell.imageView.image = image
+                }
+            }
+            
+            //make the cache and completion operations both depend on completion of the fetch operation
+            cacheOperation.addDependency(fetchPhotoOperation)
+            cellReuseOperation.addDependency(fetchPhotoOperation)
+            
+            //add each operation to the appropriate queue. Note that the last operation above uses uikit api and must run on the main queue
+            photoFetchQueue.addOperations([fetchPhotoOperation, cacheOperation], waitUntilFinished: false)
+            OperationQueue.main.addOperation(cellReuseOperation)
+            
+            //when you finish creating and starting the operations for a cell, add the fetch operation to your dictionary that way you can retrieve it later to cancel if need be.
+            storedFetchOperations[photoReference.id] = fetchPhotoOperation
+        }
+        
+        //commented out so that we can use operations to do image loading.
+        //        let imageURL = photoReference.imageURL
+        //        guard let url = imageURL.usingHTTPS else { print("Error with constructing url"); return }
+        //        URLSession.shared.dataTask(with: url) { (data, response, error) in
+        //            if let response = response as? HTTPURLResponse {
+        //                print("response from loading image: \(response.statusCode)")
+        //            }
+        //            if let error = error {
+        //                print("Error loading image: \(error.localizedDescription), real error message: \(error)")
+        //                return
+        //            }
+        //            guard let data = data else {
+        //                print("Error unwraping data loading images")
+        //                return
+        //            }
+        //
+        //            //in the network completionhandler save the just received image data to the cache so it is available later
+        //            if let imageDataForCache = UIImage(data: data){
+        //                self.cache.cache(value: imageDataForCache, forKey: photoReference.id)
+        //            }
+        //            if let imageData = UIImage(data: data) {
+        //                DispatchQueue.main.async {
+        //                    cell.imageView.image = imageData
+        //                }
+        //            }
+        //
+        //        }.resume()
     }
     
     // Properties
+    
+    var storedFetchOperations: [ Int : FetchPhotoOperation ] = [:]
+    
+    private let photoFetchQueue = OperationQueue()
+    
+    //add a cache property. its key should be Int as you'll use MarsPhotoReference ids for the keys. its values should be Data objects, as you'll be caching image data.
+    private var cache: Cache<Int, UIImage> = Cache() //int is hashable
     
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
+    
     private var solDescription: SolDescription? {
         didSet {
             if let rover = roverInfo,

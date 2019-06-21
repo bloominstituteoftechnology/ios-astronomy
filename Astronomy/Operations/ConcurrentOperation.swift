@@ -8,6 +8,13 @@
 
 import Foundation
 
+
+
+/*
+ 
+ ConcurrentOperation is a nice "boilerplate" class that makes it easier to implement concurrent/asynchronous Operation subclasses in swift. You can make a snippet and use it in other apps you write.
+ 
+ */
 class ConcurrentOperation: Operation {
     
     // MARK: Types
