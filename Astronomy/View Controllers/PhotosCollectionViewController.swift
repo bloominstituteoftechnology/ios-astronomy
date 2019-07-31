@@ -41,6 +41,17 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        if photoReferences.count > 0 {
+            let photoRef = photoReferences[indexPath.item]
+            operations[photoRef.id]?.cancel()
+        } else {
+            for (_, operation) in operations {
+                operation.cancel()
+            }
+        }
+    }
+    
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -64,14 +75,48 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
+        if let cacheImageData = cache.value(for: photoReference.id) {
+            cell.imageView.image = UIImage(data: cacheImageData)
+            return
+        }
         // TODO: Implement image loading here
+        
+        let fetchOp = FetchPhotoOperation(photoReference: photoReference)
+        let cacheOp = BlockOperation {
+            if let data = fetchOp.imageData {
+                self.cache.cache(value: data, for: photoReference.id)
+            }
+        }
+        
+        let checkReuseOp = BlockOperation {
+            if let currentIndexPath = self.collectionView.indexPath(for: cell),
+                currentIndexPath != indexPath {
+                return
+            }
+            
+            if let data = fetchOp.imageData {
+                cell.imageView.image = UIImage(data: data)
+            }
+        }
+        
+        cacheOp.addDependency(fetchOp)
+        checkReuseOp.addDependency(fetchOp)
+        
+        photoFetchQueue.addOperation(fetchOp)
+        photoFetchQueue.addOperation(cacheOp)
+        OperationQueue.main.addOperation(checkReuseOp)
+        
+        operations[photoReference.id] = fetchOp
     }
     
     // Properties
     
     private let client = MarsRoverClient()
+    private let cache = Cache<Int, Data>()
+    private let photoFetchQueue = OperationQueue()
+    private var operations = [Int : Operation]()
     
     private var roverInfo: MarsRover? {
         didSet {
