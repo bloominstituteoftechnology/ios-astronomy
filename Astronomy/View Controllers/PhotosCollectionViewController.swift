@@ -10,6 +10,7 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -60,18 +61,66 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        
+        let photoReference = photoReferences[indexPath.item]
+        cancelQ.sync {
+            if let storedOp = storedFetchOperations[photoReference.id] {
+                storedOp.cancel()
+            }
+        }
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
+        if let imageData = cache.value(for: photoReference.id) {
+            cell.imageView.image = UIImage(data: imageData)
+            return
+        }
+        
+        let fetchPhotoOp = FetchPhotoOp(marsPhotoReference: photoReference)
+//        let fetchPhotoImageData = fetchPhotoOp.imageData
+        let cacheOp = BlockOperation {
+            if let data = fetchPhotoOp.imageData {
+                self.cache.cache(value: data, key: photoReference.id)
+            }
+        }
+        cacheOp.addDependency(fetchPhotoOp)
+   
+        let cellReuseOp = BlockOperation {
+            if let cellIndexPath = self.collectionView.indexPath(for: cell),
+                cellIndexPath != indexPath {
+                return
+            }
+
+            if let imageData = fetchPhotoOp.imageData {
+                DispatchQueue.main.async {
+                    cell.imageView.image = UIImage(data: imageData)
+                    
+                }
+            }
+            
+        }
+        cellReuseOp.addDependency(fetchPhotoOp)
+        
+        photoQueue.addOperations([fetchPhotoOp, cacheOp], waitUntilFinished: false)
+        OperationQueue.main.addOperation(cellReuseOp)
+     
+        self.storedFetchOperations[photoReference.id] = fetchPhotoOp
     }
     
     // Properties
     
     private let client = MarsRoverClient()
+    private var cache: Cache<Int, Data> = Cache()
+    var storedFetchOperations: [ Int : FetchPhotoOp ] = [:]
+    private let photoQueue = OperationQueue()
+    private let cancelQ = DispatchQueue(label: "Cancel Queue")
     
     private var roverInfo: MarsRover? {
         didSet {
