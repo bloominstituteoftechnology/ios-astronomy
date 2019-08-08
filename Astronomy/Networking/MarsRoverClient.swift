@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import UIKit
 
 class MarsRoverClient {
     
@@ -87,4 +88,6 @@ class MarsRoverClient {
                                     URLQueryItem(name: "api_key", value: apiKey)]
         return urlComponents.url!
     }
+    
+   
 }
