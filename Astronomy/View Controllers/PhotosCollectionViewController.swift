@@ -83,7 +83,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             return
         }
         
-        
         let fetchPhotoOp = FetchPhotoOp(marsPhotoReference: photoReference)
 //        let fetchPhotoImageData = fetchPhotoOp.imageData
         let cacheOp = BlockOperation {
