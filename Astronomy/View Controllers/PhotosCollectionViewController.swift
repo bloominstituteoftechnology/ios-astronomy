@@ -75,10 +75,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 }
                 
                 guard let data = data else { return }
-                let image = UIImage(data: data)
                 
-                if self.collectionView.indexPathsForVisibleItems.contains(indexPath) {
-                    DispatchQueue.main.async {
+                DispatchQueue.main.async {
+                    if self.collectionView.indexPathsForVisibleItems.contains(indexPath) {
+                        let image = UIImage(data: data)
                         cell.imageView.image = image
                     }
                 }
@@ -95,7 +95,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
