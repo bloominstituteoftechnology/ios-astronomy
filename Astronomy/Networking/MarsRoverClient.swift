@@ -39,6 +39,20 @@ class MarsRoverClient {
         }
     }
     
+    func fetchImage(from photoReferences: [MarsPhotoReference], completion: @escaping(Data?, Error?) -> Void) {
+        for photoReference in photoReferences {
+            let url = photoReference.imageURL
+            fetch(from: url) { (data: Data?, error: Error?) in
+                guard let imageData = data else {
+                    completion(nil, error)
+                    return
+                }
+                completion(imageData, nil)
+            }
+        }
+        
+    }
+    
     // MARK: - Private
     
     private func fetch<T: Codable>(from url: URL,
