@@ -13,7 +13,11 @@ class FetchPhotoOperation: ConcurrentOperation {
     var imageData: Data?
     
     var loadImageDataTask : URLSessionDataTask {
-        return URLSession.shared.dataTask(with: marsPhotoReference.imageURL) { (data, response, error) in
+        guard let httpURL = marsPhotoReference.imageURL.usingHTTPS else {
+            NSLog("cant make httpURL")
+            return URLSessionDataTask()
+        }
+        return URLSession.shared.dataTask(with: httpURL) { (data, response, error) in
             defer {
                 self.state = .isFinished
             }

@@ -38,7 +38,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     let cache = Cache<Int, Data>()
     
-    
+    private let photoFetchQueue = OperationQueue()
+    private var fetchDictionary: [Int: Operation] = [:]
     
     
     override func viewDidLoad() {
@@ -96,38 +97,56 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        let url = photoReference.imageURL
-        let photoId = photoReference.id
-        guard let httpURL = url.usingHTTPS else {
-            NSLog("cant make httpURL")
-            return
-        }
         
-        if let imageData = cache.value(for: photoId) {
-            let image = UIImage(data: imageData)
-            DispatchQueue.main.async {
-                cell.imageView.image = image
-                print("loaded cache image")
-            }
-        } else {
-            URLSession.shared.dataTask(with: httpURL) { (data, response, error) in
-                if let error = error {
-                    NSLog("Error doing load image dataTask: \(error)")
-                    return
-                }
-                
-                guard let data = data else {
-                    NSLog("no data return on load image")
-                    return
-                }
-                DispatchQueue.main.async {
-                    let image = UIImage(data: data)
-                    cell.imageView.image = image
-                    print("load from internet")
-                    self.cache.cache(value: data, for: photoId)
-                }
-            }.resume()
+        let photoFetchOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+        let saveCacheOperation = BlockOperation {
+            self.cache.cache(value: photoFetchOperation.imageData!, for: photoReference.id)
         }
+        let setUpImageViewOperation = BlockOperation {
+            DispatchQueue.main.async {
+                if self.collectionView.indexPath(for: cell) == indexPath {
+                    cell.imageView.image = UIImage(data: photoFetchOperation.imageData!)
+                } else {
+                    print("not the same cell")
+                }
+            }
+        }
+        saveCacheOperation.addDependency(photoFetchOperation)
+        setUpImageViewOperation.addDependency(photoFetchOperation)
+        photoFetchQueue.addOperations([photoFetchOperation, saveCacheOperation, setUpImageViewOperation], waitUntilFinished: true)
+        fetchDictionary[photoReference.id] = photoFetchOperation
+//        let url = photoReference.imageURL
+//        let photoId = photoReference.id
+//        guard let httpURL = url.usingHTTPS else {
+//            NSLog("cant make httpURL")
+//            return
+//        }
+//
+//        if let imageData = cache.value(for: photoId) {
+//            let image = UIImage(data: imageData)
+//            DispatchQueue.main.async {
+//                cell.imageView.image = image
+//                print("loaded cache image")
+//            }
+//        } else {
+//            URLSession.shared.dataTask(with: httpURL) { (data, response, error) in
+//                if let error = error {
+//                    NSLog("Error doing load image dataTask: \(error)")
+//                    return
+//                }
+//
+//                guard let data = data else {
+//                    NSLog("no data return on load image")
+//                    return
+//                }
+//                DispatchQueue.main.async {
+//                    let image = UIImage(data: data)
+//                    cell.imageView.image = image
+//                    print("load from internet")
+//                    self.cache.cache(value: data, for: photoId)
+//                }
+//            }.resume()
+//        }
     }
     
     @IBOutlet var collectionView: UICollectionView!
