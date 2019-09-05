@@ -104,16 +104,24 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
         let setUpImageViewOperation = BlockOperation {
             DispatchQueue.main.async {
-                if self.collectionView.indexPath(for: cell) == indexPath {
-                    cell.imageView.image = UIImage(data: photoFetchOperation.imageData!)
-                } else {
-                    print("not the same cell")
-                }
+                
+                cell.imageView.image = UIImage(data: photoFetchOperation.imageData!)
+                
             }
         }
+        if let imageData = cache.value(for: photoReference.id) {
+            let image = UIImage(data: imageData)
+            DispatchQueue.main.async {
+                cell.imageView.image = image
+                print("loaded cache image")
+                return
+            }
+        }
+
         saveCacheOperation.addDependency(photoFetchOperation)
         setUpImageViewOperation.addDependency(photoFetchOperation)
         photoFetchQueue.addOperations([photoFetchOperation, saveCacheOperation, setUpImageViewOperation], waitUntilFinished: true)
+        
         fetchDictionary[photoReference.id] = photoFetchOperation
 //        let url = photoReference.imageURL
 //        let photoId = photoReference.id
@@ -150,4 +158,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     @IBOutlet var collectionView: UICollectionView!
+}
+extension PhotosCollectionViewController: UICollectionViewDelegate {
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        let id = photoReference.id
+        let operation = fetchDictionary[id]
+        operation?.cancel()
+    }
+
 }
