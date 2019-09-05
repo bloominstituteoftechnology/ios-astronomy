@@ -16,7 +16,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[105]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
@@ -37,6 +37,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     let cache = Cache<Int, Data>()
+    
+    
     
     
     override func viewDidLoad() {
