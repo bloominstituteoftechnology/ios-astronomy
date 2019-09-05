@@ -63,12 +63,21 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
-		guard let photoUrl = photoReferences[indexPath.item].imageURL.usingHTTPS,
-			collectionView.indexPath(for: cell) == nil else { return }
+		guard collectionView.indexPath(for: cell) == nil else { return }
+		let photoRef = self.photoReferences[indexPath.item]
+		guard let photoUrl = photoRef.imageURL.usingHTTPS else { return }
 		
-		if let data = try? Data(contentsOf: photoUrl) {
-			if let image = UIImage(data: data) {
+		DispatchQueue.global().async {
+			var photoData = Data()
+			if let data = self.storage.value(for: photoUrl.absoluteString) {
+				photoData = data
+			} else {
+				guard let data = try? Data(contentsOf: photoUrl) else { return }
+				self.storage.cache(value: data, for: photoUrl.absoluteString)
+				photoData = data
+			}
+			
+			if let image = UIImage(data: photoData) {
 				DispatchQueue.main.async {
 					cell.imageView.image =  image
 				}
@@ -77,6 +86,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     // Properties
+	
+	private var storage = Cache<String, Data>()
     
     private let client = MarsRoverClient()
     
