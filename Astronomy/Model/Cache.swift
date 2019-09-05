@@ -11,12 +11,17 @@ import Foundation
 class Cache<Key: Hashable, Value> {
 
 	private(set) var cachedItems: [Key: Value] = [:]
+	let queue = DispatchQueue(label: "CacheSerialQueue")
 
 	func cache(value: Value, for key: Key) {
-		cachedItems[key] = value
+		queue.async {
+			self.cachedItems[key] = value
+		}
 	}
 
 	func value(for key: Key) -> Value? {
-		return cachedItems[key]
+		return queue.sync {
+			cachedItems[key]
+		}
 	}
 }
