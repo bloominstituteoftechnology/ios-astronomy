@@ -35,7 +35,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
-		
+
 		loadImage(forCell: cell, forItemAt: indexPath)
 
         return cell
@@ -65,27 +65,48 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
 
 		let photoReference = photoReferences[indexPath.item]
+
+
 		let photoURL = photoReference.imageURL.usingHTTPS
-
 		guard let url = photoURL else { return }
-		URLSession.shared.dataTask(with: url) { (imageData, _, error) in
 
-			if let error = error {
-				print("Error loading image: \(error)")
-				return
-			}
-
-			guard let imageData = imageData else { return }
-
+		if let imageData = cache.value(for: url) {
 			let image = UIImage(data: imageData)
-			DispatchQueue.main.async {
-				cell.imageView.image = image
-			}
+			cell.imageView.image = image
+		} else {
+			URLSession.shared.dataTask(with: url) { (imageData, _, error) in
+				
+				var cellIndexPath: IndexPath?
+				DispatchQueue.main.sync {
+					cellIndexPath = self.collectionView.indexPath(for: cell)
+				}
+				
+				if let collectionViewIndexPath = cellIndexPath {
+					if collectionViewIndexPath != indexPath {
+						return
+					}
+				}
+				
+				if let error = error {
+					print("Error loading image: \(error)")
+					return
+				}
+				
+				guard let imageData = imageData else { return }
+				self.cache.cache(value: imageData, for: url)
+				let image = UIImage(data: imageData)
+				DispatchQueue.main.async {
+					cell.imageView.image = image
+				}
+			}.resume()
+		}
+	}
 
-		}.resume()
-    }
+
     
     // Properties
+
+	let cache = Cache<URL, Data>()
     
     private let client = MarsRoverClient()
     
