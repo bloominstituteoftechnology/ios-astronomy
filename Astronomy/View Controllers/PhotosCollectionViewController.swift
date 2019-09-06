@@ -40,6 +40,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 
         return cell
     }
+
+	func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+		let reference = photoReferences[indexPath.item]
+		let operation = storedFetchOperations[reference.id]
+		operation?.cancel()
+	}
     
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -65,41 +71,38 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
 
 		let photoReference = photoReferences[indexPath.item]
-
-
 		let photoURL = photoReference.imageURL.usingHTTPS
 		guard let url = photoURL else { return }
 
 		if let imageData = cache.value(for: url) {
 			let image = UIImage(data: imageData)
 			cell.imageView.image = image
-		} else {
-			URLSession.shared.dataTask(with: url) { (imageData, _, error) in
-				
-				var cellIndexPath: IndexPath?
-				DispatchQueue.main.sync {
-					cellIndexPath = self.collectionView.indexPath(for: cell)
-				}
-				
-				if let collectionViewIndexPath = cellIndexPath {
-					if collectionViewIndexPath != indexPath {
-						return
-					}
-				}
-				
-				if let error = error {
-					print("Error loading image: \(error)")
-					return
-				}
-				
-				guard let imageData = imageData else { return }
-				self.cache.cache(value: imageData, for: url)
-				let image = UIImage(data: imageData)
-				DispatchQueue.main.async {
-					cell.imageView.image = image
-				}
-			}.resume()
+			return
 		}
+
+		let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+		photoFetchQueue.addOperation(fetchPhotoOperation)
+
+		let storeDataInCache = BlockOperation {
+			guard let imageData = fetchPhotoOperation.imageData else { return }
+			self.cache.cache(value: imageData, for: url)
+		}
+
+		let setImage = BlockOperation {
+			guard indexPath == self.collectionView.indexPath(for: cell),
+			let imageData = fetchPhotoOperation.imageData else { return }
+			cell.imageView.image = UIImage(data: imageData)
+		}
+
+		OperationQueue.main.addOperation(setImage)
+
+		storeDataInCache.addDependency(fetchPhotoOperation)
+		setImage.addDependency(fetchPhotoOperation)
+
+		photoFetchQueue.addOperation(storeDataInCache)
+		photoFetchQueue.addOperation(setImage)
+
+		storedFetchOperations[photoReference.id] = fetchPhotoOperation
 	}
 
 
@@ -107,6 +110,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // Properties
 
 	let cache = Cache<URL, Data>()
+
+	private let photoFetchQueue = OperationQueue()
+
+	var storedFetchOperations: [Int: FetchPhotoOperation] = [:]
     
     private let client = MarsRoverClient()
     
@@ -134,3 +141,30 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     @IBOutlet var collectionView: UICollectionView!
 }
+
+
+//			URLSession.shared.dataTask(with: url) { (imageData, _, error) in
+//
+//				var cellIndexPath: IndexPath?
+//				DispatchQueue.main.sync {
+//					cellIndexPath = self.collectionView.indexPath(for: cell)
+//				}
+//
+//				if let collectionViewIndexPath = cellIndexPath {
+//					if collectionViewIndexPath != indexPath {
+//						return
+//					}
+//				}
+//
+//				if let error = error {
+//					print("Error loading image: \(error)")
+//					return
+//				}
+//
+//				guard let imageData = imageData else { return }
+//				self.cache.cache(value: imageData, for: url)
+//				let image = UIImage(data: imageData)
+//				DispatchQueue.main.async {
+//					cell.imageView.image = image
+//				}
+//			}.resume()

@@ -21,10 +21,10 @@ class FetchPhotoOperation: ConcurrentOperation {
 	
 	override func start() {
 		state = .isExecuting
+		fetchPhoto()
 	}
 
-	func fetchPhoto() {
-
+	private func fetchPhoto() {
 		guard let url = marsPhotoReference.imageURL.usingHTTPS else {
 			fatalError("Error modifying URL")
 		}
@@ -37,7 +37,6 @@ class FetchPhotoOperation: ConcurrentOperation {
 				print("Error fetching photo: \(error)")
 				return
 			}
-
 			self.imageData = data
 		})
 		dataTask?.resume()
