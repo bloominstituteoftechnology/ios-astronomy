@@ -70,7 +70,7 @@
                     </view>
                     <navigationItem key="navigationItem" title="Mars Rover Photos" id="Opj-RV-fZO">
                         <barButtonItem key="rightBarButtonItem" title="Solar Day" id="2xW-yC-Vpr">
-                            <color key="tintColor" red="0.5983168673" green="0.4693823238" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                            <color key="tintColor" red="0.3010385049" green="0.64125506899999996" blue="0.7665264423" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                             <connections>
                                 <segue destination="ae9-Z4-cQF" kind="presentation" identifier="ShowSolSelectorModalSegue" id="tgp-Dd-yeY"/>
                             </connections>
@@ -93,12 +93,13 @@
                         <rect key="frame" x="0.0" y="44" width="414" height="96"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <color key="tintColor" red="0.3010385049" green="0.64125506899999996" blue="0.7665264423" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <color key="barTintColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <textAttributes key="titleTextAttributes">
-                            <color key="textColor" red="0.5983168673" green="0.4693823238" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                            <color key="textColor" red="0.3010385049" green="0.64125506899999996" blue="0.7665264423" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         </textAttributes>
                         <textAttributes key="largeTitleTextAttributes">
-                            <color key="textColor" red="0.59831686729863842" green="0.46938232384681045" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                            <color key="textColor" red="0.3010385049" green="0.64125506899999996" blue="0.7665264423" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         </textAttributes>
                     </navigationBar>
                     <nil name="viewControllers"/>
@@ -124,8 +125,9 @@
                         <subviews>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="6gq-Hw-2dt">
                                 <rect key="frame" x="185" y="782" width="44" height="30"/>
+                                <color key="tintColor" red="0.3010385049" green="0.64125506899999996" blue="0.7665264423" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <state key="normal" title="Select">
-                                    <color key="titleColor" red="0.5983168673" green="0.4693823238" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    <color key="titleColor" red="0.3010385049" green="0.64125506899999996" blue="0.7665264423" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 </state>
                                 <connections>
                                     <action selector="selectTapped:" destination="ae9-Z4-cQF" eventType="touchUpInside" id="2Jb-7j-S9u"/>
@@ -133,23 +135,22 @@
                             </button>
                             <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="300" minValue="1" maxValue="1010" translatesAutoresizingMaskIntoConstraints="NO" id="EAG-LN-rvr">
                                 <rect key="frame" x="38" y="433" width="338" height="31"/>
-                                <color key="tintColor" red="0.5983168673" green="0.4693823238" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="tintColor" red="0.3010385049" green="0.64125506899999996" blue="0.7665264423" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <connections>
                                     <action selector="sliderChanged:" destination="ae9-Z4-cQF" eventType="valueChanged" id="SpU-gy-mGE"/>
                                 </connections>
                             </slider>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Select Solar Day" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="rKO-7d-bAh">
                                 <rect key="frame" x="101.5" y="94" width="211.5" height="36"/>
-                                <color key="tintColor" red="0.5983168673" green="0.4693823238" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="tintColor" red="0.27088787078452925" green="0.46149116994855544" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <fontDescription key="fontDescription" style="UICTFontTextStyleTitle0"/>
-                                <color key="textColor" red="0.5983168673" green="0.4693823238" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="textColor" red="0.30103850493831197" green="0.6412550690268457" blue="0.76652644230769229" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="w85-NH-Kdh">
-                                <rect key="frame" x="347" y="44" width="48" height="30"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="w85-NH-Kdh">
+                                <rect key="frame" x="346" y="44" width="48" height="30"/>
                                 <state key="normal" title="Cancel">
-                                    <color key="titleColor" red="0.5983168673" green="0.4693823238" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    <color key="titleColor" red="0.3010385049" green="0.64125506899999996" blue="0.7665264423" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 </state>
                                 <connections>
                                     <action selector="cancelTapped:" destination="ae9-Z4-cQF" eventType="touchUpInside" id="B1r-0p-uB9"/>
@@ -166,6 +167,7 @@
                         <constraints>
                             <constraint firstItem="EAG-LN-rvr" firstAttribute="centerY" secondItem="8xN-xM-No2" secondAttribute="centerY" id="1e9-an-Y87"/>
                             <constraint firstItem="OEX-KL-wKP" firstAttribute="top" secondItem="6gq-Hw-2dt" secondAttribute="bottom" constant="50" id="9kx-vm-Y0r"/>
+                            <constraint firstAttribute="trailing" secondItem="w85-NH-Kdh" secondAttribute="trailing" constant="20" id="SZJ-HY-mBT"/>
                             <constraint firstItem="6gq-Hw-2dt" firstAttribute="centerX" secondItem="8xN-xM-No2" secondAttribute="centerX" id="TwH-ju-xUZ"/>
                             <constraint firstAttribute="trailingMargin" secondItem="EAG-LN-rvr" secondAttribute="trailing" constant="20" id="eeI-Le-PAf"/>
                             <constraint firstItem="rKO-7d-bAh" firstAttribute="top" secondItem="RYh-fx-uM4" secondAttribute="bottom" constant="50" id="eoB-wb-NCk"/>
@@ -174,6 +176,7 @@
                             <constraint firstItem="EAG-LN-rvr" firstAttribute="top" secondItem="tw2-uw-2XZ" secondAttribute="bottom" constant="100" id="uZj-m9-EJA"/>
                             <constraint firstItem="tw2-uw-2XZ" firstAttribute="centerX" secondItem="8xN-xM-No2" secondAttribute="centerX" id="xAG-iZ-c9v"/>
                             <constraint firstItem="EAG-LN-rvr" firstAttribute="leading" secondItem="8xN-xM-No2" secondAttribute="leadingMargin" constant="20" id="xMt-G0-53M"/>
+                            <constraint firstItem="w85-NH-Kdh" firstAttribute="top" secondItem="RYh-fx-uM4" secondAttribute="bottom" id="yEu-vL-mWY"/>
                         </constraints>
                     </view>
                     <connections>

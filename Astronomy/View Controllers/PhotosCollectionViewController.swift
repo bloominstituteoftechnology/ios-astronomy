@@ -138,7 +138,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[1006]
+            solDescription = roverInfo?.solDescriptions[1007]
         }
     }
 
