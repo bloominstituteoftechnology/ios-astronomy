@@ -59,41 +59,61 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
+	
+	func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+		guard let photoUrl = photoReferences[indexPath.item].imageURL.usingHTTPS,
+			let fetchOp = storedFetchOps[photoUrl.absoluteString] else { return }
+		
+		cancelQueue.sync {
+			fetchOp.cancel()
+		}
+	}
     
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-		guard collectionView.indexPath(for: cell) == nil else { return }
-		let photoRef = self.photoReferences[indexPath.item]
+		let photoRef = photoReferences[indexPath.item]
 		guard let photoUrl = photoRef.imageURL.usingHTTPS else { return }
 		
-		DispatchQueue.global().async {
-			var photoData = Data()
-			if let data = self.storage.value(for: photoUrl.absoluteString) {
-				photoData = data
-			} else {
-				guard let data = try? Data(contentsOf: photoUrl) else { return }
-				self.storage.cache(value: data, for: photoUrl.absoluteString)
-				photoData = data
-			}
-			
-			if let image = UIImage(data: photoData) {
-				DispatchQueue.main.async {
-					cell.imageView.image =  image
-				}
+		if let photoData = self.storage.value(for: photoUrl.absoluteString) {
+			cell.imageView.image =  UIImage(data: photoData)
+		}
+		
+		let fetchPhotoOp = FetchPhotoOperation(photoRef: photoRef)
+		let cacheOp = BlockOperation {
+			if let photoData = fetchPhotoOp.imageData {
+				self.storage.cache(value: photoData, for: photoUrl.absoluteString)
 			}
 		}
+		
+		let cellCheckOp = BlockOperation {
+			if let cellPath = self.collectionView.indexPath(for: cell), cellPath != indexPath {
+				return
+			}
+			if let photoData = fetchPhotoOp.imageData {
+				cell.imageView.image =  UIImage(data: photoData)
+			}
+		}
+		
+		cacheOp.addDependency(fetchPhotoOp)
+		cellCheckOp.addDependency(fetchPhotoOp)
+		
+		photofetchQueue.addOperations([fetchPhotoOp, cacheOp], waitUntilFinished: false)
+		OperationQueue.main.addOperation(cellCheckOp)
+		
+		storedFetchOps.updateValue(fetchPhotoOp, forKey: photoUrl.absoluteString)
     }
     
     // Properties
-	
+	private let cancelQueue = DispatchQueue(label: "MyCancelationOps")
+	private var storedFetchOps = [String:FetchPhotoOperation]()
+	private let photofetchQueue = OperationQueue()
 	private var storage = Cache<String, Data>()
-    
+	
     private let client = MarsRoverClient()
-    
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[105]
+            solDescription = roverInfo?.solDescriptions[55]
         }
     }
     private var solDescription: SolDescription? {
