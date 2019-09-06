@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		37F3A0B22321B64E009FB16B /* Cache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37F3A0B12321B64E009FB16B /* Cache.swift */; };
 		37F3A0B42321CB5A009FB16B /* FetchPhotoOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37F3A0B32321CB5A009FB16B /* FetchPhotoOperation.swift */; };
+		37F3A0B623222024009FB16B /* SolSelectViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37F3A0B523222024009FB16B /* SolSelectViewController.swift */; };
 		9DBD20092140D1300047905E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DBD20082140D1300047905E /* AppDelegate.swift */; };
 		9DBD20102140D1300047905E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9DBD200F2140D1300047905E /* Assets.xcassets */; };
 		9DBD20132140D1300047905E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9DBD20112140D1300047905E /* LaunchScreen.storyboard */; };
@@ -27,6 +28,7 @@
 /* Begin PBXFileReference section */
 		37F3A0B12321B64E009FB16B /* Cache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cache.swift; sourceTree = "<group>"; };
 		37F3A0B32321CB5A009FB16B /* FetchPhotoOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchPhotoOperation.swift; sourceTree = "<group>"; };
+		37F3A0B523222024009FB16B /* SolSelectViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolSelectViewController.swift; sourceTree = "<group>"; };
 		9DBD20052140D1300047905E /* Astronomy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Astronomy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9DBD20082140D1300047905E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9DBD200F2140D1300047905E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 		9DBD20262140D3130047905E /* View Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				37F3A0B523222024009FB16B /* SolSelectViewController.swift */,
 				9DBD20332140DF1D0047905E /* PhotosCollectionViewController.swift */,
 			);
 			path = "View Controllers";
@@ -174,6 +177,7 @@
 				TargetAttributes = {
 					9DBD20042140D1300047905E = {
 						CreatedOnToolsVersion = 9.4.1;
+						LastSwiftMigration = 1030;
 					};
 				};
 			};
@@ -225,6 +229,7 @@
 				9DBD20092140D1300047905E /* AppDelegate.swift in Sources */,
 				9DBD20242140D30F0047905E /* MarsPhotoReference.swift in Sources */,
 				9DBD202F2140D7720047905E /* Camera.swift in Sources */,
+				37F3A0B623222024009FB16B /* SolSelectViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -369,7 +374,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.lambdaschool.Astronomy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -387,7 +392,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.lambdaschool.Astronomy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;

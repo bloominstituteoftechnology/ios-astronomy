@@ -44,9 +44,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 	func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
 		let reference = photoReferences[indexPath.item]
 		let operation = storedFetchOperations[reference.id]
-		operation?.cancel()
+		queue.sync {
+			operation?.cancel()
+		}
 	}
-    
+
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -81,7 +83,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 		}
 
 		let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
-		photoFetchQueue.addOperation(fetchPhotoOperation)
 
 		let storeDataInCache = BlockOperation {
 			guard let imageData = fetchPhotoOperation.imageData else { return }
@@ -89,20 +90,28 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 		}
 
 		let setImage = BlockOperation {
-			guard indexPath == self.collectionView.indexPath(for: cell),
-			let imageData = fetchPhotoOperation.imageData else { return }
+			defer {
+				self.storedFetchOperations.removeValue(forKey: photoReference.id)
+			}
+
+			if let currentIndexPath = self.collectionView.indexPath(for: cell),
+				currentIndexPath != indexPath {
+				return
+			}
+			guard let imageData = fetchPhotoOperation.imageData else { return }
 			cell.imageView.image = UIImage(data: imageData)
 		}
 
-		OperationQueue.main.addOperation(setImage)
 
 		storeDataInCache.addDependency(fetchPhotoOperation)
 		setImage.addDependency(fetchPhotoOperation)
 
+		photoFetchQueue.addOperation(fetchPhotoOperation)
 		photoFetchQueue.addOperation(storeDataInCache)
-		photoFetchQueue.addOperation(setImage)
+		OperationQueue.main.addOperation(setImage)
 
 		storedFetchOperations[photoReference.id] = fetchPhotoOperation
+
 	}
 
 
@@ -113,15 +122,18 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 
 	private let photoFetchQueue = OperationQueue()
 
+	let queue = DispatchQueue(label: "CancelOperationQueue")
+
 	var storedFetchOperations: [Int: FetchPhotoOperation] = [:]
     
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[1001]
+            solDescription = roverInfo?.solDescriptions[1006]
         }
     }
+
     private var solDescription: SolDescription? {
         didSet {
             if let rover = roverInfo,
@@ -141,30 +153,3 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     @IBOutlet var collectionView: UICollectionView!
 }
-
-
-//			URLSession.shared.dataTask(with: url) { (imageData, _, error) in
-//
-//				var cellIndexPath: IndexPath?
-//				DispatchQueue.main.sync {
-//					cellIndexPath = self.collectionView.indexPath(for: cell)
-//				}
-//
-//				if let collectionViewIndexPath = cellIndexPath {
-//					if collectionViewIndexPath != indexPath {
-//						return
-//					}
-//				}
-//
-//				if let error = error {
-//					print("Error loading image: \(error)")
-//					return
-//				}
-//
-//				guard let imageData = imageData else { return }
-//				self.cache.cache(value: imageData, for: url)
-//				let image = UIImage(data: imageData)
-//				DispatchQueue.main.async {
-//					cell.imageView.image = image
-//				}
-//			}.resume()

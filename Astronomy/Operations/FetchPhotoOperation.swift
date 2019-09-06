@@ -29,7 +29,7 @@ class FetchPhotoOperation: ConcurrentOperation {
 			fatalError("Error modifying URL")
 		}
 
-		dataTask = URLSession.shared.dataTask(with: url, completionHandler: { (data, _, error) in
+		dataTask = URLSession.shared.dataTask(with: url) { (data, _, error) in
 
 			defer { self.state = .isFinished }
 
@@ -38,12 +38,13 @@ class FetchPhotoOperation: ConcurrentOperation {
 				return
 			}
 			self.imageData = data
-		})
+		}
 		dataTask?.resume()
 	}
 
 	override func cancel() {
 		dataTask?.cancel()
+		print("I AM CANCELLED")
 	}
 
 }
