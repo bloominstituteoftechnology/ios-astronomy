@@ -12,6 +12,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     override func viewDidLoad() {
         super.viewDidLoad()
+		solSelectorVC.delegate = self
         
         client.fetchMarsRover(named: "curiosity") { (rover, error) in
             if let error = error {
@@ -22,6 +23,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             self.roverInfo = rover
         }
     }
+
+	override func viewWillAppear(_ animated: Bool) {
+		super.viewWillAppear(animated)
+		collectionView.reloadData()
+	}
     
     // UICollectionViewDataSource/Delegate
     
@@ -120,6 +126,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 
 	let cache = Cache<URL, Data>()
 
+	let solSelectorVC = SolSelectViewController()
+
 	private let photoFetchQueue = OperationQueue()
 
 	let queue = DispatchQueue(label: "CancelOperationQueue")
@@ -152,4 +160,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     @IBOutlet var collectionView: UICollectionView!
+}
+
+extension PhotosCollectionViewController: SolSelectViewControllerDelegate {
+	func didSelect(solarDay: Int) {
+		print(solarDay)
+		solDescription = roverInfo?.solDescriptions[solarDay]
+		collectionView.reloadData()
+	}
 }

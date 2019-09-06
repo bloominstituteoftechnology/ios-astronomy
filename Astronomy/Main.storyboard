@@ -134,6 +134,9 @@
                             <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="300" minValue="1" maxValue="1010" translatesAutoresizingMaskIntoConstraints="NO" id="EAG-LN-rvr">
                                 <rect key="frame" x="38" y="433" width="338" height="31"/>
                                 <color key="tintColor" red="0.5983168673" green="0.4693823238" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <connections>
+                                    <action selector="sliderChanged:" destination="ae9-Z4-cQF" eventType="valueChanged" id="SpU-gy-mGE"/>
+                                </connections>
                             </slider>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Select Solar Day" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="rKO-7d-bAh">
                                 <rect key="frame" x="101.5" y="94" width="211.5" height="36"/>
@@ -152,6 +155,12 @@
                                     <action selector="cancelTapped:" destination="ae9-Z4-cQF" eventType="touchUpInside" id="B1r-0p-uB9"/>
                                 </connections>
                             </button>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="tw2-uw-2XZ">
+                                <rect key="frame" x="183" y="309" width="48" height="24"/>
+                                <fontDescription key="fontDescription" style="UICTFontTextStyleTitle2"/>
+                                <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
@@ -162,11 +171,14 @@
                             <constraint firstItem="rKO-7d-bAh" firstAttribute="top" secondItem="RYh-fx-uM4" secondAttribute="bottom" constant="50" id="eoB-wb-NCk"/>
                             <constraint firstItem="rKO-7d-bAh" firstAttribute="centerX" secondItem="8xN-xM-No2" secondAttribute="centerX" id="ggj-bo-Ojo"/>
                             <constraint firstItem="EAG-LN-rvr" firstAttribute="centerX" secondItem="8xN-xM-No2" secondAttribute="centerX" id="oNJ-S9-p0b"/>
+                            <constraint firstItem="EAG-LN-rvr" firstAttribute="top" secondItem="tw2-uw-2XZ" secondAttribute="bottom" constant="100" id="uZj-m9-EJA"/>
+                            <constraint firstItem="tw2-uw-2XZ" firstAttribute="centerX" secondItem="8xN-xM-No2" secondAttribute="centerX" id="xAG-iZ-c9v"/>
                             <constraint firstItem="EAG-LN-rvr" firstAttribute="leading" secondItem="8xN-xM-No2" secondAttribute="leadingMargin" constant="20" id="xMt-G0-53M"/>
                         </constraints>
                     </view>
                     <connections>
                         <outlet property="slider" destination="EAG-LN-rvr" id="Ybq-PX-DsZ"/>
+                        <outlet property="sliderValueLabel" destination="tw2-uw-2XZ" id="Myr-lo-Sd4"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="3nv-pZ-8jP" userLabel="First Responder" sceneMemberID="firstResponder"/>
