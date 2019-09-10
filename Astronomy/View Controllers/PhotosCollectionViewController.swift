@@ -41,17 +41,24 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
-
 		loadImage(forCell: cell, forItemAt: indexPath)
 
         return cell
     }
 
 	func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+		guard indexPath.item < photoReferences.count else { return }
 		let reference = photoReferences[indexPath.item]
 		let operation = storedFetchOperations[reference.id]
 		queue.sync {
 			operation?.cancel()
+		}
+	}
+
+	override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+		if segue.identifier == "ShowSolSelectorModalSegue" {
+			guard let solSelectVC = segue.destination as? SolSelectViewController else { return }
+			solSelectVC.delegate = self
 		}
 	}
 
