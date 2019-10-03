@@ -8,15 +8,7 @@
 
 import UIKit
 
-enum NetworkError: Error {
-    case noAuth
-    case badAuth
-    case otherError(Error)
-    case badData
-    case noDecode
-    case noEncode
-    case badResponse
-}
+
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
@@ -24,6 +16,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - IBOutlets & Properties
 
     let photosGroup = DispatchGroup()
+    let cache = Cache<Int, Data>()
     
     private let client = MarsRoverClient()
     
@@ -70,26 +63,34 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         var image: UIImage = UIImage(named: "MarsPlaceholder")!
-         let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
         photosGroup.enter()
         URLSession.shared.dataTask(with: imageURL) { data, _, error in
-            if let error = error {
-                NSLog("error loading image:\(error)")
-            }
-            
-            guard let data = data else {
-                NSLog("Bad data when loading image from photoReference ID:\(photoReference.id)")
+            let currentPhotoID = self.photoReferences[indexPath.row].id
+            if currentPhotoID != photoReference.id {
                 return
+            } else {
+                if let error = error {
+                    NSLog("error loading image:\(error)")
+                }
+                
+                guard let data = data else {
+                    NSLog("Bad data when loading image from photoReference ID:\(photoReference.id)")
+                    return
+                }
+                print("Got image data \(data)")
+                guard let imageFromData = UIImage(data: data) else { return }
+                image = imageFromData
+                print("got image \(image)")
             }
-            print("Got image data \(data)")
-            guard let imageFromData = UIImage(data: data) else { return }
-            image = imageFromData
-            print("got image \(image)")
             self.photosGroup.leave()
         }.resume()
+        
         photosGroup.notify(queue: .main) {
+            
             cell.imageView.image = image
+            
         }
     }
     
