@@ -65,6 +65,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         var image: UIImage = UIImage(named: "MarsPlaceholder")!
         let photoReference = photoReferences[indexPath.item]
         guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
+        
+        if let data = cache.value(for: photoReference.id) {
+            let image = UIImage(data: data)
+            cell.imageView.image = image
+        }
+        
         photosGroup.enter()
         URLSession.shared.dataTask(with: imageURL) { data, _, error in
             let currentPhotoID = self.photoReferences[indexPath.row].id
@@ -79,7 +85,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                     NSLog("Bad data when loading image from photoReference ID:\(photoReference.id)")
                     return
                 }
-                print("Got image data \(data)")
+               // Storing data in Cache
+                self.cache.cache(value: data, for: photoReference.id)
+                
                 guard let imageFromData = UIImage(data: data) else { return }
                 image = imageFromData
                 print("got image \(image)")
@@ -88,9 +96,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }.resume()
         
         photosGroup.notify(queue: .main) {
-            
             cell.imageView.image = image
-            
         }
     }
     
