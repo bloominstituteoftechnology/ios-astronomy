@@ -10,7 +10,7 @@ import Foundation
 
 class ConcurrentOperation: Operation {
     
-    // MARK: Types
+    // MARK: - Types
     
     enum State: String {
         case isReady, isExecuting, isFinished
