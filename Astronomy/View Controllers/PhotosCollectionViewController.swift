@@ -63,6 +63,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoID = photoReferences[indexPath.item].id
+        
+        if let image = cache.fetch(key: photoID) {
+            cell.imageView.image = image
+            return
+        }
         
         guard let imageURL = photoReferences[indexPath.item].imageURL.usingHTTPS else { return }
         URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
@@ -77,15 +83,20 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
             
             DispatchQueue.main.async {
-                if indexPath == self.collectionView.indexPath(for: cell) {
-                    let image = UIImage(data: data)
-                    cell.imageView.image = image
+                if indexPath != self.collectionView.indexPath(for: cell) { return }
+                let image = UIImage(data: data)
+                cell.imageView.image = image
+                    
+                if let image = image {
+                    self.cache.imageDict[photoID] = image
                 }
             }
         }.resume()
     }
     
     // Properties
+    
+    private let cache = Cache<Int, UIImage>()
     
     private let client = MarsRoverClient()
     
