@@ -23,6 +23,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     
+    // MARK: - properties
+    
+    private let cache = Cache<Int,Data>()
+    
+    // background thread.
+    private let photoFetchQueue = OperationQueue()
+    private var operations = [Int: Operation]()
     // UICollectionViewDataSource/Delegate
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -60,13 +67,48 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        operations[photoReference.id]?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
-        
+         let photoReference = photoReferences[indexPath.item]
+        if let cachedData = cache.getValue(forKey: photoReference.id),
+            let image = UIImage(data: cachedData) {
+            cell.imageView.image = image
+            return
+        }
         // TODO: Implement image loading here
+        let fetchOperation = FetchPhotoOperation(marsPhoto: photoReference)
+        let cacheOp = BlockOperation {
+            if let data = fetchOperation.imageData {
+                self.cache.cache(value: data, forKey: photoReference.id)
+            }
+            }
+        
+        let completionOp = BlockOperation {
+            defer {self.operations.removeValue(forKey: photoReference.id)}
+            if let currentIndexpath = self.collectionView.indexPath(for: cell),
+                currentIndexpath != indexPath {
+                print("got image for reused image")
+                return
+            }
+            if let data = fetchOperation.imageData {
+                cell.imageView.image = UIImage(data: data)
+            }
+        }
+        
+        cacheOp.addDependency(fetchOperation)
+        completionOp.addDependency(fetchOperation)
+        photoFetchQueue.addOperation(fetchOperation)
+        photoFetchQueue.addOperation(cacheOp)
+        OperationQueue.main.addOperation(completionOp)
+        
+        operations[photoReference.id] = fetchOperation
     }
     
     // Properties

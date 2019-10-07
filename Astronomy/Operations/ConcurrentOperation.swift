@@ -35,7 +35,7 @@ class ConcurrentOperation: Operation {
             let oldValue = state
             willChangeValue(forKey: newValue.rawValue)
             willChangeValue(forKey: oldValue.rawValue)
-            
+           
             stateQueue.sync { self._state = newValue }
             
             didChangeValue(forKey: oldValue.rawValue)
