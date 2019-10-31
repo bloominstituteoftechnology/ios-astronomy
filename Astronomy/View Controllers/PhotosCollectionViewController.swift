@@ -9,6 +9,10 @@
 import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+    let cache = Cache<Int, Data>()
+    
+    private let photoFetchQueue = OperationQueue()
+    private var operations = [Int : Operation]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -60,6 +64,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+          let photoRef = photoReferences[indexPath.item]
+          operations[photoRef.id]?.cancel()
+      }
+    
     
     // MARK: - Private
     
@@ -69,27 +78,57 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         // Implement image loading here
         // For each photo reference, load the actual image data using the photo reference's imageURL property
-        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
+//        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
+        
+        if let cachedImage = cache.value(key: photoReference.id) {
+             cell.imageView.image = UIImage(data: cachedImage)
+             return
+         }
+        
+        let fetchOp = FetchPhotoOperation(marsPhotoReference: photoReference)
+        let cacheOp = BlockOperation {
+            if let data = fetchOp.imageData {
+                self.cache.cache(value: data, key: photoReference.id)
+            }
+        }
 
-        URLSession.shared.dataTask(with: imageURL) { data, _, error in
-            if let error = error {
-                NSLog("Error loading imageURL: \(error)")
+        //        URLSession.shared.dataTask(with: imageURL) { data, _, error in
+        //            if let error = error {
+        //                NSLog("Error loading imageURL: \(error)")
+        //                return
+        //            }
+        let checkReuseOp = BlockOperation {
+            if let currentIndexPath = self.collectionView.indexPath(for: cell),
+                currentIndexPath != indexPath {
                 return
             }
-
-            DispatchQueue.main.async {
-                if let currentIndexPath = self.collectionView.indexPath(for: cell),
-                    currentIndexPath != indexPath {
-                    return
-                }
-
-                if let data = data {
-                    cell.imageView.image = UIImage(data: data)
-                }
+            //            DispatchQueue.main.async {
+            //                if let currentIndexPath = self.collectionView.indexPath(for: cell),
+            //                    currentIndexPath != indexPath {
+            //                    return
+            //                }
+            //
+            //                if let data = data {
+            //                    cell.imageView.image = UIImage(data: data)
+            //                      self.cache.cache(value: data, key: photoReference.id)
+            //                }
+            if let data = fetchOp.imageData {
+                cell.imageView.image = UIImage(data: data)
             }
-
-        }.resume()
+            
+            //        }.resume()
+        }
+        
+        cacheOp.addDependency(fetchOp)
+        checkReuseOp.addDependency(fetchOp)
+        
+        photoFetchQueue.addOperation(fetchOp)
+        photoFetchQueue.addOperation(cacheOp)
+        OperationQueue.main.addOperation(checkReuseOp)
+        
+        operations[photoReference.id] = fetchOp
     }
+    
     
     // Properties
     
