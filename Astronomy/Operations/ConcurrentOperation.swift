@@ -45,6 +45,8 @@ class ConcurrentOperation: Operation {
     
     // MARK: NSOperation
     
+    let fetchPhotoOperation: ConcurrentOperation
+    
     override dynamic var isReady: Bool {
         return super.isReady && state == .isReady
     }
