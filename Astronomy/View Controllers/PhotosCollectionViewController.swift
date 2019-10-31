@@ -67,26 +67,30 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         let url = photoReference.imageURL.usingHTTPS!
         
-        print("About to perform data task on URL: \(url)")
-        URLSession.shared.dataTask(with: url) { (data, _, error) in
-            print("Data task complete")
-            if let error = error {
-                NSLog("\(error)")
-                return
-            }
-            
-            guard let data = data  else {
-                NSLog("No data returned from url: \(url)")
-                return
-            }
-            
-            DispatchQueue.main.async {
-//                if self.collectionView.indexPath(for: cell) == indexPath {
-                    let image = UIImage(data: data)
-                    cell.imageView.image = image
-//                }
-            }
-        }.resume()
+        if let image = cache.value(for: indexPath.item) {
+            cell.imageView.image = image
+        } else {
+            URLSession.shared.dataTask(with: url) { (data, _, error) in
+                if let error = error {
+                    NSLog("\(error)")
+                    return
+                }
+                
+                guard let data = data  else {
+                    NSLog("No data returned from url: \(url)")
+                    return
+                }
+                
+                DispatchQueue.main.async {
+                    if let image = UIImage(data: data) {
+                        self.cache.cache(value: image, for: indexPath.item)
+                        if self.collectionView.indexPath(for: cell) == indexPath {
+                            cell.imageView.image = image
+                        }
+                    }
+                }
+            }.resume()
+        }
     }
     
     // Properties
@@ -114,6 +118,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    
+    private let cache = Cache<Int, UIImage>()
     
     @IBOutlet var collectionView: UICollectionView!
 }
