@@ -11,7 +11,8 @@ import UIKit
 class ImageCollectionViewCell: UICollectionViewCell {
     
     override func prepareForReuse() {
-        imageView.image = #imageLiteral(resourceName: "MarsPlaceholder")
+        //imageView.image = #imageLiteral(resourceName: "MarsPlaceholder")
+        imageView.image = nil
         
         super.prepareForReuse()
     }
