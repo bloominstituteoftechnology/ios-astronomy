@@ -10,6 +10,8 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    var cache = Cache<Int, Data>()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -64,9 +66,42 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        if let imageData = cache.value(forKey: photoReference.id) {
+            if let image = UIImage(data: imageData) {
+                DispatchQueue.main.async {
+                    let visibleIndexPaths = self.collectionView.indexPathsForVisibleItems
+                    if visibleIndexPaths.contains(indexPath) {
+                        cell.imageView.image = image
+                        return
+                    }
+                }
+            }
+        }
+        
+        guard let url = photoReference.imageURL.usingHTTPS else {
+            NSLog("Invalid image URL")
+            return
+        }
+        
+        URLSession.shared.dataTask(with: url) { (data, _, error) in
+            if let error = error {
+                NSLog("Error getting imageURL: \(error)")
+                return
+            }
+            
+            if let data = data {
+                let image = UIImage(data: data)
+                DispatchQueue.main.async {
+                    let visibleIndexPaths = self.collectionView.indexPathsForVisibleItems
+                    if visibleIndexPaths.contains(indexPath) {
+                        cell.imageView.image = image
+                    }
+                }
+                self.cache.cache(value: data, forKey: photoReference.id)
+            }
+        }.resume()
     }
     
     // Properties
