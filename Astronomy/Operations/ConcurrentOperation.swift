@@ -17,13 +17,8 @@ class ConcurrentOperation: Operation {
     }
     
     // MARK: Properties
-    
-    var marsPhotoReference: MarsPhotoReference?
-    
     private var _state = State.isReady
-    
-    private var dataTask = URLSession.shared.dataTask(with: <#T##URL#>)
-    
+
     private let stateQueue = DispatchQueue(label: "com.LambdaSchool.Astronomy.ConcurrentOperationStateQueue")
     var state: State {
         get {
@@ -45,14 +40,6 @@ class ConcurrentOperation: Operation {
             didChangeValue(forKey: oldValue.rawValue)
             didChangeValue(forKey: newValue.rawValue)
         }
-    }
-    
-    init(marsPhotoReference: MarsPhotoReference) {
-        self.marsPhotoReference = marsPhotoReference
-    }
-    
-    override func start() {
-        state = .isExecuting
     }
     
     // MARK: NSOperation

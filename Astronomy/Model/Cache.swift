@@ -13,15 +13,15 @@ class Cache<Key: Hashable, Value> {
     
     private var queue = DispatchQueue(label: "Cache Queue")
     
-    func cache(value: Value, forKey: Key) {
+    func cache(value: Value, for key: Key) {
         queue.async {
-            self.cacheDictionary[forKey] = value
+            self.cacheDictionary[key] = value
         }
     }
     
-    func value(forKey: Key) -> Value? {
+    func value(for key: Key) -> Value? {
         queue.sync {
-            return cacheDictionary[forKey]
+            return cacheDictionary[key]
         }
     }
 }

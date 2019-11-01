@@ -12,6 +12,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     var cache = Cache<Int, Data>()
     
+    private var photoFetchQueue = OperationQueue()
+    private var fetchOperations: [Int: FetchPhotoOperation] = [:]
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -65,44 +68,66 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
         let photoReference = photoReferences[indexPath.item]
         
-        if let imageData = cache.value(forKey: photoReference.id) {
-            if let image = UIImage(data: imageData) {
-                DispatchQueue.main.async {
-                    let visibleIndexPaths = self.collectionView.indexPathsForVisibleItems
-                    if visibleIndexPaths.contains(indexPath) {
-                        cell.imageView.image = image
-                        return
-                    }
-                }
+        let fetchPhoto = FetchPhotoOperation(marsPhotoReference: photoReference)
+        
+        let cacheData = BlockOperation {
+            guard let data = fetchPhoto.imageData else { return }
+            self.cache.cache(value: data, for: photoReference.id)
+        }
+        
+        let setImage = BlockOperation {
+            let visibleIndexPaths = self.collectionView.indexPathsForVisibleItems
+            if  visibleIndexPaths.contains(indexPath),
+                let data = fetchPhoto.imageData,
+                let image = UIImage(data: data) {
+                cell.imageView.image = image
             }
         }
         
-        guard let url = photoReference.imageURL.usingHTTPS else {
-            NSLog("Invalid image URL")
-            return
-        }
+        cacheData.addDependency(fetchPhoto)
+        setImage.addDependency(fetchPhoto)
         
-        URLSession.shared.dataTask(with: url) { (data, _, error) in
-            if let error = error {
-                NSLog("Error getting imageURL: \(error)")
-                return
-            }
-            
-            if let data = data {
-                let image = UIImage(data: data)
-                DispatchQueue.main.async {
-                    let visibleIndexPaths = self.collectionView.indexPathsForVisibleItems
-                    if visibleIndexPaths.contains(indexPath) {
-                        cell.imageView.image = image
-                    }
-                }
-                self.cache.cache(value: data, forKey: photoReference.id)
-            }
-        }.resume()
+        photoFetchQueue.addOperations([fetchPhoto, cacheData], waitUntilFinished: false)
+        OperationQueue.main.addOperation(setImage)
+        
+        fetchOperations[photoReference.id] = fetchPhoto
     }
+        
+        // Before part 4
+//        if let imageData = cache.value(for: photoReference.id) {
+//            if let image = UIImage(data: imageData) {
+//                    //let visibleIndexPaths = self.collectionView.indexPathsForVisibleItems
+//                    //if visibleIndexPaths.contains(indexPath) {
+//                        cell.imageView.image = image
+//                        return
+//                   // }
+//            }
+//        }
+//
+//        guard let url = photoReference.imageURL.usingHTTPS else {
+//            NSLog("Invalid image URL")
+//            return
+//        }
+//
+//        URLSession.shared.dataTask(with: url) { (data, _, error) in
+//            if let error = error {
+//                NSLog("Error getting imageURL: \(error)")
+//                return
+//            }
+//
+//            if let data = data {
+//                let image = UIImage(data: data)
+//                DispatchQueue.main.async {
+//                    //let visibleIndexPaths = self.collectionView.indexPathsForVisibleItems
+//                    //if visibleIndexPaths.contains(indexPath) {
+//                        cell.imageView.image = image
+//                    //}
+//                }
+//                self.cache.cache(value: data, for: photoReference.id)
+//            }
+//        }.resume()
     
     // Properties
     
