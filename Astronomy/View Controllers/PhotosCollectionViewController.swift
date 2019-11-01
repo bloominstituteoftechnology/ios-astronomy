@@ -10,6 +10,10 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    //var cache: Cache<Int, Data>?
+    var cache = Cache<Int, Data>()
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -68,6 +72,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         //let marsPhotoReference = photoReference.imageURL.usingHTTPS
         
         guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
+       // guard let cache = cache.value(for: photoReference.id) else { guard }
+        
+        if let cachedImage = cache.value(for: photoReference.id as Int) as? Data {
+            cell.imageView.image = UIImage(data: cachedImage)
+            return
+        }
         
         //func fetchImage(with imageURL: URL, completion: @escaping (Error?) -> Void) {
             
@@ -89,6 +99,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                         // Implement image loading here
                         cell.imageView.image = UIImage(data: data)
                       //  completion(error)
+                        
+                        self.cache.cache(value: data, for: photoReference.id)
                     }
                 }
             }.resume()

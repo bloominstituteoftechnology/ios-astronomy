@@ -12,7 +12,13 @@ class Cache<Key: Hashable, Value> {
     
     private var catchedItems: [Key : Value] = [:]
     
+    func cache(value: Value, for: Key) {
+        
+    }
     
+    func value(for: Key) {
+        
+    }
     
     
     
