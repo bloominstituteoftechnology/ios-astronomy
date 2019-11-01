@@ -74,7 +74,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
        // guard let cache = cache.value(for: photoReference.id) else { guard }
         
-        if let cachedImage = cache.value(for: photoReference.id as Int) as? Data {
+        if let cachedImage = cache.value(key: photoReference.id as Int) as? Data {
             cell.imageView.image = UIImage(data: cachedImage)
             return
         }
@@ -100,7 +100,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                         cell.imageView.image = UIImage(data: data)
                       //  completion(error)
                         
-                        self.cache.cache(value: data, for: photoReference.id)
+                        self.cache.cache(value: data, key: photoReference.id)
                     }
                 }
             }.resume()
