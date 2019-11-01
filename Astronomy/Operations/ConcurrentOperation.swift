@@ -45,7 +45,46 @@ class ConcurrentOperation: Operation {
     
     // MARK: NSOperation
     
-    let fetchPhotoOperation: ConcurrentOperation
+    class FetchPhotoOperation: ConcurrentOperation {
+        var marsPhotoReference: MarsPhotoReference
+        var imageData: URL?
+        private var session: URLSessionDataTask
+        
+        init(marsPhotoReference: MarsPhotoReference) {
+            self.marsPhotoReference = marsPhotoReference
+        }
+        
+        override func start() {
+            state = .isExecuting
+            
+            guard let url = imageData else { return }
+            
+            session = URLSession.shared.dataTask(with: url) { (data, _, error) in
+                if let error = error {
+                    NSLog("Error: \(error)")
+                    return
+                }
+                
+                guard let data = data else {
+                    NSLog("Error")
+                    return
+                }
+                
+                let receivedImageData = UIImage(data: data)
+                
+
+            }
+            state = .isFinished
+        }
+        
+        override func cancel() {
+            session.cancel()
+        }
+            
+        
+        
+        
+    }
     
     override dynamic var isReady: Bool {
         return super.isReady && state == .isReady
