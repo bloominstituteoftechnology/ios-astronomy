@@ -16,13 +16,13 @@ class Cache<Key: Hashable, Value> {
     
     func cache(value: Value, for: Key) {
         cacheQueue.sync {
-            <#code#>
+
         }
     }
     
     func value(for: Key) {
         cacheQueue.sync {
-            <#code#>
+
         }
     }
 }
