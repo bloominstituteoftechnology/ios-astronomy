@@ -115,6 +115,8 @@ To fix this, you'll want to implement cancellation of in-flight network requests
 2. Add properties to store an instance of `MarsPhotoReference` for which an image should be loaded as well as `imageData` that has been loaded. `imageData` should be optional since it won't be set until after data has been loaded from the network.
 3. Implement an initializer that takes a `MarsPhotoReference`.
 4. Override `start()`. You should begin by setting `state` to `.isExecuting`. This tells the operation queue machinery that the operation has started running.
+
+
 5. Create a data task to load the image. You should store the task itself in a private property so you can cancel it if need be.
 6. In the data task's completion handler, check for an error and bail out if one occurs. Otherwise, set `imageData` with the received data.
 7. Make sure you set `state` to `.isFinished` before exiting the completion closure. This is a good use case for `defer`.

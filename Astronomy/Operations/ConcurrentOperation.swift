@@ -62,3 +62,24 @@ class ConcurrentOperation: Operation {
     }
     
 }
+
+class FetchPhotoOperation: ConcurrentOperation {
+    var id: Int
+    var sol: Int
+    var camera: Camera
+    var earthDate: Date
+    var imageURL: URL
+    var imageData: Data?
+    
+    init(_ reference: MarsPhotoReference) {
+        self.id = reference.id
+        self.sol = reference.sol
+        self.camera = reference.camera
+        self.earthDate = reference.earthDate
+        self.imageURL = reference.imageURL
+    }
+    
+    override func start() {
+        state = .isExecuting
+    }
+}
