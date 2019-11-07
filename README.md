@@ -74,8 +74,12 @@ Implement a simple cache in your app:
 3. The generic `Key` type will need to be constrained to conform to `Hashable`.
 4. Create a private property that is a dictionary to be used to actually store the cached items. The type of the dictionary should be `[Key : Value]`. Make sure you initialize it with an empty dictionary.
 5. Implement `cache(value:, for:)` to add items to the cache and `value(for:)` to return the associated value from the cache.
+
+// NOT SURE
 6. Add a `cache` proeprty to `PhotosCollectionViewController`. Its keys should be `Int`s as you'll use `MarsPhotoReference` `id`s for the keys. Its values should be `Data` objects, as you'll be caching image data. (You could also cache `UIImage`s directly.)
 6. In your `PhotosCollectionViewController.loadImage(forCell:, forItemAt:)` method, before starting a data task, first check to see if the cache already contains data for the given photo reference's id. If it exists, set the cell's image immediately without doing a network request.
+
+// DONT HAVE A COMPLETION HANDLER
 7. In your network request completion handler, save the just-received image data to the cache so it is available later.
 
 ### Test for Thread Safety
@@ -93,6 +97,8 @@ You can make `Cache` thread-safe, that is safe to use from multiple threads simu
 You could use an instance of `NSLock` for this. However, Grand Central Dispatch serial queues are designed to only allow one closure or unit of code to run at a time. They make for a great way to implement synchronized access to a shared resource without using a lock.
 
 1. Create a private `queue` property and initialize it with a serial `DispatchQueue`. Give it an appropriate label.
+
+// DID WHAT I COULD
 2. In `cache(value:, for:)`, dispatch the actual setting of the dictionary key/value pair so that it occurs on the `queue`.
 3. In `value(for:)`, use a _synchronous_ dispatch to retrieve the requested value from the dictionary before returning it. Note that `DispatchQueue.sync()`'s closure can return a value which will subsequently be returned from `DispatchQueue.sync()` itself. This means you don't need to create a temporary variable outside the dispatched closure.
 4. Run your app again. Verify that thread sanitizer no longer flags any issues.
