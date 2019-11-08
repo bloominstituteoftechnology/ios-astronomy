@@ -68,6 +68,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoRequestURL = URLRequest(url: url)
         
+        if let cachedData = cache.value(for: photoReference.id) {
+            DispatchQueue.main.async {
+                guard let image = UIImage(data: cachedData) else { return }
+                cell.imageView.image = image
+            }
+        }
+        
         URLSession.shared.dataTask(with: photoRequestURL) { (data, _, error) in
             
             if let error = error {
@@ -77,6 +84,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             
             guard let data = data else { return }
             
+            self.cache.cache(value: data, for: photoReference.id)
+            
             guard let image = UIImage(data: data) else { return }
             
             DispatchQueue.main.async {
@@ -84,6 +93,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 if newIndicies.contains(indexPath) {
                     cell.imageView.image = image
                 }
+                
             }
             
         }.resume()
@@ -94,6 +104,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // Properties
     
     private let client = MarsRoverClient()
+    
+    let cache = Cache<Int, Data>()
+    
     
     private var roverInfo: MarsRover? {
         didSet {
