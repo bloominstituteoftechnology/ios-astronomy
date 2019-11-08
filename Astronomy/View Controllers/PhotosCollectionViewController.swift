@@ -60,6 +60,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let imageReference = photoReferences[indexPath.item]
+        operations[imageReference.id]?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
@@ -67,7 +72,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
-        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
+//        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
         
         if let imageData = cache.value(for: photoReference.id) {
             let image = UIImage(data: imageData)
@@ -75,34 +80,59 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             return
         }
         
-        URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
-            if let error = error {
-                print("Error: \(error)")
-                return
+        let fetchOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+        let cacheOperation = BlockOperation {
+            if let imageData = fetchOperation.imageData {
+                self.cache.addToCache(value: imageData, for: photoReference.id)
             }
+        }
+        
+        let reuseOperation = BlockOperation {
+            if let currentIndexPath = self.collectionView.indexPath(for: cell), currentIndexPath != indexPath { return }
             
-            guard let data = data else {
-                print("Error getting data")
-                return
+            if let imageData = fetchOperation.imageData {
+                cell.imageView.image = UIImage(data: imageData)
             }
-            
-            let image = UIImage(data: data)
-            
-            self.cache.addToCache(value: data, for: photoReference.id)
-            
-            if indexPath != indexPath {
-                return
-            } else {
-                DispatchQueue.main.async {
-                    cell.imageView.image = image
-                }
-            }
-        }.resume()
+        }
+        
+        cacheOperation.addDependency(fetchOperation)
+        reuseOperation.addDependency(fetchOperation)
+        photoFetchQueue.addOperation(fetchOperation)
+        photoFetchQueue.addOperation(cacheOperation)
+        OperationQueue.main.addOperation(reuseOperation)
+        operations[photoReference.id] = fetchOperation
+        
+//        URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+//            if let error = error {
+//                print("Error: \(error)")
+//                return
+//            }
+//
+//            guard let data = data else {
+//                print("Error getting data")
+//                return
+//            }
+//
+//            let image = UIImage(data: data)
+//
+//            self.cache.addToCache(value: data, for: photoReference.id)
+//
+//            if indexPath != indexPath {
+//                return
+//            } else {
+//                DispatchQueue.main.async {
+//                    cell.imageView.image = image
+//                }
+//            }
+//        }.resume()
     }
     
     // Properties
     
     private let client = MarsRoverClient()
+    
+    private let photoFetchQueue = OperationQueue()
+    private var operations = [Int: Operation]()
     
     let cache = Cache<Int,Data>()
     
