@@ -81,5 +81,24 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     override func start() {
         state = .isExecuting
+        
+        let dataTask = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+            if let error = error {
+                print("Error fetching photo: \(error)")
+                return
+            }
+            
+            self.imageData = data
+            
+            self.state = .isFinished
+        }
+        
+        dataTask.cancel()
     }
+    
+    override func cancel() {
+        
+    }
+    
+    
 }

@@ -120,6 +120,8 @@ To fix this, you'll want to implement cancellation of in-flight network requests
 5. Create a data task to load the image. You should store the task itself in a private property so you can cancel it if need be.
 6. In the data task's completion handler, check for an error and bail out if one occurs. Otherwise, set `imageData` with the received data.
 7. Make sure you set `state` to `.isFinished` before exiting the completion closure. This is a good use case for `defer`.
+
+// DOESNT TELL ME TO DO ANYTHING INSIDE CANCEL OVERRIDE
 8. Override `cancel()`, which will be called if the operation is cancelled. In your implementation, call `cancel()` on the `dataTask`.
 
 *`ConcurrentOperation` is a nice "boilerplate" class that makes it easier to implement concurrent/asynchonous `Operation` subclasses in Swift. Feel free to keep it in your personal code library so you can use it in other apps you write.
