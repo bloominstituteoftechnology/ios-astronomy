@@ -22,8 +22,9 @@ class FetchPhotoOperation: ConcurrentOperation {
     override func start() {
         self.state = .isExecuting
         
-        let dataTask = URLSession.shared.dataTask(with: model.imageURL) { data, _, error in
-            // this will happen at the end, no matter what
+        guard let imageURL = model.imageURL.usingHTTPS else { return }
+        
+        let dataTask = URLSession.shared.dataTask(with: imageURL) { data, _, error in
             defer { self.state = .isFinished }
             
             guard error == nil else { return }
