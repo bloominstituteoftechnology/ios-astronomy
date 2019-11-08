@@ -63,8 +63,30 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        guard let url = photoReference.imageURL.usingHTTPS else { return }
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoRequestURL = URLRequest(url: url)
+        
+        URLSession.shared.dataTask(with: photoRequestURL) { (data, _, error) in
+            
+            if let error = error {
+                print("Error: \(error)")
+                return
+            }
+            
+            guard let data = data else { return }
+            
+            guard let image = UIImage(data: data) else { return }
+            
+            DispatchQueue.main.async {
+                let newIndicies = self.collectionView.indexPathsForVisibleItems
+                if newIndicies.contains(indexPath) {
+                    cell.imageView.image = image
+                }
+            }
+            
+        }.resume()
         
         // TODO: Implement image loading here
     }
@@ -75,7 +97,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
