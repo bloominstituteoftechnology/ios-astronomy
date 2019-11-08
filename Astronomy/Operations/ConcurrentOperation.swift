@@ -97,7 +97,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     }
     
     override func cancel() {
-        
+        // Not running anything
     }
     
     

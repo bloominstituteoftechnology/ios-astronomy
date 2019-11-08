@@ -41,6 +41,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        //Get the associated fetch operation and cancel it
+    }
+    
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -65,10 +69,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         // Getting the instance from the array: 1
-        let photoReference = photoReferences[indexPath.item]
+//        let photoReference = photoReferences[indexPath.item]
         // Getting the URL for the associated image: 2
-        let url = photoReference.imageURL.usingHTTPS
-        guard let imageUrl = url else { return }
+//        let url = photoReference.imageURL.usingHTTPS
+//        guard let imageUrl = url else { return }
             
         // Checking to see if the two index paths are the same: 5
         let cellIndexPath = index(ofAccessibilityElement: cell)
@@ -76,29 +80,53 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             
         if photoIndexPath == cellIndexPath {
             
-        // Making sure I do the API calls on the main queue: 7
-            DispatchQueue.main.async {
-                // Creating and running a dataTask to load the image from the URL: 3
-                URLSession.shared.dataTask(with: imageUrl) { (data, _, error) in
-                    // Checking for errors before creating an image: 4
-                    if let error = error {
-                        print("Error fetching image: \(error)")
-                        return
-                    }
+            let fetchDataOperation = BlockOperation {
+                
+            }
+            
+            let cacheOperation = BlockOperation {
+                
+            }
+            
+            let reusedOperation = BlockOperation {
+                DispatchQueue.main.async {
                     
-                    guard let data = data else { return }
-                    
-                    let image = UIImage(data: data)
-                    
-                    // Setting the cell's image view to the image i just created: 6
-                    cell.imageView.image = image
                 }
             }
+            
+            cacheOperation.addDependency(fetchDataOperation)
+            reusedOperation.addDependency(fetchDataOperation)
+            
+        // Making sure I do the API calls on the main queue: 7
+//            DispatchQueue.main.async {
+                // Creating and running a dataTask to load the image from the URL: 3
+//                URLSession.shared.dataTask(with: imageUrl) { (data, _, error) in
+//                    // Checking for errors before creating an image: 4
+//                    if let error = error {
+//                        print("Error fetching image: \(error)")
+//                        return
+//                    }
+//
+//                    guard let data = data else { return }
+//
+//                    let image = UIImage(data: data)
+//
+//                    // Setting the cell's image view to the image i just created: 6
+//                    cell.imageView.image = image
+//                }
+//            }
+            
+            let photoFetchQueue = OperationQueue()
+            photoFetchQueue.addOperations([fetchDataOperation,cacheOperation,reusedOperation], waitUntilFinished: true)
+            
         } else { return }
         
     }
     
     // Properties
+    
+    
+//    let storedOperations = [:] Supposed to be a dictionary to store the fetched operations and their photo ID keys.
     
     private let client = MarsRoverClient()
     
@@ -124,7 +152,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     
-//    private var cache: Cache<Int, Data> 
+    
+    
+    
+//    private var cache: Cache<Int, Data>
     
     @IBOutlet var collectionView: UICollectionView!
 }
+
+

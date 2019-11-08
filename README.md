@@ -139,6 +139,8 @@ Now that you've created an operation to fetch images, you should rewrite `Photos
 	The last two of these can be instances of `BlockOperation`.
 4. Make the cache and completion operations both depend on completion of the fetch operation.
 5. Add each operation to the appropriate queue. Note that the last operation above uses UIKit API and must run on the main queue.
+
+// NO CLUE ON 6 OR 7
 6. Add a dictionary property that you'll use to store fetch operations by the associated photo reference id.
 7. When you finish creating and starting the operations for a cell, add the fetch operation to your dictionary. This way you can retrieve it later to cancel it if need be.
 
