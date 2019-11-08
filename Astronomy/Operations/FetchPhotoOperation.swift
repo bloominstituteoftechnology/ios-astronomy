@@ -20,6 +20,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     }
     
     override func start() {
+        super.start()
         self.state = .isExecuting
         
         guard let imageURL = model.imageURL.usingHTTPS else { return }
@@ -38,6 +39,8 @@ class FetchPhotoOperation: ConcurrentOperation {
     }
     
     override func cancel() {
+        super.cancel()
         self.dataTask?.cancel()
+        print("Cancel the operation")
     }
 }

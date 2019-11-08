@@ -64,6 +64,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        let fetchOp = operationCache.value(for: photoReference.id)
+        fetchOp?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
@@ -97,26 +103,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         photoFetchQueue.addOperations([fetchOp, cacheOp, setOp], waitUntilFinished: false)
         
         self.operationCache.cache(value: fetchOp, for: photoReference.id)
-        
-        
-//        URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
-//            guard error == nil else { return }
-//
-//            if let data = data {
-//                let image = UIImage(data: data)
-//                // save the just-received image data to the cache so it is available later
-//                if let image = image {
-//                    self.cache.cache(value: image, for: photoReference.id)
-//                }
-//
-//                DispatchQueue.main.async {
-//                    // Check to see if the current index path for cell is the one that is being loaded
-//                    if self.collectionView.indexPath(for: cell) == indexPath {
-//                        cell.imageView.image = image
-//                    }
-//                }
-//            }
-//        }.resume()
     }
     
     // Properties
