@@ -81,12 +81,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             
             if let data = data {
                 let image = UIImage(data: data)
+                if let image = image {
+                    self.cache.cache(value: image, for: photoReference.id)
+                }
                 
                 DispatchQueue.main.async {
                     // save the just-received image data to the cache so it is available later
-                    if let image = image {
-                        self.cache.cache(value: image, for: photoReference.id)
-                    }
+
                     
                     // Check to see if the current index path for cell is the one that is being loaded
                     if self.collectionView.indexPath(for: cell) == indexPath {
