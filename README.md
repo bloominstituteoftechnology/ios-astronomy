@@ -22,6 +22,8 @@ This is a large project with a lot of pieces. In order to allow you to focus on 
 
 ## Part 1 - Implement Basic Collection View
 
+//WORKED BUT ONLY LOADED ONE IMAGE OVER AND OVER
+
 A collection view and associated view controller have already been set up for you, and data is already being loaded from the API. However, loading images from the Mars Rover API is a multi-step process:
 
 1. Load mission manifest (`MarsRover`) for a given Rover. (Done for you already)
@@ -44,6 +46,7 @@ Test your app. It should load images and display them.
 
 ## Part 2 - Test Scrolling Performance
 
+// IT RAN FINE
 Your app should work at this point, however, you should evaulate its performance, especially with a slow network. Apple provides a tool called *Network Link Conditioner* that you can install on your Mac and use to simulate a slow or unreliable network for the purposes of testing your apps. 
 
 You can download it (along with a number of other supplemental Apple developer tools) here: [Download Additional Tools for Xcode](https://developer.apple.com/download/more/?q=Additional%20Tools) (Make sure you download the correct tools for your version of Xcode). You can read a good article on the Network Link Conditioner on [NSHipster](https://nshipster.com/network-link-conditioner/).
@@ -133,6 +136,8 @@ Now that you've created an operation to fetch images, you should rewrite `Photos
 1. Add a private property called `photoFetchQueue`, which is an instance of `OperationQueue`.
 2. In `PhotosCollectionViewController.loadImage(forCell:, forItemAt:)`, delete the code that creates a data task.
 3. Create three operations:
+
+//DONT KNOW WHAT TO PUT IN THESE
 	- One should be a `PhotoFetchOperation` to fetch the image data from the network.
 	- One should be used to store received data in the cache.
 	- The last should check if the cell has been reused, and if not, set its image view's image.  
