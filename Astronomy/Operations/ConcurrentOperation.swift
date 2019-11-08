@@ -76,7 +76,8 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     override func start() {
         state = .isExecuting
-        guard let url = photoReference?.imageURL else { return }
+        
+        guard let url = photoReference?.imageURL.usingHTTPS else { return }
         
         urlSession = URLSession.shared.dataTask(with: url) { (data, _, error) in
             

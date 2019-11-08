@@ -64,9 +64,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         let photoReference = photoReferences[indexPath.item]
-        guard let url = photoReference.imageURL.usingHTTPS else { return }
         
-        let photoRequestURL = URLRequest(url: url)
+        
         
         if let cachedData = cache.value(for: photoReference.id) {
             DispatchQueue.main.async {
@@ -75,34 +74,58 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
         }
         
-        URLSession.shared.dataTask(with: photoRequestURL) { (data, _, error) in
-            
-            if let error = error {
-                print("Error: \(error)")
-                return
-            }
-            
-            guard let data = data else { return }
-            
-            self.cache.cache(value: data, for: photoReference.id)
-            
-            guard let image = UIImage(data: data) else { return }
-            
-            DispatchQueue.main.async {
-                let newIndicies = self.collectionView.indexPathsForVisibleItems
-                if newIndicies.contains(indexPath) {
-                    cell.imageView.image = image
-                }
-                
-            }
-            
-        }.resume()
+//        URLSession.shared.dataTask(with: photoRequestURL) { (data, _, error) in
+//
+//            if let error = error {
+//                print("Error: \(error)")
+//                return
+//            }
+//
+//            guard let data = data else { return }
+//
+//            self.cache.cache(value: data, for: photoReference.id)
+//
+//            guard let image = UIImage(data: data) else { return }
+//
+//            DispatchQueue.main.async {
+//                let newIndicies = self.collectionView.indexPathsForVisibleItems
+//                if newIndicies.contains(indexPath) {
+//                    cell.imageView.image = image
+//                }
+//
+//            }
+//
+//        }.resume()
         
-        // TODO: Implement image loading here
+        let fetchOp = FetchPhotoOperation(photoReference: photoReference)
+        
+        let cacheOp = BlockOperation {
+            guard let data = fetchOp.imageData else { return }
+            self.cache.cache(value: data, for: photoReference.id)
+        }
+        
+        let uiOP = BlockOperation {
+            guard let data = fetchOp.imageData else { return }
+            
+            let newIndices = self.collectionView.indexPathsForVisibleItems
+            if newIndices.contains(indexPath) {
+                let image = UIImage(data: data)
+                cell.imageView.image = image
+            }
+        }
+        
+        cacheOp.addDependency(fetchOp)
+        uiOP.addDependency(fetchOp)
+        
+        photoFetchQueue.addOperations([fetchOp, cacheOp, uiOP], waitUntilFinished: true)
+        let mainQueue = OperationQueue.main
+        mainQueue.addOperations([uiOP], waitUntilFinished: true)
+        
     }
     
     // Properties
     
+    private let photoFetchQueue = OperationQueue()
     private let client = MarsRoverClient()
     
     let cache = Cache<Int, Data>()
