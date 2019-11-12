@@ -74,6 +74,25 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // Getting the URL for the associated image: 2
 //        let url = photoReference.imageURL.usingHTTPS
 //        guard let imageUrl = url else { return }
+        
+        // Making sure I do the API calls on the main queue: 7
+//            DispatchQueue.main.async {
+                // Creating and running a dataTask to load the image from the URL: 3
+//                URLSession.shared.dataTask(with: imageUrl) { (data, _, error) in
+//                    // Checking for errors before creating an image: 4
+//                    if let error = error {
+//                        print("Error fetching image: \(error)")
+//                        return
+//                    }
+//
+//                    guard let data = data else { return }
+//
+//                    let image = UIImage(data: data)
+//
+//                    // Setting the cell's image view to the image i just created: 6
+//                    cell.imageView.image = image
+//                }
+//            }
             
         // Checking to see if the two index paths are the same: 5
         let cellIndexPath = index(ofAccessibilityElement: cell)
@@ -98,24 +117,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             cacheOperation.addDependency(fetchDataOperation)
             reusedOperation.addDependency(fetchDataOperation)
             
-        // Making sure I do the API calls on the main queue: 7
-//            DispatchQueue.main.async {
-                // Creating and running a dataTask to load the image from the URL: 3
-//                URLSession.shared.dataTask(with: imageUrl) { (data, _, error) in
-//                    // Checking for errors before creating an image: 4
-//                    if let error = error {
-//                        print("Error fetching image: \(error)")
-//                        return
-//                    }
-//
-//                    guard let data = data else { return }
-//
-//                    let image = UIImage(data: data)
-//
-//                    // Setting the cell's image view to the image i just created: 6
-//                    cell.imageView.image = image
-//                }
-//            }
+
             
             let photoFetchQueue = OperationQueue()
             photoFetchQueue.addOperations([fetchDataOperation,cacheOperation,reusedOperation], waitUntilFinished: true)
