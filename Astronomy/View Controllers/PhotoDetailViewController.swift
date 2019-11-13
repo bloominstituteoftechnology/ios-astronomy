@@ -16,7 +16,7 @@ class PhotoDetailViewController: UIViewController {
         updateViews()
     }
     
-    @IBAction func save(_ sender: Any) {
+    @IBAction func saveTapped(_ sender: Any) {
         guard let image = imageView.image else { return }
         PHPhotoLibrary.shared().performChanges({
             PHAssetChangeRequest.creationRequestForAsset(from: image)
