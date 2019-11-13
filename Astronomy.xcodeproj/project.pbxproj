@@ -83,7 +83,6 @@
 				9DBD201E2140D1AE0047905E /* Main.storyboard */,
 				9DBD20112140D1300047905E /* LaunchScreen.storyboard */,
 				9DBD20142140D1300047905E /* Info.plist */,
-				3764C3CF2374C8D40070642B /* Cache.swift */,
 			);
 			path = Astronomy;
 			sourceTree = "<group>";
@@ -99,6 +98,7 @@
 		9DBD20272140D31B0047905E /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				3764C3CF2374C8D40070642B /* Cache.swift */,
 				9DBD20212140D30F0047905E /* MarsPhotoReference.swift */,
 				9DBD20222140D30F0047905E /* MarsRover.swift */,
 				9DBD20202140D30F0047905E /* SolDescription.swift */,
