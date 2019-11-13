@@ -32,7 +32,9 @@ class PhotoDetailViewController: UIViewController {
     // MARK: - Private
     
     private func updateViews() {
-        guard let photo1 = photo, isViewLoaded else { return }
+        guard let photo1 = photo,
+            isViewLoaded else {
+                return }
         do {
             let data = try Data(contentsOf: photo1.imageURL)
             imageView.image = UIImage(data: data)
