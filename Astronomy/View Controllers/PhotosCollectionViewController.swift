@@ -94,6 +94,16 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    // MARK: - Navigation
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "ShowDetail" {
+            guard let indexPath = collectionView.indexPathsForSelectedItems?.first else { return }
+            let detailVC = segue.destination as! PhotoDetailViewController
+            detailVC.photo = photoReferences[indexPath.item]
+        }
+    }
+    
     // MARK: - Private
     
     private func configureTitleView() {
