@@ -122,7 +122,7 @@
                                         <rect key="frame" x="0.0" y="41" width="414" height="30"/>
                                         <state key="normal" title="Save to Photo Library"/>
                                         <connections>
-                                            <action selector="saveTapped:" destination="9hV-9o-Mb2" eventType="touchUpInside" id="QDC-t9-W9u"/>
+                                            <action selector="save:" destination="zeb-mt-50G" eventType="touchUpInside" id="uXK-LQ-dIM"/>
                                         </connections>
                                     </button>
                                 </subviews>
@@ -148,7 +148,6 @@
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="DEY-JC-Ltb" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
-                <exit id="9hV-9o-Mb2" userLabel="Exit" sceneMemberID="exit"/>
             </objects>
             <point key="canvasLocation" x="1929" y="117"/>
         </scene>
