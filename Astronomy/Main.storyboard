@@ -80,7 +80,7 @@
         <!--Title-->
         <scene sceneID="0Vf-gj-6Na">
             <objects>
-                <viewController id="zeb-mt-50G" sceneMemberID="viewController">
+                <viewController id="zeb-mt-50G" customClass="PhotoDetailViewController" customModule="Astronomy" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="hy5-O2-PCv"/>
                         <viewControllerLayoutGuide type="bottom" id="z7f-CS-FW6"/>
@@ -141,6 +141,11 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" title="Title" id="e7y-Nl-xOc"/>
+                    <connections>
+                        <outlet property="cameraLabel" destination="aIs-7t-y4a" id="vCx-X2-SYm"/>
+                        <outlet property="detailLabel" destination="9Ml-yH-1Sk" id="UUz-56-0PH"/>
+                        <outlet property="imageView" destination="2gB-Di-m60" id="7hO-ky-cGb"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="DEY-JC-Ltb" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
                 <exit id="9hV-9o-Mb2" userLabel="Exit" sceneMemberID="exit"/>

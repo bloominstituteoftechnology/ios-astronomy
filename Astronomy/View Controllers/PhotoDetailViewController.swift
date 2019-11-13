@@ -16,6 +16,7 @@ class PhotoDetailViewController: UIViewController {
         updateViews()
     }
     
+    
     @IBAction func saveTapped(_ sender: Any) {
         guard let image = imageView.image else { return }
         PHPhotoLibrary.shared().performChanges({
@@ -31,13 +32,13 @@ class PhotoDetailViewController: UIViewController {
     // MARK: - Private
     
     private func updateViews() {
-        guard let photo = photo, isViewLoaded else { return }
+        guard let photo1 = photo, isViewLoaded else { return }
         do {
-            let data = try Data(contentsOf: photo.imageURL)
+            let data = try Data(contentsOf: photo1.imageURL)
             imageView.image = UIImage(data: data)
-            let dateString = dateFormatter.string(from: photo.earthDate)
-            detailLabel.text = "Taken by \(photo.camera.roverId) on \(dateString) (Sol \(photo.sol))"
-            cameraLabel.text = photo.camera.fullName
+            let dateString = dateFormatter.string(from: photo1.earthDate)
+            detailLabel.text = "Taken by \(photo1.camera.roverId) on \(dateString) (Sol \(photo1.sol))"
+            cameraLabel.text = photo1.camera.fullName
         } catch {
             NSLog("Error setting up views on detail view controller: \(error)")
         }
@@ -61,5 +62,5 @@ class PhotoDetailViewController: UIViewController {
     @IBOutlet weak var imageView: UIImageView!
     @IBOutlet weak var detailLabel: UILabel!
     @IBOutlet weak var cameraLabel: UILabel!
-
+    
 }
