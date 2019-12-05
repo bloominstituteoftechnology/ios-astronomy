@@ -17,9 +17,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Properties
     
     private let client = MarsRoverClient()
+    private let cache = Cache<Int, Data>()
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[105]
         }
     }
     private var solDescription: SolDescription? {
@@ -100,6 +101,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // TODO: Implement image loading here
         guard let photoURL = photoReferences[indexPath.row].imageURL.usingHTTPS else { return }
         
+        if let imageData = cache.value(for: indexPath.row) {
+            let image = UIImage(data: imageData)
+            cell.imageView.image = image
+            print("Cached Image")
+            return
+        }
+        
         let fetchImage = URLSession.shared.dataTask(with: photoURL) { data, _, error in
             
             if let error = error {
@@ -114,6 +122,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                     return
                 }
                     cell.imageView.image = image
+                    print("fetched an image")
+                    self.cache.cache(value: data, for: indexPath.row)
                 }
             }
         }.resume()
