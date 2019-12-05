@@ -21,10 +21,15 @@ class FetchPhotoOperation: ConcurrentOperation {
     override func start() {
         state = .isExecuting
         
-        dataTask = URLSession.shared.dataTask(
-            with: photoReference.imageURL,
-            completionHandler:
-        { possibleData, possibleResponse, possibleError in
+        var returnedImageData: Data?
+        defer {
+            imageData = returnedImageData
+            state = .isFinished
+        }
+        
+        dataTask = URLSession.shared.dataTask(with: photoReference.imageURL) {
+            possibleData, possibleResponse, possibleError in
+            
             if let error = possibleError {
                 print("Error fetching image: \(error)")
                 if let response = possibleResponse {
@@ -33,14 +38,7 @@ class FetchPhotoOperation: ConcurrentOperation {
                 return
             }
             
-            guard let data = possibleData else {
-                print("no data!")
-                return
-            }
-            
-            self.imageData = data
-            
-            self.state = .isFinished
-        })
+            returnedImageData = possibleData
+        }
     }
 }
