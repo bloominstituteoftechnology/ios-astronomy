@@ -35,7 +35,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
-    
+    private var cache = Cache<Int, Data>()
     
     @IBOutlet var collectionView: UICollectionView!
     
@@ -100,6 +100,15 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             return
         }
         
+        // if present, use cached image for cell & return
+        if let imageData = cache[photoReference.id],
+            let image = UIImage(data: imageData)
+        {
+            cell.imageView.image = image
+            return
+        }
+        
+        // otherwise, fetch the image
         URLSession.shared.dataTask(with: imgURL) {
             possibleData, possibleResponse, possibleError in
             
@@ -119,7 +128,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 print("bad data!")
                 return
             }
+            
             DispatchQueue.main.async {
+                self.cache[photoReference.id] = data
+                
                 guard cell == self.collectionView.cellForItem(at: indexPath) else {
                     return
                 }

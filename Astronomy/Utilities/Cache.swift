@@ -10,13 +10,14 @@ import Foundation
 
 class Cache<Key: Hashable, Value> {
     private var _cache = [Key: Value]()
+    private var q: DispatchQueue
+    
+    init(name: String? = nil) {
+        self.q = DispatchQueue(label: name ?? "Cache<\(Key.self), \(Value.self)>")
+    }
     
     subscript(key: Key) -> Value? {
-        get {
-            return _cache[key]
-        }
-        set {
-            _cache[key] = newValue
-        }
+        get { q.sync { return _cache[key] } }
+        set { q.sync { _cache[key] = newValue } }
     }
 }
