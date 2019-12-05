@@ -17,6 +17,8 @@ class FetchPhotoOperation: ConcurrentOperation {
         let task = URLSession.shared.dataTask( with: url, completionHandler: {
             possibleData, possibleResponse, possibleError in
             
+            defer { self.state = .isFinished }
+            
             if let error = possibleError {
                 print("Error fetching image: \(error)")
                 if let response = possibleResponse {
@@ -37,12 +39,12 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     override func start() {
         state = .isExecuting
-        defer { state = .isFinished }
         
         dataTask?.resume()
     }
     
     override func cancel() {
         dataTask?.cancel()
+        state = .isFinished
     }
 }

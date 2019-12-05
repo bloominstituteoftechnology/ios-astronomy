@@ -103,7 +103,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // otherwise, fetch the image
         let photoFetchOp = FetchPhotoOperation(photoReference)
         let storeImageToCacheOp = BlockOperation {
-            guard let imageData = photoFetchOp.imageData else { return }
+            guard let imageData = photoFetchOp.imageData else {
+                print("no image data!")
+                return
+            }
             self.cache[photoReference.id] = imageData
         }
         let checkCellReuseOp = BlockOperation {
