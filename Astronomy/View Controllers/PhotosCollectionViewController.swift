@@ -35,7 +35,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
-    private var cache = Cache<Int, Data>()
+    lazy private var cache = Cache<Int, Data>()
+    lazy private var photoFetchQueue = OperationQueue()
     
     @IBOutlet var collectionView: UICollectionView!
     
@@ -96,48 +97,26 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        guard let imgURL = photoReference.imageURL.usingHTTPS else {
-            return
-        }
-        
-        // if present, use cached image for cell & return
-        if let imageData = cache[photoReference.id],
-            let image = UIImage(data: imageData)
-        {
-            cell.imageView.image = image
-            return
-        }
         
         // otherwise, fetch the image
-        URLSession.shared.dataTask(with: imgURL) {
-            possibleData, possibleResponse, possibleError in
-            
-            if let error = possibleError {
-                print("Error fetching image: \(error)")
-                if let response = possibleResponse {
-                    print("Response:\n\(response)")
-                }
-                return
-            }
-            
-            guard let data = possibleData else {
-                print("no data!")
-                return
-            }
-            guard let image = UIImage(data: data) else {
-                print("bad data!")
-                return
-            }
-            
-            DispatchQueue.main.async {
-                self.cache[photoReference.id] = data
-                
-                guard cell == self.collectionView.cellForItem(at: indexPath) else {
-                    return
-                }
-                
+        let photoFetchOp = FetchPhotoOperation(photoReference)
+        let storeImageToCacheOp = BlockOperation {
+            guard let imageData = photoFetchOp.imageData else { return }
+            self.cache[photoReference.id] = imageData
+        }
+        let checkCellReuseOp = BlockOperation {
+            // if present, use cached image for cell & return
+            if let imageData = self.cache[photoReference.id],
+                let image = UIImage(data: imageData)
+            {
                 cell.imageView.image = image
             }
-        }.resume()
+        }
+        
+        checkCellReuseOp.addDependency(storeImageToCacheOp)
+        storeImageToCacheOp.addDependency(photoFetchOp)
+        
+        photoFetchQueue.addOperations([photoFetchOp, storeImageToCacheOp], waitUntilFinished: false)
+        OperationQueue.main.addOperation(checkCellReuseOp)
     }
 }
