@@ -19,7 +19,10 @@ class FetchPhotoOperation: ConcurrentOperation {
             
             defer { self.state = .isFinished }
             
-            if let error = possibleError {
+            if let error = possibleError as NSError?,
+                error.code == -999 {
+                return
+            } else if let error = possibleError {
                 print("Error fetching image: \(error)")
                 if let response = possibleResponse {
                     print("Response:\n\(response)")
