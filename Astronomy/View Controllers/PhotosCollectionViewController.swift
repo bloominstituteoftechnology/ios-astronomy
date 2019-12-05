@@ -36,7 +36,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     lazy private var cache = Cache<Int, Data>()
+    
     lazy private var photoFetchQueue = OperationQueue()
+    lazy private var photoFetchOps = [Int: FetchPhotoOperation]()
     
     @IBOutlet var collectionView: UICollectionView!
     
@@ -118,5 +120,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         photoFetchQueue.addOperations([photoFetchOp, storeImageToCacheOp], waitUntilFinished: false)
         OperationQueue.main.addOperation(checkCellReuseOp)
+        
+        photoFetchOps[photoReference.id] = photoFetchOp
     }
 }
