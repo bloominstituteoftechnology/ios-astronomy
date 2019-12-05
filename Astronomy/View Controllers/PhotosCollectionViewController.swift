@@ -18,6 +18,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private let client = MarsRoverClient()
     private let cache = Cache<Int, Data>()
+    private let photoFetchQueue = OperationQueue()
     private var roverInfo: MarsRover? {
         didSet {
             solDescription = roverInfo?.solDescriptions[105]
@@ -99,34 +100,47 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
-        guard let photoURL = photoReferences[indexPath.row].imageURL.usingHTTPS else { return }
         
-        if let imageData = cache.value(for: indexPath.row) {
-            let image = UIImage(data: imageData)
-            cell.imageView.image = image
-            print("Cached Image")
-            return
+        
+        let photoFetchOperation = FetchPhotoOperation(marsPhotoReference: photoReferences[indexPath.row])
+        
+        let storeData = BlockOperation {
+            
         }
         
-        let fetchImage = URLSession.shared.dataTask(with: photoURL) { data, _, error in
+        photoFetchQueue.addOperation {
             
-            if let error = error {
-                print("Error fetching image data: \(error)")
-                return
-            }
-            
-            if let data = data {
-                guard let image = UIImage(data: data) else { return }
-                DispatchQueue.main.async {
-                if self.collectionView.indexPath(for: cell) != indexPath {
-                    return
-                }
-                    cell.imageView.image = image
-                    print("fetched an image")
-                    self.cache.cache(value: data, for: indexPath.row)
-                }
-            }
-        }.resume()
+        }
+        
+//        guard let photoURL = photoReferences[indexPath.row].imageURL.usingHTTPS else { return }
+        
+//        if let imageData = cache.value(for: indexPath.row) {
+//            let image = UIImage(data: imageData)
+//            cell.imageView.image = image
+////            print("Cached Image")
+//            return
+//        }
+        
+        
+//        let fetchImage = URLSession.shared.dataTask(with: photoURL) { data, _, error in
+//
+//            if let error = error {
+//                print("Error fetching image data: \(error)")
+//                return
+//            }
+//
+//            if let data = data {
+//                guard let image = UIImage(data: data) else { return }
+//                DispatchQueue.main.async {
+//                if self.collectionView.indexPath(for: cell) != indexPath {
+//                    return
+//                }
+//                    cell.imageView.image = image
+////                    print("fetched an image")
+//                    self.cache.cache(value: data, for: indexPath.row)
+//                }
+//            }
+//        }.resume()
     }
     
     
