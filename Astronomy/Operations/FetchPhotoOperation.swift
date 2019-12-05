@@ -22,8 +22,9 @@ class FetchPhotoOperation: ConcurrentOperation {
         state = .isExecuting
         defer { self.state = .isFinished }
         
-        let photoURL = marsPhotoReference.imageURL
+        guard let photoURL = marsPhotoReference.imageURL.usingHTTPS else { return }
         
+        // this data task can(should?) be moved to a lazy var at the class scope
         dataTask = URLSession.shared.dataTask(with: photoURL) { data, _, error in
             
             if let error = error {

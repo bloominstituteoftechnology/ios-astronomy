@@ -19,6 +19,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private let client = MarsRoverClient()
     private let cache = Cache<Int, Data>()
     private let photoFetchQueue = OperationQueue()
+    private var fetchOperations: [Int: Operation] = [:]
     private var roverInfo: MarsRover? {
         didSet {
             solDescription = roverInfo?.solDescriptions[105]
@@ -74,6 +75,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
+//    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+//        fetchOperations[indexPath.row]?.cancel()
+//    }
+    
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -105,12 +110,30 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoFetchOperation = FetchPhotoOperation(marsPhotoReference: photoReferences[indexPath.row])
         
         let storeData = BlockOperation {
-            
+            if let imageData = photoFetchOperation.imageData {
+                self.cache.cache(value: imageData, for: indexPath.row)
+            }
         }
         
-        photoFetchQueue.addOperation {
-            
+        let setImage = BlockOperation {
+            if self.collectionView.indexPath(for: cell) != indexPath {
+                return
+            } else {
+                guard let data = photoFetchOperation.imageData else { return }
+                let image = UIImage(data: data)
+                cell.imageView.image = image
+            }
         }
+        
+        setImage.addDependency(photoFetchOperation)
+        storeData.addDependency(photoFetchOperation)
+        photoFetchQueue.addOperations([photoFetchOperation, storeData], waitUntilFinished: false)
+        OperationQueue.main.addOperations([setImage], waitUntilFinished: false)
+        
+        fetchOperations[photoReferences[indexPath.row].id] = photoFetchOperation
+        
+        
+        
         
 //        guard let photoURL = photoReferences[indexPath.row].imageURL.usingHTTPS else { return }
         
