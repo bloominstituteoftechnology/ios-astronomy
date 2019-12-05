@@ -12,9 +12,11 @@ class FetchPhotoOperation: ConcurrentOperation {
     var photoReference: MarsPhotoReference
     private(set) var imageData: Data?
     
-    lazy private var dataTask = URLSession.shared.dataTask(
-        with: photoReference.imageURL,
-        completionHandler: { possibleData, possibleResponse, possibleError in
+    lazy private var dataTask: URLSessionDataTask? = {
+        guard let url = photoReference.imageURL.usingHTTPS else { return nil }
+        let task = URLSession.shared.dataTask( with: url, completionHandler: {
+            possibleData, possibleResponse, possibleError in
+            
             if let error = possibleError {
                 print("Error fetching image: \(error)")
                 if let response = possibleResponse {
@@ -24,7 +26,9 @@ class FetchPhotoOperation: ConcurrentOperation {
             }
             
             self.imageData = possibleData
-    })
+        })
+        return task
+    }()
     
     
     init(_ photoReference: MarsPhotoReference) {
@@ -35,10 +39,10 @@ class FetchPhotoOperation: ConcurrentOperation {
         state = .isExecuting
         defer { state = .isFinished }
         
-        dataTask.resume()
+        dataTask?.resume()
     }
     
     override func cancel() {
-        dataTask.cancel()
+        dataTask?.cancel()
     }
 }
