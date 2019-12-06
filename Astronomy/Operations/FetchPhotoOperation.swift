@@ -20,12 +20,12 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     override func start() {
         state = .isExecuting
-        defer { self.state = .isFinished }
         
         guard let photoURL = marsPhotoReference.imageURL.usingHTTPS else { return }
         
         // this data task can(should?) be moved to a lazy var at the class scope
         dataTask = URLSession.shared.dataTask(with: photoURL) { data, _, error in
+            defer { self.state = .isFinished }
             
             if let error = error {
                 print("Error fetching image data: \(error)")
@@ -36,9 +36,12 @@ class FetchPhotoOperation: ConcurrentOperation {
                 self.imageData = data
             }
         }
+        dataTask?.resume()
     }
     
     override func cancel() {
+        print("cancel")
         dataTask?.cancel()
+        print("cancelled")
     }
 }

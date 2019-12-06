@@ -19,10 +19,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private let client = MarsRoverClient()
     private let cache = Cache<Int, Data>()
     private let photoFetchQueue = OperationQueue()
-    private var fetchOperations: [Int: Operation] = [:]
+    private var fetchOperations: [Int: FetchPhotoOperation] = [:]
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[105]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
@@ -75,9 +75,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
-//    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
-//        fetchOperations[indexPath.row]?.cancel()
-//    }
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        fetchOperations[photoReferences[indexPath.item].id]?.cancel()
+    }
     
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -105,13 +105,16 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
+        if let imageData = cache.value(for: indexPath.row), let image = UIImage(data: imageData) {
+            cell.imageView.image = image
+            return
+        }
         
-        
-        let photoFetchOperation = FetchPhotoOperation(marsPhotoReference: photoReferences[indexPath.row])
+        let photoFetchOperation = FetchPhotoOperation(marsPhotoReference: photoReferences[indexPath.item])
         
         let storeData = BlockOperation {
             if let imageData = photoFetchOperation.imageData {
-                self.cache.cache(value: imageData, for: indexPath.row)
+                self.cache.cache(value: imageData, for: indexPath.item)
             }
         }
         
@@ -130,7 +133,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         photoFetchQueue.addOperations([photoFetchOperation, storeData], waitUntilFinished: false)
         OperationQueue.main.addOperations([setImage], waitUntilFinished: false)
         
-        fetchOperations[photoReferences[indexPath.row].id] = photoFetchOperation
+        fetchOperations[photoReferences[indexPath.item].id] = photoFetchOperation
         
         
         
