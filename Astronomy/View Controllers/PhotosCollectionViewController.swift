@@ -12,17 +12,22 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // MARK: - Properties
     
+    var solIndex = 3
+    
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[solIndex]
         }
     }
     private var solDescription: SolDescription? {
         didSet {
             if let rover = roverInfo,
                 let sol = solDescription?.sol {
+                DispatchQueue.main.async {
+                    self.setUpForNewSol()
+                }
                 client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
                     if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
                     self.photoReferences = photoRefs ?? []
@@ -41,6 +46,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     lazy private var photoFetchOps = [Int: FetchPhotoOperation]()
     
     @IBOutlet var collectionView: UICollectionView!
+    @IBOutlet weak var solDayLabel: UILabel!
     
     // MARK: - View Lifecycle
     
@@ -55,6 +61,26 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             
             self.roverInfo = rover
         }
+    }
+    
+    private func setUpForNewSol() {
+        for (_, op) in photoFetchOps {
+            op.cancel()
+        }
+        photoReferences = []
+        cache = Cache<Int, Data>()
+        solDayLabel.text = "Sol \(solDescription?.sol.description ?? "?")"
+//        collectionView.scrollToItem(at: IndexPath(item: 0, section: 0), at: .top, animated: false)
+    }
+    
+    // MARK: - IB Actions
+    
+    @IBAction func previousButtonTapped(_ sender: UIButton) {
+        changeSol(incrementing: false)
+    }
+    
+    @IBAction func nextButtonTapped(_ sender: UIButton) {
+        changeSol(incrementing: true)
     }
     
     // MARK: - UICollectionViewDataSource/Delegate
@@ -96,7 +122,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
         // cancel fetch operation for cell at indexPath
-        photoFetchOps[photoReferences[indexPath.item].id]?.cancel()
+        if !photoReferences.isEmpty {
+            photoFetchOps[photoReferences[indexPath.item].id]?.cancel()
+        }
     }
     
     // MARK: - Private Methods
@@ -104,6 +132,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
+        
+        // check first if image is already cached
+        if let imageData = cache[photoReference.id] {
+            cell.imageView.image = UIImage(data: imageData)
+            return
+        }
         
         // otherwise, fetch the image
         let photoFetchOp = FetchPhotoOperation(photoReference)
@@ -118,6 +152,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             if let imageData = self.cache[photoReference.id],
                 let image = UIImage(data: imageData)
             {
+                photoFetchOp.cancel()
                 cell.imageView.image = image
             }
         }
@@ -129,5 +164,22 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         OperationQueue.main.addOperation(checkCellReuseOp)
         
         photoFetchOps[photoReference.id] = photoFetchOp
+    }
+    
+    private func changeSol(incrementing: Bool) {
+        let changeAmount: Int = incrementing ? 1 : -1
+        
+        guard let roverInfo = roverInfo
+            else { return }
+        
+        solIndex += changeAmount
+        if solIndex < 0 {
+            solIndex = 0
+        } else if solIndex >= roverInfo.solDescriptions.count {
+            solIndex = roverInfo.solDescriptions.count - 1
+        }
+        
+        print("new sol index: \(solIndex)")
+        solDescription = roverInfo.solDescriptions[solIndex]
     }
 }
