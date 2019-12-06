@@ -16,7 +16,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private let client = MarsRoverClient()
     private let cache = Cache<Int, Data>()
     private let photoFetchQueue = OperationQueue()
-    
+    private var operations = [Int : Operation]()
        private var roverInfo: MarsRover? {
            didSet {
                solDescription = roverInfo?.solDescriptions[3]
@@ -96,8 +96,75 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        photoReference.imageURL
+        
+        // Check if there is cached data
+        
+        if let cachedData = cache.value(key: photoReference.id),
+        let image = UIImage(data: cachedData) {
+            cell.imageView.image = image
+            return
+        }
+        
+        // start our fetch operations
+        
+       let fetchOp = FetchPhotoOperation(photoReference: photoReference)
+        
+        
+        
+        let cacheOp = BlockOperation {
+            if let data = fetchOp.imageData {
+                self.cache.cache(key: photoReference.id, value: data)
+            }
+        }
+
+        
+        let completionOp = BlockOperation {
+            defer {self.operations.removeValue(forKey: photoReference.id)}
+            if let currentIndexPath = self.collectionView.indexPath(for: cell),
+                currentIndexPath != indexPath {
+                print("Got image for reused cell")
+                return
+            }
+            if let data = fetchOp.imageData {
+                cell.imageView.image = UIImage(data: data)
+            }
+        }
+        
+        
+        cacheOp.addDependency(fetchOp)
+        completionOp.addDependency(fetchOp)
+        photoFetchQueue.addOperation( fetchOp)
+        photoFetchQueue.addOperation(cacheOp)
+        
+        OperationQueue.main.addOperation(completionOp)
+        
+        
+        
+        
+        // Not fastest way
+        
+      //  guard let url = photoReference.imageURL.usingHTTPS else {return}
+        
         //TODO: Implement image loading here
+        
+//        let dataTask = URLSession.shared.dataTask(with: url) { (data,_,error) in
+//            if let error = error {
+//                NSLog("Error getting images: \(error)")
+//                return
+//            }
+//            guard let data = data else {
+//                NSLog("No data found")
+//                return
+//            }
+//            let image = UIImage(data: data)
+//            DispatchQueue.main.async {
+//                if self.collectionView.indexPath(for: cell) == indexPath {
+//                    cell.imageView.image = image
+//                }
+//            }
+//        }
+//        dataTask.resume()
+        
     }
     
     
