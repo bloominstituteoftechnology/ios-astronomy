@@ -17,6 +17,7 @@ class PhotosCollectionViewController: UIViewController {
     // --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
     // MARK: - Properties
     private let client = MarsRoverClient()
+    var cache = Cache<Int, Data>()
     private var roverInfo: MarsRover? {
         didSet {
             solDescription = roverInfo?.solDescriptions[105]
@@ -59,19 +60,26 @@ class PhotosCollectionViewController: UIViewController {
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         let photoReference = photoReferences[indexPath.item]
         guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
-        URLSession.shared.dataTask(with: imageURL) { data, _, error in
-            if let _ = error {
-                return
-            }
-            
-            guard let data = data else { return }
-            
-            if self.collectionView.cellForItem(at: indexPath) == cell {
-                DispatchQueue.main.async {
-                    cell.imageView.image = UIImage(data: data)
+        
+        if cache.contains(photoReference.id) {
+            guard let data = cache.value(for: photoReference.id) else { return }
+            cell.imageView.image = UIImage(data: data)
+        } else {
+            URLSession.shared.dataTask(with: imageURL) { data, _, error in
+                if let _ = error {
+                    return
                 }
-            }
-        }.resume()
+                
+                guard let data = data else { return }
+                self.cache.cache(value: data, for: photoReference.id)
+                
+                DispatchQueue.main.async {
+                    if self.collectionView.cellForItem(at: indexPath) == cell {
+                        cell.imageView.image = UIImage(data: data)
+                    }
+                }
+            }.resume()
+        }
     }
 }
 
