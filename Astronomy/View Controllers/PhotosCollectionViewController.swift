@@ -18,9 +18,11 @@ class PhotosCollectionViewController: UIViewController {
     // MARK: - Properties
     private let client = MarsRoverClient()
     var cache = Cache<Int, Data>()
+    private let photoFetchQueue = OperationQueue()
+    private var fetchOperationsDictionary = [Int : FetchPhotoOperation]()
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[105]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
@@ -59,26 +61,32 @@ class PhotosCollectionViewController: UIViewController {
     // MARK: - Private
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         let photoReference = photoReferences[indexPath.item]
-        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
         
         if cache.contains(photoReference.id) {
             guard let data = cache.value(for: photoReference.id) else { return }
             cell.imageView.image = UIImage(data: data)
         } else {
-            URLSession.shared.dataTask(with: imageURL) { data, _, error in
-                if let _ = error {
-                    return
-                }
-                
-                guard let data = data else { return }
+            let photoFetchOperation = FetchPhotoOperation(reference: photoReference)
+            
+            let cacheOperation = BlockOperation {
+                guard let data = photoFetchOperation.imageData else { return }
                 self.cache.cache(value: data, for: photoReference.id)
-                
-                DispatchQueue.main.async {
-                    if self.collectionView.cellForItem(at: indexPath) == cell {
-                        cell.imageView.image = UIImage(data: data)
-                    }
+            }
+            
+            let updateUIOperation = BlockOperation {
+                if self.collectionView.cellForItem(at: indexPath) == cell {
+                    guard let data = photoFetchOperation.imageData else { return }
+                    cell.imageView.image = UIImage(data: data)
+                    self.collectionView.reloadItems(at: [indexPath])
                 }
-            }.resume()
+            }
+            
+            cacheOperation.addDependency(photoFetchOperation)
+            updateUIOperation.addDependency(photoFetchOperation)
+            
+            photoFetchQueue.addOperations([photoFetchOperation, cacheOperation], waitUntilFinished: false)
+            OperationQueue.main.addOperation(updateUIOperation)
+            fetchOperationsDictionary[photoReference.id] = photoFetchOperation
         }
     }
 }
@@ -119,5 +127,10 @@ extension PhotosCollectionViewController: UICollectionViewDataSource, UICollecti
     // Add margins to the left and right side
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        fetchOperationsDictionary[photoReference.id]?.cancel()
     }
 }
