@@ -10,6 +10,8 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    let cache = Cache<Int, Data>()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -66,30 +68,28 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoReference = photoReferences[indexPath.item]
         guard let url = photoReference.imageURL.usingHTTPS else { return }
-        URLSession.shared.dataTask(with: url) { (data, _, error) in
-            let origIndexPath = indexPath
-            if let error = error {
-                print(error)
-                return
-            }
-            guard let data = data else {
-                print("No data")
-                return
-            }
-            guard let image = UIImage(data: data) else { return }
-            
-            if indexPath == origIndexPath {
-                guard let cell = cell as? ImageCollectionViewCell else {
-                    print("invalid cell")
+        if let item = cache.value(for: indexPath.item) {
+            cell.imageView.image = UIImage(data: item)
+        } else {
+            URLSession.shared.dataTask(with: url) { (data, _, error) in
+                let origIndexPath = indexPath
+                if let error = error {
+                    print(error)
                     return
                 }
-                DispatchQueue.main.async {
-                    cell.imageView.image = image
+                guard let data = data else {
+                    print("No data")
+                    return
                 }
-            }
-        }.resume()
-        
-        // TODO: Implement image loading here
+                self.cache.cache(value: data, for: indexPath.item)
+                guard let image = UIImage(data: data) else { return }
+                if indexPath == origIndexPath {
+                    DispatchQueue.main.async {
+                        cell.imageView.image = image
+                    }
+                }
+            }.resume()
+        }
     }
     
     // Properties
