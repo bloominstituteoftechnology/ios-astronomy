@@ -71,24 +71,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         if let item = cache.value(for: indexPath.item) {
             cell.imageView.image = UIImage(data: item)
         } else {
-            URLSession.shared.dataTask(with: url) { (data, _, error) in
-                let origIndexPath = indexPath
-                if let error = error {
-                    print(error)
-                    return
-                }
-                guard let data = data else {
-                    print("No data")
-                    return
-                }
-                self.cache.cache(value: data, for: indexPath.item)
-                guard let image = UIImage(data: data) else { return }
-                if indexPath == origIndexPath {
-                    DispatchQueue.main.async {
-                        cell.imageView.image = image
-                    }
-                }
-            }.resume()
+            
         }
     }
     

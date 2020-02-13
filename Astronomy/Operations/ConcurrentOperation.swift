@@ -17,6 +17,41 @@ class ConcurrentOperation: Operation {
     }
     
     // MARK: Properties
+    var photoRef: MarsPhotoReference
+    var imageData: Data?
+    private var dataTask: URLSessionDataTask {
+        return URLSession.shared.dataTask(with: photoRef.imageURL) { (data, _, error) in
+            
+            defer { self.state = .isFinished }
+            
+            if let error = error {
+                print(error)
+                return
+            }
+            guard let data = data else {
+                print("No data")
+                return
+            }
+            DispatchQueue.main.async {
+                self.imageData = data
+            }
+        }
+    }
+    
+    // MARK: - init
+    init(ref: MarsPhotoReference) {
+        self.photoRef = ref
+    }
+    
+    override func start() {
+        state = .isExecuting
+        dataTask.resume()
+    }
+    
+    override func cancel() {
+        //state = .isFinished
+        dataTask.cancel()
+    }
     
     private var _state = State.isReady
     
