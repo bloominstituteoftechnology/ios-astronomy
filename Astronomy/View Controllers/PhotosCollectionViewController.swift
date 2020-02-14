@@ -9,8 +9,40 @@
 import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+    //=======================
+    // MARK: - IBOutlets
+    @IBOutlet var collectionView: UICollectionView!
     
-    let cache = Cache<Int, Data>()
+    //=======================
+    // MARK: - Properties
+    private let cache = Cache<Int, Data>()
+    private let photoFetchQueue = OperationQueue()
+    private let client = MarsRoverClient()
+    private var operations = [Int : Operation]()
+    
+    private var roverInfo: MarsRover? {
+        didSet {
+            solDescription = roverInfo?.solDescriptions[3]
+        }
+    }
+    
+    private var solDescription: SolDescription? {
+        didSet {
+            if let rover = roverInfo,
+                let sol = solDescription?.sol {
+                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
+                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
+                    self.photoReferences = photoRefs ?? []
+                }
+            }
+        }
+    }
+    
+    private var photoReferences = [MarsPhotoReference]() {
+        didSet {
+            DispatchQueue.main.async { self.collectionView?.reloadData() }
+        }
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,8 +57,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     
-    // UICollectionViewDataSource/Delegate
-    
+    //=======================
+    // MARK: - UICollectionViewDataSource/Delegate
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         return 1
     }
@@ -41,6 +73,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         loadImage(forCell: cell, forItemAt: indexPath)
         
         return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoRef = photoReferences[indexPath.item]
+        operations[photoRef.id]?.cancel()
     }
     
     // Make collection view cells fill as much available width as possible
@@ -62,44 +99,40 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    //=======================
     // MARK: - Private
-    
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
         let photoReference = photoReferences[indexPath.item]
-        guard let url = photoReference.imageURL.usingHTTPS else { return }
-        if let item = cache.value(for: indexPath.item) {
-            cell.imageView.image = UIImage(data: item)
+        
+        if let imageData = cache.value(for: photoReference.id),
+            let image = UIImage(data:imageData) {
+            cell.imageView.image = image
         } else {
-            
-        }
-    }
-    
-    // Properties
-    
-    private let client = MarsRoverClient()
-    
-    private var roverInfo: MarsRover? {
-        didSet {
-            solDescription = roverInfo?.solDescriptions[3]
-        }
-    }
-    private var solDescription: SolDescription? {
-        didSet {
-            if let rover = roverInfo,
-                let sol = solDescription?.sol {
-                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
-                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
-                    self.photoReferences = photoRefs ?? []
+            let fetchOp = PhotoFetchOperation(ref: photoReference)
+            let cacheOp = BlockOperation {
+                if let data = fetchOp.imageData {
+                    self.cache.cache(value: data, for: photoReference.id)
                 }
             }
-        }
-    }
-    private var photoReferences = [MarsPhotoReference]() {
-        didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
+            
+            let setImgOp = BlockOperation {
+                DispatchQueue.main.async {
+                    if let imageData = fetchOp.imageData {
+                        cell.imageView.image = UIImage(data: imageData)
+                    }
+                }
+            }
+            cacheOp.addDependency(fetchOp)
+            setImgOp.addDependency(fetchOp)
+            
+            photoFetchQueue.addOperations([
+                fetchOp,
+                cacheOp
+            ], waitUntilFinished: false)
+            
+            OperationQueue.main.addOperation(setImgOp)
+            operations[photoReference.id] = fetchOp
         }
     }
     
-    @IBOutlet var collectionView: UICollectionView!
 }
