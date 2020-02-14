@@ -10,6 +10,12 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    let cache = Cache<Int, Data>()
+    
+    private let photoFetchQueue = OperationQueue()
+    
+    var operation: [Int : Operation] = [:]
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -38,7 +44,15 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         loadImage(forCell: cell, forItemAt: indexPath)
         
+        
         return cell
+    }
+    
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        let key = photoReference.id
+        operation[key]?.cancel()
     }
     
     // Make collection view cells fill as much available width as possible
@@ -63,11 +77,64 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        let key = photoReference.id
         
-        // let photoReference = photoReferences[indexPath.item]
-        
-        // TODO: Implement image loading here
+        if let cachedData = cache.value(for: key) {
+            let image = UIImage(data: cachedData)
+            cell.imageView.image = image
+        } else {
+            let fetchImage = FetchPhotoOperation(reference: photoReference)
+            let storeCacheData = BlockOperation {
+                if let data = fetchImage.imageData {
+                    self.cache.cache(value: data, for: key)
+                }
+            }
+                       
+            let setCellImage = BlockOperation {
+                if let imageData = fetchImage.imageData {
+                    cell.imageView.image = UIImage(data: imageData)
+                }
+            }
+            storeCacheData.addDependency(fetchImage)
+            setCellImage.addDependency(fetchImage)
+            photoFetchQueue.addOperations([fetchImage, storeCacheData], waitUntilFinished: false)
+            OperationQueue.main.addOperation(setCellImage)
+            
+            operation[key] = fetchImage
+        }
     }
+        
+        
+//        guard let request = photoReference.imageURL.usingHTTPS else { return }
+//        let key = photoReference.id
+//        if let cachedData = cache.value(for: key),
+//            let image = UIImage(data: cachedData) {
+//            cell.imageView.image = image
+//        } else {
+//            URLSession.shared.dataTask(with: request) { data, _, error in
+//                if let error = error {
+//                    NSLog("Error retrieving photo from server. \(error)")
+//                    return
+//                }
+//                guard let data = data else {
+//                    NSLog("Error bad data")
+//                    return
+//                }
+//                self.cache.cache(value: data, for: key)
+//                let image = UIImage(data: data)
+//                DispatchQueue.main.async {
+//                    if cell == self.collectionView.cellForItem(at: indexPath) {
+//                        DispatchQueue.main.async {
+//                            cell.imageView.image = image
+//                        }
+//                    } else {
+//                        return
+//                    }
+//                }
+//            }.resume()
+//        }
+//    }
     
     // Properties
     
@@ -75,7 +142,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
