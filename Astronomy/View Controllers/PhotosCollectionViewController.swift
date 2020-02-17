@@ -67,6 +67,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
+        // DONT TELL ME WHAT TO DO
     }
     
     // Properties
