@@ -94,11 +94,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return CGSize(width: width, height: width)
     }
     
-    // Add margins to the left and right side
+    /// Add margins to the left and right side
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    /// Called when an item scrolls off screen. Gets fetch operation and cancels it
     func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
         let photoReference = photoReferences[indexPath.item]
         let key = photoReference.id
@@ -107,6 +108,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // MARK: - Private
     
+    /// Loads images using 3 operations: Fetch, Cache, and Complete
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
