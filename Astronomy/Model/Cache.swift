@@ -16,7 +16,7 @@ class Cache<Key: Hashable, Value> {
      
     private let queue = DispatchQueue(label: "Serial Queue")
     
-    /// Adds items to cache
+    /// Adds items to cache (setting of value occurs on the queue)
     func cache(value: Value, for key: Key) {
         queue.async {
             self.dictionary[key] = value
