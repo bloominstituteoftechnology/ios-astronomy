@@ -97,7 +97,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         // TODO: Implement image loading here
         // DONT TELL ME WHAT TO DO
-        
+        // new comment
         let key = photoReference.id
         
         if let cachedData = cache.value(for: key) {
