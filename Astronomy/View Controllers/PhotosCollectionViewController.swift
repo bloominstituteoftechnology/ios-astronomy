@@ -68,12 +68,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let referenceURL = photoReference.imageURL.usingHTTPS
         
         guard let imageURL = referenceURL else { return }
+        
         guard !cache.keys.contains(photoReference.id) else {
             cell.imageView.image = UIImage(data: cache[photoReference.id] ?? Data())
             
             return }
-        
-        
         
         URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
             if let error = error {
@@ -84,18 +83,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 NSLog("No data returned")
                 return
             }
-            
             let image = UIImage(data: data)
             
             DispatchQueue.main.async {
                 cell.imageView.image = image
                 self.cache[photoReference.id] = data
             }
-            
         }.resume()
-        
-        
-     
     }
     
     // Properties
@@ -126,4 +120,5 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     @IBOutlet var collectionView: UICollectionView!
+    
 }
