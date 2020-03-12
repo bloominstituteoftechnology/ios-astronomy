@@ -64,9 +64,17 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
+        // Abstract of the photo
         let photoReference = photoReferences[indexPath.item]
+        // URL
         guard let url = photoReference.imageURL.usingHTTPS else { return }
-        URLSession.shared.dataTask(with: url) { (data, _, error) in
+        // if photo in cache, set cell.imageView.image to new UIImage made from photo data
+        if let photo = cache.value(for: indexPath.item) {
+            cell.imageView.image = UIImage(data: photo)
+        }
+        // Pull the data from the net
+        else {
+            URLSession.shared.dataTask(with: url) { (data, _, error) in
             let originalIndex = indexPath
             if let error = error {
                 print(error)
@@ -76,13 +84,19 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 print("No Data!")
                 return
             }
+            // Cache the new image
+            self.cache.cache(value: data, for: indexPath.item)
+            // unwrap potential new image
             guard let image = UIImage(data: data) else { return }
+                
             
+            // If Cell hasn't been resused
             if originalIndex == indexPath {
                 guard let cell = cell as? ImageCollectionViewCell else {
                     print("The cell was reused!")
                     return
                 }
+                // Set cell.imageView.image to "image"
                 DispatchQueue.main.async{
                     cell.imageView.image = image
                 }
@@ -93,8 +107,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         // TODO: Implement image loading here
     }
+    }
     
     // Properties
+    
+    let cache = Cache <Int, Data> ()
     
     private let client = MarsRoverClient()
     
