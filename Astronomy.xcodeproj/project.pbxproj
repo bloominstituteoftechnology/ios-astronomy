@@ -20,6 +20,8 @@
 		9DBD20322140DE100047905E /* URL+Secure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DBD20312140DE100047905E /* URL+Secure.swift */; };
 		9DBD20342140DF1D0047905E /* PhotosCollectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DBD20332140DF1D0047905E /* PhotosCollectionViewController.swift */; };
 		9DBD20382140E46E0047905E /* ConcurrentOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DBD20362140E46E0047905E /* ConcurrentOperation.swift */; };
+		B5685769241ADD8C00443688 /* Cache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5685768241ADD8C00443688 /* Cache.swift */; };
+		B568576D241AFBE700443688 /* FetchPhotoOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B568576C241AFBE700443688 /* FetchPhotoOperation.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +40,8 @@
 		9DBD20312140DE100047905E /* URL+Secure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "URL+Secure.swift"; sourceTree = "<group>"; };
 		9DBD20332140DF1D0047905E /* PhotosCollectionViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotosCollectionViewController.swift; sourceTree = "<group>"; };
 		9DBD20362140E46E0047905E /* ConcurrentOperation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConcurrentOperation.swift; sourceTree = "<group>"; };
+		B5685768241ADD8C00443688 /* Cache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cache.swift; sourceTree = "<group>"; };
+		B568576C241AFBE700443688 /* FetchPhotoOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchPhotoOperation.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +82,7 @@
 				9DBD20352140E45D0047905E /* Operations */,
 				9DBD20302140DDCF0047905E /* Utilities */,
 				9DBD200F2140D1300047905E /* Assets.xcassets */,
+				B5685767241ADD5A00443688 /* Cache */,
 				9DBD201E2140D1AE0047905E /* Main.storyboard */,
 				9DBD20112140D1300047905E /* LaunchScreen.storyboard */,
 				9DBD20142140D1300047905E /* Info.plist */,
@@ -132,8 +137,17 @@
 			isa = PBXGroup;
 			children = (
 				9DBD20362140E46E0047905E /* ConcurrentOperation.swift */,
+				B568576C241AFBE700443688 /* FetchPhotoOperation.swift */,
 			);
 			path = Operations;
+			sourceTree = "<group>";
+		};
+		B5685767241ADD5A00443688 /* Cache */ = {
+			isa = PBXGroup;
+			children = (
+				B5685768241ADD8C00443688 /* Cache.swift */,
+			);
+			path = Cache;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -211,6 +225,8 @@
 				9DBD20322140DE100047905E /* URL+Secure.swift in Sources */,
 				9DBD201C2140D19D0047905E /* ImageCollectionViewCell.swift in Sources */,
 				9DBD20342140DF1D0047905E /* PhotosCollectionViewController.swift in Sources */,
+				B5685769241ADD8C00443688 /* Cache.swift in Sources */,
+				B568576D241AFBE700443688 /* FetchPhotoOperation.swift in Sources */,
 				9DBD20252140D30F0047905E /* MarsRover.swift in Sources */,
 				9DBD202A2140D35B0047905E /* MarsRoverClient.swift in Sources */,
 				9DBD20232140D30F0047905E /* SolDescription.swift in Sources */,
