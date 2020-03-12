@@ -11,12 +11,18 @@ import Foundation
 class Cache<Key: Hashable, Value> {
     
     private var dict: [Key: Value] = [:]
+    private var queue = DispatchQueue(label: "Thread Safer-er")
+    
     
     func cache(value: Value, for key: Key) {
-        dict[key] = value
+        queue.sync {
+            self.dict[key] = value
+        }
     }
     func value(for key: Key) -> Value?  {
+        queue.sync {
         return dict[key] ?? nil
+        }
     }
     
 }
