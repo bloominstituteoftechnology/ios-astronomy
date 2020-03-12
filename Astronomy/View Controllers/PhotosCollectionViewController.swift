@@ -65,37 +65,43 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        let referenceURL = photoReference.imageURL.usingHTTPS
         
-        guard let imageURL = referenceURL else { return }
-        
-        guard !cache.keys.contains(photoReference.id) else {
-            cell.imageView.image = UIImage(data: cache[photoReference.id] ?? Data())
+        if let image = cache.value(for: photoReference.id) {
+            cell.imageView.image = image
+        } else {
+            let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+            let saveToCacheOperation = BlockOperation {
+                guard let imageData = fetchPhotoOperation.imageData else { return }
+                guard let image = UIImage(data: imageData) else { return }
+                self.cache.cache(value: image,
+                                 for: photoReference.id)
+            }
+            let checkReuseOperation = BlockOperation {
+                if indexPath == self.collectionView.indexPath(for: cell) {
+                    guard let imageData = fetchPhotoOperation.imageData else { return }
+                    guard let image = UIImage(data: imageData) else { return }
+                    cell.imageView.image = image
+                }
+            }
             
-            return }
-        
-        URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
-            if let error = error {
-                NSLog("Error loading image URL: \(error)")
-                return
-            }
-            guard let data = data else {
-                NSLog("No data returned")
-                return
-            }
-            let image = UIImage(data: data)
+            saveToCacheOperation.addDependency(fetchPhotoOperation)
+            checkReuseOperation.addDependency(fetchPhotoOperation)
+            photoFetchQueue.addOperations([fetchPhotoOperation,
+                                           saveToCacheOperation],
+                                          waitUntilFinished: false)
+            OperationQueue.main.addOperation(checkReuseOperation)
             
-            DispatchQueue.main.async {
-                cell.imageView.image = image
-                self.cache[photoReference.id] = data
-            }
-        }.resume()
+            fetchResults[fetchPhotoOperation] = photoReference.id
+            
+        }
     }
     
     // Properties
     
     private let client = MarsRoverClient()
-    private var cache: [Int: Data] = [:]
+    private var cache: Cache<Int, UIImage> = Cache()
+    private let photoFetchQueue = OperationQueue()
+    private var fetchResults: [FetchPhotoOperation: Int] = [:]
     
     private var roverInfo: MarsRover? {
         didSet {
