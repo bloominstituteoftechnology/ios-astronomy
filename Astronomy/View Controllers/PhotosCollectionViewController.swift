@@ -10,6 +10,10 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    // MARK: - Variables
+    private let cache = Cache<Int, Data>()
+    
+    // MARK: - View LifeCycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -23,7 +27,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     
-    // UICollectionViewDataSource/Delegate
+    // MARK: - CollectionView DataSource
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         return 1
@@ -66,28 +70,30 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoReference = photoReferences[indexPath.item]
         guard let url = photoReference.imageURL.usingHTTPS else { return }
-        URLSession.shared.dataTask(with: url) { (data, _, error) in
-            if let error = error {
-                print(error)
-                return
-            }
-            
-            guard let data = data else {
-                print("Bad Data")
-                return
-            }
-            
-            guard let image = UIImage(data: data) else { return }
-            if indexPath == indexPath {
-                guard let cell = cell as? ImageCollectionViewCell else {
-                    print("Invalid")
+        if let item = cache.value(for: indexPath.item) {
+            cell.imageView.image = UIImage(data: item)
+        } else {
+            URLSession.shared.dataTask(with: url) { (data, _, error) in
+                if let error = error {
+                    print(error)
                     return
                 }
-                DispatchQueue.main.async {
-                    cell.imageView.image = image
+                
+                guard let data = data else {
+                    print("No data")
+                    return
                 }
-            }
-        }.resume()
+                
+                self.cache.cache(value: data, for: indexPath.item)
+                guard let image = UIImage(data: data) else { return }
+                if indexPath == indexPath {
+                    DispatchQueue.main.async {
+                        cell.imageView.image = image
+                    }
+                }
+                
+            }.resume()
+        }
     }
     
     // Properties
