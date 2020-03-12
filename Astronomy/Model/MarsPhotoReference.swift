@@ -6,7 +6,10 @@
 //  Copyright © 2018 Lambda School. All rights reserved.
 //
 
-import Foundation
+import UIKit
+
+
+
 
 struct MarsPhotoReference: Codable {
     let id: Int
@@ -15,6 +18,8 @@ struct MarsPhotoReference: Codable {
     let earthDate: Date
     
     let imageURL: URL
+    
+ 
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -39,4 +44,11 @@ struct MarsPhotoReference: Codable {
         return result
     }
 }
+
+
+
+
+
+
+
 

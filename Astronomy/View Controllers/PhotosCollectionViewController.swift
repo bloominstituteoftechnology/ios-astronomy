@@ -64,12 +64,25 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
+        
+        URLSession.shared.dataTask(with: photoReference.imageURL.usingHTTPS!) { (data, _, error) in
+            if let error = error  {
+                print(error.localizedDescription)
+                return
+            }
+            DispatchQueue.main.async {
+                   cell.imageView.image = UIImage(data: data!)
+            }
+         
+            
+        }.resume()
+        
     }
     
-    // Properties
+    //MARK:- Properties
     
     private let client = MarsRoverClient()
     
@@ -97,3 +110,5 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     @IBOutlet var collectionView: UICollectionView!
 }
+
+
