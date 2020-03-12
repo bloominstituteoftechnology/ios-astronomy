@@ -60,6 +60,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let index = photoReferences[indexPath.row]
+        guard let fetchResults = fetchResults[index.id] else { return }
+        fetchResults.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
@@ -91,8 +97,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                                           waitUntilFinished: false)
             OperationQueue.main.addOperation(checkReuseOperation)
             
-            fetchResults[fetchPhotoOperation] = photoReference.id
-            
+            fetchResults[photoReference.id] = fetchPhotoOperation
         }
     }
     
@@ -101,7 +106,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private let client = MarsRoverClient()
     private var cache: Cache<Int, UIImage> = Cache()
     private let photoFetchQueue = OperationQueue()
-    private var fetchResults: [FetchPhotoOperation: Int] = [:]
+    private var fetchResults: [Int: FetchPhotoOperation] = [:]
     
     private var roverInfo: MarsRover? {
         didSet {
