@@ -10,6 +10,35 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    private var photoReferences = [MarsPhotoReference]() {
+           didSet {
+               DispatchQueue.main.async { self.collectionView?.reloadData() }
+           }
+       }
+    let cache = Cache <Int, Data> ()
+    let photoFetchQueue = OperationQueue()
+    private let client = MarsRoverClient()
+    private var ops = [Int: Operation]()
+    private var roverInfo: MarsRover? {
+        didSet {
+            solDescription = roverInfo?.solDescriptions[105]
+        }
+    }
+    private var solDescription: SolDescription? {
+        didSet {
+            if let rover = roverInfo,
+            let sol = solDescription?.sol {
+                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
+                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
+                    self.photoReferences = photoRefs ?? []
+                }
+            }
+        }
+    }
+       
+    @IBOutlet var collectionView: UICollectionView!
+       
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -60,82 +89,59 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
-    // MARK: - Private
+
+    
+    
+    // MARK: - Properties
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // Abstract of the photo
         let photoReference = photoReferences[indexPath.item]
-        // URL
-        guard let url = photoReference.imageURL.usingHTTPS else { return }
-        // if photo in cache, set cell.imageView.image to new UIImage made from photo data
-        if let photo = cache.value(for: indexPath.item) {
-            cell.imageView.image = UIImage(data: photo)
+        
+        // Abstract of the photo
+        if let photo = cache.value(for: photoReference.id) {
+            let image = UIImage(data: photo)
+            cell.imageView.image = image
         }
         // Pull the data from the net
         else {
-            URLSession.shared.dataTask(with: url) { (data, _, error) in
-            let originalIndex = indexPath
-            if let error = error {
-                print(error)
-                return
-            }
-            guard let data = data else {
-                print("No Data!")
-                return
-            }
-            // Cache the new image
-            self.cache.cache(value: data, for: indexPath.item)
-            // unwrap potential new image
-            guard let image = UIImage(data: data) else { return }
-                
-            
-            // If Cell hasn't been resused
-            if originalIndex == indexPath {
-                guard let cell = cell as? ImageCollectionViewCell else {
-                    print("The cell was reused!")
-                    return
-                }
-                // Set cell.imageView.image to "image"
-                DispatchQueue.main.async{
-                    cell.imageView.image = image
+            let photoFetchOp = FetchPhotoOperation(reference: photoReference)
+            let cacheOperation = BlockOperation {
+                if let data = photoFetchOp.data {
+                    self.cache.cache(value: data, for: photoReference.id)
+                    
                 }
             }
+            let setImageQueue = BlockOperation {
+                DispatchQueue.main.async {
+                    if let data = photoFetchOp.data {
+                        cell.imageView.image = UIImage(data: data)
+                    }
+                }
+            }
+            cacheOperation.addDependency(photoFetchOp)
+            cacheOperation.addDependency(photoFetchOp)
             
-        }.resume()
-        
+            photoFetchQueue.addOperations ([
+            photoFetchOp, cacheOperation], waitUntilFinished: false)
+            
+            OperationQueue.main.addOperation(setImageQueue)
+            ops[photoReference.id] = photoFetchOp
         
         // TODO: Implement image loading here
     }
-    }
-    
-    // Properties
-    
-    let cache = Cache <Int, Data> ()
-    
-    private let client = MarsRoverClient()
-    
-    private var roverInfo: MarsRover? {
-        didSet {
-            solDescription = roverInfo?.solDescriptions[105]
-        }
-    }
-    private var solDescription: SolDescription? {
-        didSet {
-            if let rover = roverInfo,
-                let sol = solDescription?.sol {
-                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
-                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
-                    self.photoReferences = photoRefs ?? []
-                }
-            }
-        }
-    }
-    private var photoReferences = [MarsPhotoReference]() {
-        didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
-        }
-    }
-    
-    @IBOutlet var collectionView: UICollectionView!
 }
+   
+    
+    
+   
+    
+    
+    
+    
+    
+    
+    
+   
+}
+
