@@ -10,6 +10,8 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    let cache = Cache<Int, Data>()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -73,6 +75,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             return
         }
         
+        if let imageData = cache.value(for: photoReference.id) {
+            cell.imageView.image = UIImage(data: imageData)
+            return
+        }
+        
         URLSession.shared.dataTask(with: URL) { (data, response, error) in
             if let error = error {
                 NSLog("Error received from network: \(error)")
@@ -90,6 +97,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
             
             let image = UIImage(data: data)
+            self.cache.cache(value: data, for: photoReference.id)
             DispatchQueue.main.async {
 //                if self.collectionView.indexPath(for: cell) == indexPath {
                     cell.imageView.image = image
