@@ -68,6 +68,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let referenceURL = photoReference.imageURL.usingHTTPS
         
         guard let imageURL = referenceURL else { return }
+        guard !cache.keys.contains(photoReference.id) else {
+            cell.imageView.image = UIImage(data: cache[photoReference.id] ?? Data())
+            
+            return }
+        
+        
         
         URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
             if let error = error {
@@ -83,6 +89,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             
             DispatchQueue.main.async {
                 cell.imageView.image = image
+                self.cache[photoReference.id] = data
             }
             
         }.resume()
@@ -94,10 +101,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // Properties
     
     private let client = MarsRoverClient()
+    private var cache: [Int: Data] = [:]
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
