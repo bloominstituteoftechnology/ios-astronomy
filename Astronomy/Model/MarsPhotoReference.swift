@@ -8,19 +8,14 @@
 
 import UIKit
 
-
-
-
 struct MarsPhotoReference: Codable {
     let id: Int
     let sol: Int
     let camera: Camera
     let earthDate: Date
-    
     let imageURL: URL
     
  
-    
     enum CodingKeys: String, CodingKey {
         case id
         case sol

@@ -59,6 +59,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+      let photoReference = photoReferences[indexPath.item]
+        fetchOperations[photoReference.id]?.cancel()
+        print("Cancelling.")
+    }
     
     // MARK: - Private
     
@@ -71,27 +76,35 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         if let cachedImage = cache.value(for: photoReference.id) {
             cell.imageView.image = UIImage(data: cachedImage)
             return
-        } else {
-            URLSession.shared.dataTask(with: photoReference.imageURL.usingHTTPS!) { (data, _, error) in
-                
-                if let error = error  {
-                    print(error.localizedDescription)
-                    return
-                }
-                if let data = data {
-                    self.cache.cache(value: data, for: photoReference.id)
-                }
-                DispatchQueue.main.async {
-                    cell.imageView.image = UIImage(data: data!)
-                }
-       
-              
-                
-                
-            }.resume()
         }
+       let photoFetchOperation = PhotoFetchOperation(photoReference: photoReference) //1
         
+        let cacheOpration = BlockOperation { //2
+            if let data = photoFetchOperation.imageData {
+                self.cache.cache(value: data, for: photoReference.id)
+            }
+        }
+        let completionOperation = BlockOperation { //3
+             defer { self.fetchOperations.removeValue(forKey: photoReference.id) }
+            
+            if let currentIndexPath = self.collectionView.indexPath(for: cell), currentIndexPath != indexPath {
+                print("Cell has not been used")
+                return
+            }
+            
+            if let data = photoFetchOperation.imageData {
+                cell.imageView.image = UIImage(data: data)
+            }
+            
+        }
+        cacheOpration.addDependency(photoFetchOperation)
+        completionOperation.addDependency(photoFetchOperation)
         
+        photoFetchQueue.addOperation(photoFetchOperation)
+        photoFetchQueue.addOperation(cacheOpration)
+        OperationQueue.main.addOperation(completionOperation)
+        
+        fetchOperations[photoReference.id] = photoFetchOperation
         
         
     }
@@ -99,11 +112,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     //MARK:- Properties
     
     private let client = MarsRoverClient()
-      private let cache = Cache<Int, Data>()
-    
+    private let cache = Cache<Int, Data>()
+    private var photoFetchQueue = OperationQueue()
+    private var fetchOperations = [Int:Operation]()
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[25]
         }
     }
     private var solDescription: SolDescription? {
