@@ -64,14 +64,44 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
+        
+         if let cData = photoCache.value(for: photoReference.id) {
+            DispatchQueue.main.async {
+                guard let image = UIImage(data: cData) else { return }
+                cell.imageView.image = image
+            }
+        }
+        
+        guard let url = photoReference.imageURL.usingHTTPS else { return }
+        
+       
         
         // TODO: Implement image loading here
+               
+               URLSession.shared.dataTask(with: url) { (data, _, error) in
+
+                   if let error = error {
+                       print("Error within line 75 PhotoCollectionViewController: \(error)")
+                       return
+                   }
+                   guard let data = data else { return }
+                   guard let image = UIImage(data: data) else { return }
+                
+                DispatchQueue.main.async {
+                    //this is making sure we only are seeing the visible items
+                    let newIndex = self.collectionView.indexPathsForVisibleItems
+                    if newIndex.contains(indexPath) {
+                        cell.imageView.image = image
+                    }
+                }
+               }.resume()
     }
     
     // Properties
     
     private let client = MarsRoverClient()
+    let photoCache = Cache<Int, Data>()
     
     private var roverInfo: MarsRover? {
         didSet {
