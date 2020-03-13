@@ -11,6 +11,8 @@ import UIKit
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
     let cache = Cache<Int, Data>()
+    let photoFetchQueue = OperationQueue()
+    var imageLoadOperations: [Int: FetchPhotoOperation] = [:]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -68,45 +70,37 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
          let photoReference = photoReferences[indexPath.item]
         
+        
         // TODO: Implement image loading here
-        let url = photoReference.imageURL.usingHTTPS
-        guard let URL = url else {
-            print("invalid url")
-            return
+        
+        let loadOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+        let updateCacheOperation = BlockOperation {
+            if let data = loadOperation.imageData {
+                self.cache.cache(value: data, for: photoReference.id)
+            }
         }
         
-        if let imageData = cache.value(for: photoReference.id) {
-            cell.imageView.image = UIImage(data: imageData)
-            return
-        }
-        
-        URLSession.shared.dataTask(with: URL) { (data, response, error) in
-            if let error = error {
-                NSLog("Error received from network: \(error)")
-                return
-            }
+        let cellReuseOperation = BlockOperation {
             
-            if let response = response as? HTTPURLResponse, response.statusCode != 200 {
-                NSLog("Unsuccessful status code received, status code was: \(response.statusCode)")
-                return
-            }
-            
-            guard let data = data else {
-                NSLog("No data received")
-                return
-            }
-            
-            let image = UIImage(data: data)
-            self.cache.cache(value: data, for: photoReference.id)
-            DispatchQueue.main.async {
-//                if self.collectionView.indexPath(for: cell) == indexPath {
-                    cell.imageView.image = image
-//                }
+            if let currentIndexPath = self.collectionView.indexPath(for: cell), currentIndexPath != indexPath {
+                print("Got image for now-reused cell")
+                return // Cell has been reused
+                
                 
             }
             
-        }.resume()
+            if let data = self.cache.value(for: photoReference.id) {
+                cell.imageView.image = UIImage(data: data)
+                
+            }
+        }
         
+        updateCacheOperation.addDependency(loadOperation)
+        cellReuseOperation.addDependency(updateCacheOperation)
+        photoFetchQueue.addOperations([loadOperation, updateCacheOperation], waitUntilFinished: false)
+        OperationQueue.main.addOperation(cellReuseOperation)
+        
+        imageLoadOperations[photoReference.id] = loadOperation
         
         
     }
