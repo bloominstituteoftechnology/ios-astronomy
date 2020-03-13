@@ -81,7 +81,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
         
         let cellReuseOperation = BlockOperation {
-            
+            defer { self.imageLoadOperations.removeValue(forKey: photoReference.id) }
             if let currentIndexPath = self.collectionView.indexPath(for: cell), currentIndexPath != indexPath {
                 print("Got image for now-reused cell")
                 return // Cell has been reused
@@ -103,6 +103,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         imageLoadOperations[photoReference.id] = loadOperation
         
         
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.row]
+        let fetchOperation = imageLoadOperations[photoReference.id]
+        fetchOperation?.cancel()
     }
     
     // Properties
