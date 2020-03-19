@@ -60,6 +60,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReferenceID = photoReferences[indexPath.item].id
+        if let operation = fetchPhotoOperations[photoReferenceID] {
+            operation.cancel()
+        }
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
@@ -72,41 +79,35 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { cell.imageView.image = image }
             return
         }
+
+        let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
         
-        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
-        var image: UIImage!
-        let semaphore = DispatchSemaphore(value: 0)
-        
-        URLSession.shared.dataTask(with: imageURL) { data, _, error in
-            guard error == nil else {
-                print("Error fetching image from url: \(error!)")
-                return
+        let cacheStoreOperation = BlockOperation {
+            if let imageData = fetchPhotoOperation.imageData {
+                self.cache.cache(value: imageData, for: photoReference.id)
             }
-            
-            guard let data = data else {
-                print("No data returned by data task.")
-                return
-            }
-            
-            guard let imageFromData = UIImage(data: data) else {
-                print("Error decoding image data into UIImage.")
-                return
-            }
-            
-            image = imageFromData
-            semaphore.signal()
-            
-            self.cache.cache(value: data, for: photoReference.id)
-            
-        }.resume()
-        
-        semaphore.wait()
-        
-        if let currentIndexPath = self.collectionView.indexPath(for: cell) {
-            guard currentIndexPath == indexPath else { return }
         }
         
-        DispatchQueue.main.async { cell.imageView.image = image }
+        cacheStoreOperation.addDependency(fetchPhotoOperation)
+        
+        let setImageOperation = BlockOperation {
+            if let currentIndexPath = self.collectionView.indexPath(for: cell) {
+                guard currentIndexPath == indexPath else { return }
+            }
+            
+            if let imageData = fetchPhotoOperation.imageData,
+                let image = UIImage(data: imageData) {
+                DispatchQueue.main.async { cell.imageView.image = image }
+            }
+        }
+        
+        setImageOperation.addDependency(fetchPhotoOperation)
+        
+        fetchPhotoQueue.addOperations([fetchPhotoOperation, cacheStoreOperation], waitUntilFinished: false) // false = async
+        
+        OperationQueue.main.addOperations([setImageOperation], waitUntilFinished: false)
+
+        fetchPhotoOperations[photoReference.id] = fetchPhotoOperation
     }
     
     // Properties
@@ -135,7 +136,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     
-    var cache = Cache<Int, Data>()
+    private var cache = Cache<Int, Data>()
+    
+    private let fetchPhotoQueue = OperationQueue()
+    
+    private var fetchPhotoOperations = [Int:Operation]()
     
     @IBOutlet var collectionView: UICollectionView!
 }

@@ -18,7 +18,6 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     private lazy var dataTask: URLSessionDataTask? = {
         guard let imageURL = marsPhotoReference.imageURL.usingHTTPS else { return nil }
-        //let semaphore = DispatchSemaphore(value: 0)
 
         return URLSession.shared.dataTask(with: imageURL) { data, _, error in
             defer { self.state = .isFinished }
@@ -26,7 +25,6 @@ class FetchPhotoOperation: ConcurrentOperation {
             guard let data = data else { print("No data returned by data task."); return }
             
             self.imageData = data
-            //semaphore.signal()
         }
     }()
     
