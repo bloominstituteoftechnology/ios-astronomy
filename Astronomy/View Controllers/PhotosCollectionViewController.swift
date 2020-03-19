@@ -66,10 +66,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoReference = photoReferences[indexPath.item]
         
-        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
-        //let request = URLRequest(url: imageURL)
-        //request.httpMethod = HTTPMethod.get.rawValue
+        if let imageData = cache.value(for: photoReference.id),
+            let image = UIImage(data: imageData) {
+            // Load image from cache
+            DispatchQueue.main.async { cell.imageView.image = image }
+            return
+        }
         
+        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
         var image: UIImage!
         let semaphore = DispatchSemaphore(value: 0)
         
@@ -85,13 +89,15 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
             
             guard let imageFromData = UIImage(data: data) else {
-                print("Error decoding image data from url.")
+                print("Error decoding image data into UIImage.")
                 return
             }
             
             image = imageFromData
-            
             semaphore.signal()
+            
+            self.cache.cache(value: data, for: photoReference.id)
+            
         }.resume()
         
         semaphore.wait()
@@ -100,9 +106,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             guard currentIndexPath == indexPath else { return }
         }
         
-        DispatchQueue.main.async {
-            cell.imageView.image = image
-        }
+        DispatchQueue.main.async { cell.imageView.image = image }
     }
     
     // Properties
@@ -130,6 +134,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    
+    var cache = Cache<Int, Data>()
     
     @IBOutlet var collectionView: UICollectionView!
 }
