@@ -15,6 +15,7 @@ struct MarsPhotoReference: Codable {
     let earthDate: Date
     
     let imageURL: URL
+    // TODO: For each photo reference, load the actual image data using the photo reference's imageURL property. (You need to do this.)
     
     enum CodingKeys: String, CodingKey {
         case id
