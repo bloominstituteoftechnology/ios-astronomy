@@ -62,16 +62,50 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // MARK: - Private
     
-    private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+    private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt requestedIndexPath: IndexPath) {
+        let photoReference = photoReferences[requestedIndexPath.item]
+          
+            if let cachedImage = cache.value(for: photoReference.id) {
+                cell.imageView.image = cachedImage
+                return
+            }
         
-        // let photoReference = photoReferences[indexPath.item]
+            let fetchOp = FetchPhotoOperation(photoReference: photoReference)
+            let processImageOp = BlockOperation {
         
-        // TODO: Implement image loading here
-    }
+                defer { self.operations.removeValue(forKey: photoReference.id) }
+
+                guard let data = fetchOp.imageData,
+                    let imageFromData = UIImage(data: data) else {
+                    return
+                }
+
+                let filteredImage = imageFromData.filtered()
+                self.cache.cache(value: filteredImage, for: photoReference.id)
+                DispatchQueue.main.async {
+                   
+                    if let visibleIndexPath = self.collectionView?.indexPath(for: cell), // 8
+                        visibleIndexPath != requestedIndexPath { // 0
+                         
+                        return
+                    }
+
+                    cell.imageView.image = filteredImage
+                }
+            }
+            
+            processImageOp.addDependency(fetchOp)
+            photoFetchQueue.addOperation(fetchOp)
+            photoFetchQueue.addOperation(processImageOp)
+            operations[photoReference.id] = fetchOp
+        }
     
     // Properties
     
     private let client = MarsRoverClient()
+    private let cache = Cache<Int, UIImage>()
+    private let photoFetchQueue = OperationQueue()
+    private var operations = [Int : Operation]()
     
     private var roverInfo: MarsRover? {
         didSet {

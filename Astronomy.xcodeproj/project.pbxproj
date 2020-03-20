@@ -77,10 +77,7 @@
 				9DBD202B2140D3600047905E /* Networking */,
 				9DBD20352140E45D0047905E /* Operations */,
 				9DBD20302140DDCF0047905E /* Utilities */,
-				9DBD200F2140D1300047905E /* Assets.xcassets */,
-				9DBD201E2140D1AE0047905E /* Main.storyboard */,
-				9DBD20112140D1300047905E /* LaunchScreen.storyboard */,
-				9DBD20142140D1300047905E /* Info.plist */,
+				BAAED9D02424537700D81ADE /* Resources */,
 			);
 			path = Astronomy;
 			sourceTree = "<group>";
@@ -134,6 +131,17 @@
 				9DBD20362140E46E0047905E /* ConcurrentOperation.swift */,
 			);
 			path = Operations;
+			sourceTree = "<group>";
+		};
+		BAAED9D02424537700D81ADE /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9DBD200F2140D1300047905E /* Assets.xcassets */,
+				9DBD201E2140D1AE0047905E /* Main.storyboard */,
+				9DBD20112140D1300047905E /* LaunchScreen.storyboard */,
+				9DBD20142140D1300047905E /* Info.plist */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
