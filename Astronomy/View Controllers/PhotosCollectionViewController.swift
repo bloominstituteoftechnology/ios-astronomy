@@ -9,6 +9,8 @@
 import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+///    Add a cache proeprty to PhotosCollectionViewController. Its keys should be Ints as you'll use MarsPhotoReference ids for the keys. Its values should be Data objects, as you'll be caching image data. (You could also cache UIImages directly.)
+    let cache = Cache<Int, Data>()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -77,6 +79,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             print("invalid url")
             return
         }
+///        In your PhotosCollectionViewController.loadImage(forCell:, forItemAt:) method, before starting a data task, first check to see if the cache already contains data for the given photo reference's id. If it exists, set the cell's image immediately without doing a network request.
+        if let imageData = cache.value(for: photoReference.id){
+            cell.imageView.image = UIImage(data: imageData)
+            return
+        }
+        
         
 ///        Create and run a data task to load the image data from the imageURL.
         URLSession.shared.dataTask(with: URL) { (data, response, error) in
@@ -101,6 +109,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 ///            If the cell hasn't been reused, set its imageView's image to the UIImage you just created.
 ///            Make sure you do all UIKit API calls on the main queue.
             let image = UIImage(data: data)
+///            In your network request completion handler, save the just-received image data to the cache so it is available later.
+            self.cache.cache(value: data, for: photoReference.id)
+            
             DispatchQueue.main.async {
                 cell.imageView.image = image
             }
