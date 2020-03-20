@@ -9,8 +9,10 @@
 import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
-///    Add a cache proeprty to PhotosCollectionViewController. Its keys should be Ints as you'll use MarsPhotoReference ids for the keys. Its values should be Data objects, as you'll be caching image data. (You could also cache UIImages directly.)
+    
     let cache = Cache<Int, Data>()
+    private var photoFetchQueue = OperationQueue()
+    var storedFetchOperations: [Int : FetchPhotoOperation] = [:]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -66,59 +68,47 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-///        Get the MarsPhotoReference instance for the passed in indexPath from the photoReferences array property.
-         let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
+        if let photoData = cache.value(for: photoReference.id),
+            let image = UIImage(data: photoData) {
+            cell.imageView.image = image
+        }
         // TODO: Implement image loading here
         
+        let fetchImageOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
         
-///        Get the URL for the associated image using the imageURL property. Use .usingHTTPS (provided in URL+Secure.swift) to make sure the URL is an https URL. By default, the API returns http URLs.
-        let url = photoReference.imageURL.usingHTTPS
-        
-        guard let URL = url else {
-            print("invalid url")
-            return
-        }
-///        In your PhotosCollectionViewController.loadImage(forCell:, forItemAt:) method, before starting a data task, first check to see if the cache already contains data for the given photo reference's id. If it exists, set the cell's image immediately without doing a network request.
-        if let imageData = cache.value(for: photoReference.id){
-            cell.imageView.image = UIImage(data: imageData)
-            return
+        let cacheOperation = BlockOperation {
+            if let data = fetchImageOperation.imageData {
+                self.cache.cache(value: data, for: photoReference.id)
+            }
         }
         
-        
-///        Create and run a data task to load the image data from the imageURL.
-        URLSession.shared.dataTask(with: URL) { (data, response, error) in
-            
-///            In the data task's completion handler, check for an error, and return early if there is one. Otherwise, create a UIImage from the received data.
-            if let error = error {
-                print("Error fetching data: \(error)")
+        let cellReuseOperation = BlockOperation {
+            if self.collectionView.indexPath(for: cell) != indexPath {
                 return
-            }
-            
-            guard let data = data else {
-                NSLog("No data returned from data task.")
-                return
-            }
-            
-            if let response =
-                response as? HTTPURLResponse,
-                response.statusCode != 200 {
-                NSLog("Unsuccessful response code is not 200, code returned is \(response.statusCode)")
-            }
-///            Important: Check to see if the current index path for cell is the same one you were asked to load. If not, this means that that item has scrolled off screen and the UICollectionViewCell instance has been reused for a different index path. If this happens, abort setting the image.
-///            If the cell hasn't been reused, set its imageView's image to the UIImage you just created.
-///            Make sure you do all UIKit API calls on the main queue.
-            let image = UIImage(data: data)
-///            In your network request completion handler, save the just-received image data to the cache so it is available later.
-            self.cache.cache(value: data, for: photoReference.id)
-            
-            DispatchQueue.main.async {
+            } else {
+                guard let data = fetchImageOperation.imageData else { return }
+                let image = UIImage(data: data)
                 cell.imageView.image = image
             }
-            
-        }.resume()
+        }
+        cacheOperation.addDependency(fetchImageOperation)
+        cellReuseOperation.addDependency(cacheOperation)
+        photoFetchQueue.addOperations(
+            [fetchImageOperation, cacheOperation], waitUntilFinished: false
+        )
+        OperationQueue.main.addOperations([cellReuseOperation], waitUntilFinished: false)
+        storedFetchOperations[photoReference.id] = fetchImageOperation
         
     }
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        storedFetchOperations[photoReferences[indexPath.item].id]?.cancel()
+//        let photoReference = photoReferences[indexPath.row]
+//        let fetchOperation = storedFetchOperations[photoReference.id]
+//        fetchOperation?.cancel()
+    }
+    
     
     // Properties
     
