@@ -80,17 +80,16 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                     return
                 }
 
-                let filteredImage = imageFromData.filtered()
-                self.cache.cache(value: filteredImage, for: photoReference.id)
+                self.cache.cache(value: imageFromData, for: photoReference.id)
                 DispatchQueue.main.async {
                    
-                    if let visibleIndexPath = self.collectionView?.indexPath(for: cell), // 8
-                        visibleIndexPath != requestedIndexPath { // 0
+                    if let visibleIndexPath = self.collectionView?.indexPath(for: cell),
+                        visibleIndexPath != requestedIndexPath {
                          
                         return
                     }
 
-                    cell.imageView.image = filteredImage
+                    cell.imageView.image = imageFromData
                 }
             }
             
