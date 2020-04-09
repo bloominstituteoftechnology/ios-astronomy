@@ -62,6 +62,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // MARK: - Private
     
+    private var opDic: [Int : BlockOperation] = [ : ]
+    
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
          let photoReference = photoReferences[indexPath.item]
@@ -77,14 +79,37 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             self.cache.cache(value: fetchOp.imageData!, for: photoReference.id)
         }
         storeCache.addDependency(fetchOp)
-        let reuseCheck = BlockOperation {
-            if let existingData = self.cache.value(for: photoReference.id) {
-                let newImage = UIImage(data: existingData)
-                cell.imageView.image = newImage
-                return
+        
+        
+        let lastOp = BlockOperation {
+            DispatchQueue.main.async {
+                let checkCell = self.collectionView?.cellForItem(at: indexPath) as? ImageCollectionViewCell
+                let newImage: UIImage
+                if let existingData = self.cache.value(for: photoReference.id) {
+                    newImage = UIImage(data: existingData)!
+                } else {
+                    newImage = UIImage(data: fetchOp.imageData!)!
+                }
+                if  checkCell == cell {
+                    checkCell?.imageView.image = newImage
+                }
             }
         }
-        reuseCheck.addDependency(fetchOp)
+//        let reuseCheck = BlockOperation {
+//
+//
+//        }
+//        reuseCheck.addDependency(fetchOp)
+//        let completionOp = BlockOperation {
+//            if let existingData = self.cache.value(for: photoReference.id) {
+//                let newImage = UIImage(data: existingData)
+//                cell.imageView.image = newImage
+//                return
+//            }
+//        }
+        
+        OperationQueue().addOperations([fetchOp, storeCache, lastOp], waitUntilFinished: true)
+        
         
 //        URLSession.shared.dataTask(with: request) { d, r, e in
 //            if let error = e {
