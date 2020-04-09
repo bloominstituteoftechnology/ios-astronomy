@@ -12,10 +12,10 @@ class Cache<Key: Hashable, Value> {
     private var dict: [Key: Value] = [:]
     
     func cache(value: Value, for: Key) {
-        // FIXME: Implement
+        dict[`for`] = value
     }
 
-    func value(for: Key) {
-        // FIXME: Implement
+    func value(for: Key) -> Value? {
+        return dict[`for`]
     }
 }
