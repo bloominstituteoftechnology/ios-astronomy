@@ -10,8 +10,36 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    // Properties
+    
+    private let client = MarsRoverClient()
+    
+    private var roverInfo: MarsRover? {
+        didSet {
+            solDescription = roverInfo?.solDescriptions[3]
+        }
+    }
+    private var solDescription: SolDescription? {
+        didSet {
+            if let rover = roverInfo,
+                let sol = solDescription?.sol {
+                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
+                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
+                    self.photoReferences = photoRefs ?? []
+                }
+            }
+        }
+    }
+    private var photoReferences = [MarsPhotoReference]() {
+        didSet {
+            DispatchQueue.main.async { self.collectionView?.reloadData() }
+        }
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        print("no")
         
         client.fetchMarsRover(named: "curiosity") { (rover, error) in
             if let error = error {
@@ -36,7 +64,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
         
+        print("ITS ABOUT TO LOAD IMAGE")
         loadImage(forCell: cell, forItemAt: indexPath)
+        print("OK ITS LOADED")
         
         return cell
     }
@@ -64,35 +94,38 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
-    }
-    
-    // Properties
-    
-    private let client = MarsRoverClient()
-    
-    private var roverInfo: MarsRover? {
-        didSet {
-            solDescription = roverInfo?.solDescriptions[3]
-        }
-    }
-    private var solDescription: SolDescription? {
-        didSet {
-            if let rover = roverInfo,
-                let sol = solDescription?.sol {
-                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
-                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
-                    self.photoReferences = photoRefs ?? []
+        
+        let session = URLSession(configuration: .default)
+
+        session.dataTask(with: photoReference.imageURL.usingHTTPS!) { (data, response, error) in
+            if let error = error {
+                print("Error downloading picture: \(error)")
+                return
+            } else {
+                if let response = response as? HTTPURLResponse {
+                    if let imageData = data {
+                        let image = UIImage(data: imageData)
+                        
+                        DispatchQueue.main.async {
+                            if self.collectionView.indexPath(for: cell) == indexPath {
+                                cell.imageView.image = image
+                            } else {
+                                print("WRONG INDEXPATH")
+                            }
+                        }
+                        
+                    } else {
+                        print("No image available")
+                    }
+                } else {
+                    print("Couldn't get response code")
                 }
             }
-        }
-    }
-    private var photoReferences = [MarsPhotoReference]() {
-        didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
-        }
+        }.resume()
+        
     }
     
     @IBOutlet var collectionView: UICollectionView!
