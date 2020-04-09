@@ -68,37 +68,49 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
 //         TODO: Implement image loading here
         
-        let request = photoReference.imageURL.usingHTTPS!
+//        let request = photoReference.imageURL.usingHTTPS!
         
-        if let existingData = cache.value(for: photoReference.id) {
-            let newImage = UIImage(data: existingData)
-            cell.imageView.image = newImage
-            return
+        
+        
+        let fetchOp = FetchPhotoOperation(marsReference: photoReference)
+        let storeCache = BlockOperation {
+            self.cache.cache(value: fetchOp.imageData!, for: photoReference.id)
         }
-        
-        URLSession.shared.dataTask(with: request) { d, r, e in
-            if let error = e {
-                NSLog("Error connecting to mars: \(error)")
+        storeCache.addDependency(fetchOp)
+        let reuseCheck = BlockOperation {
+            if let existingData = self.cache.value(for: photoReference.id) {
+                let newImage = UIImage(data: existingData)
+                cell.imageView.image = newImage
                 return
             }
-            
-            if let data = d {
-                self.cache.cache(value: data, for: photoReference.id)
-                let newImage = UIImage(data: data)
-                DispatchQueue.main.async {
-                    let checkCell = self.collectionView?.cellForItem(at: indexPath) as? ImageCollectionViewCell
-                    if  checkCell == cell {
-                        checkCell?.imageView.image = newImage
-                    }
-                }
-                
-            }
-            
-        }.resume()
+        }
+        reuseCheck.addDependency(fetchOp)
+        
+//        URLSession.shared.dataTask(with: request) { d, r, e in
+//            if let error = e {
+//                NSLog("Error connecting to mars: \(error)")
+//                return
+//            }
+//
+//            if let data = d {
+//                self.cache.cache(value: data, for: photoReference.id)
+//                let newImage = UIImage(data: data)
+//                DispatchQueue.main.async {
+//                    let checkCell = self.collectionView?.cellForItem(at: indexPath) as? ImageCollectionViewCell
+//                    if  checkCell == cell {
+//                        checkCell?.imageView.image = newImage
+//                    }
+//                }
+//
+//            }
+//
+//        }.resume()
         
     }
     
     // Properties
+    
+    private var photoFetchQueue = OperationQueue()
     
     let cache = Cache<Int, Data>()
     
