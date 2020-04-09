@@ -77,7 +77,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
             
             if let data = d {
-                let newImage = UIImage(data: data)
+                DispatchQueue.main.async {
+                    let newImage = UIImage(data: data)
+                    let checkCell = self.collectionView?.cellForItem(at: indexPath) as? ImageCollectionViewCell
+                    if  checkCell == cell {
+                        checkCell?.imageView.image = newImage
+                    }
+                }
+                
             }
             
         }.resume()
