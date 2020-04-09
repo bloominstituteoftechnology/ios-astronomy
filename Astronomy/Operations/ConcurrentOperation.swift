@@ -62,3 +62,23 @@ class ConcurrentOperation: Operation {
     }
     
 }
+
+// MARK: - Subclass
+
+class FetchPhotoOperation: ConcurrentOperation {
+    var marsReference: MarsPhotoReference
+    var imageData: Data?
+    var task: URLSessionDataTask {
+        URLSession.shared.dataTask(with: <#T##URL#>)
+    }
+    
+    init(marsReference: MarsPhotoReference) {
+        self.marsReference = marsReference
+    }
+    
+    
+    override func start() {
+        self.state = .isExecuting
+        
+    }
+}
