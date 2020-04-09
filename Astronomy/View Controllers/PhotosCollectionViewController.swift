@@ -64,9 +64,24 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+//         TODO: Implement image loading here
+        
+        let request = photoReference.imageURL.usingHTTPS!
+        
+        URLSession.shared.dataTask(with: request) { d, r, e in
+            if let error = e {
+                NSLog("Error connecting to mars : \(error)")
+                return
+            }
+            
+            if let data = d {
+                let newImage = UIImage(data: data)
+            }
+            
+        }.resume()
+        
     }
     
     // Properties
