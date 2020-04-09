@@ -38,6 +38,8 @@ class FetchPhotoOperation: ConcurrentOperation {
             
             self.imageData = data
         }
+        
+        fetchPhotoTask?.resume()
     }
     
     override func cancel() {

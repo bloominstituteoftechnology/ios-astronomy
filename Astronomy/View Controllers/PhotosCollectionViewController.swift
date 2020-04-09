@@ -56,6 +56,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var cache = Cache<Int, Data>()
     
+    private let photoFetchQueue: OperationQueue = {
+        let pfq = OperationQueue()
+        pfq.name = "Photo Fetch Queue"
+        return pfq
+    }()
+    
     // MARK: - Private Methods
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
@@ -70,29 +76,27 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             return
         }
         
-        guard let imageURl = photoReference.imageURL.usingHTTPS else { return }
+        let fetchOperation = FetchPhotoOperation(photoReference: photoReference)
         
-        URLSession.shared.dataTask(with: imageURl) { (data, response, error) in
-            if let error = error {
-                print("Error: \(error)")
-                return
-            }
+        let cacheOperation = BlockOperation {
+            guard let imageData = fetchOperation.imageData else { return }
+            self.cache.cache(imageData, for: photoReference.id)
+        }
+        
+        cacheOperation.addDependency(fetchOperation)
+        
+        let updateCellOperation = BlockOperation {
+            guard let imageData = fetchOperation.imageData,
+                let image = UIImage(data: imageData),
+                self.collectionView.indexPath(for: cell) == indexPath else { return }
             
-            if let response = response as? HTTPURLResponse, !(200...299).contains(response.statusCode) {
-                print("Invalid response: \(response.statusCode)")
-                return
-            }
-            
-            guard let data = data, let image = UIImage(data: data) else { return }
-            
-            self.cache.cache(data, for: photoReference.id)
-            
-            DispatchQueue.main.async {
-                guard self.collectionView.indexPath(for: cell) == indexPath else { return }
                 cell.imageView.image = image
-            }
-            
-        }.resume()
+        }
+        
+        updateCellOperation.addDependency(fetchOperation)
+        
+        photoFetchQueue.addOperations([fetchOperation, cacheOperation], waitUntilFinished: false)
+        OperationQueue.main.addOperation(updateCellOperation)
     }
     
     // MARK: - Collection View Data Source & Delegate
