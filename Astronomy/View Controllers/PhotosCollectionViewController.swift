@@ -93,6 +93,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // Properties
     
+    let cache = Cache<Int, Data>()
+    
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
