@@ -85,8 +85,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
             
             DispatchQueue.main.async {
-                cell.imageView.image = image
-                #warning("Abort if the index path for cell is not the same")
+                if self.collectionView.indexPath(for: cell) == indexPath {
+                    cell.imageView.image = image
+                } else {
+                    return
+                }
             }
             
         }.resume()
