@@ -109,8 +109,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             
             guard let image = UIImage(data: data) else { return }
             
+            DispatchQueue.main.async {
+                let indexForVisibleCells = self.collectionView.indexPathsForVisibleItems
+                if indexForVisibleCells.contains(indexPath) {
+                    cell.imageView.image = image
+                }
+            }
         }.resume()
-        
-        // TODO: Implement image loading here
     }
 }
