@@ -110,12 +110,21 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        let photoReference = photoReferences[indexPath.item]
+        cell.indexPath = indexPath
+        let cachedIndexPath = cell.indexPath
+        
+        let photoReference = photoReferences[cachedIndexPath.item]
         
         // TODO: Implement image loading here
         guard let secureURL = photoReference.imageURL.usingHTTPS else { return }
         
         fetchImage(of: secureURL) { result in
+            if cachedIndexPath != cell.indexPath {
+                // Cell was reused before image finished loading
+                // print("\(cachedIndexPath) != \(cell.indexPath)")
+                return
+            }
+            
             if let image = try? result.get() {
                 DispatchQueue.main.async {
                     cell.imageView.image = image
