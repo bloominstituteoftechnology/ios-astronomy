@@ -18,7 +18,6 @@ class Cache<Key: Hashable, Value> {
         queue.async {
             self.dict[key] = value
         }
-        #warning("should be async here?")
     }
     
     func value(for key: Key) -> Value? {

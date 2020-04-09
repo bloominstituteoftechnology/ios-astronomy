@@ -13,7 +13,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     var photo: MarsPhotoReference
     var imageData: Data?
-    var task: URLSession?
+    private var dataTask = URLSessionDataTask()
     
     init(photo: MarsPhotoReference) {
         self.photo = photo
@@ -25,26 +25,26 @@ class FetchPhotoOperation: ConcurrentOperation {
         let imageURL = photo.imageURL.usingHTTPS!
         var request = URLRequest(url: imageURL)
         request.httpMethod = "GET"
-
-        task?.dataTask(with: request, completionHandler: { (data, response, error) in
+        
+        dataTask = URLSession.shared.dataTask(with: request, completionHandler: { (data, response, error) in
             if let error = error {
                 NSLog("Error receiving pokemon image data: \(error)")
-                self.cancel()
                 return
             }
             
             guard let data = data else {
                 NSLog("API responded with no image data")
-                self.cancel()
                 return
             }
             
             self.imageData = data
             self.state = .isFinished
-        }).resume()
+            
+        })
+        dataTask.resume()
     }
     
     override func cancel() {
-        task?.invalidateAndCancel()
+        dataTask.cancel()
     }
 }

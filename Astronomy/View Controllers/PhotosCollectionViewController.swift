@@ -11,6 +11,8 @@ import UIKit
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
     let cache = Cache<Int,Data>()
+    let photoFetchQueue = OperationQueue()
+    var operationsDict: [Int : Operation] = [:]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -43,6 +45,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        if let op = operationsDict[photoReferences[indexPath.row].id] {
+            op.cancel()
+        }
+    }
+    
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -68,15 +76,39 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoReference = photoReferences[indexPath.item]
     
-        if let cache = cache.value(for: photoReference.id) {
-            cell.imageView.image = UIImage(data: cache)
-            return
+        let fetchPhotoOperation = FetchPhotoOperation(photo: photoReference)
+        
+        let cacheImageData = BlockOperation {
+            self.cache.cache(value: fetchPhotoOperation.imageData!, for: photoReference.id)
         }
-    
-        let imageURL = photoReference.imageURL.usingHTTPS!
-        var request = URLRequest(url: imageURL)
-        request.httpMethod = "GET"
-    
+
+        let setCellImage = BlockOperation {
+            DispatchQueue.main.async {
+                if self.collectionView.indexPath(for: cell) == indexPath {
+                    cell.imageView.image = UIImage(data: fetchPhotoOperation.imageData!)
+                } else {
+                    return
+                }
+            }
+        }
+
+        cacheImageData.addDependency(fetchPhotoOperation)
+        setCellImage.addDependency(fetchPhotoOperation)
+
+        photoFetchQueue.addOperations([fetchPhotoOperation, cacheImageData, setCellImage], waitUntilFinished: true)
+        operationsDict[photoReference.id] = fetchPhotoOperation
+        
+        
+    /*
+         if let cache = cache.value(for: photoReference.id) {
+             cell.imageView.image = UIImage(data: cache)
+             return
+         }
+         
+         let imageURL = photoReference.imageURL.usingHTTPS!
+         var request = URLRequest(url: imageURL)
+         request.httpMethod = "GET"
+         
         URLSession.shared.dataTask(with: request) { (data, response, error) in
             if let error = error {
                 NSLog("Error receiving pokemon image data: \(error)")
@@ -102,6 +134,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
             
         }.resume()
+         
+   */
+        
     }
     
     // Properties
