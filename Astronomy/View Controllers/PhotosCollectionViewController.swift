@@ -8,6 +8,20 @@
 
 import UIKit
 
+enum HTTPMethod: String {
+    case get = "GET"
+    case post = "POST"
+}
+
+enum NetworkError: Error {
+    case noAuth
+    case badAuth
+    case otherNetworkError
+    case badData
+    case noDecode
+    case badUrl
+}
+
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
     // MARK: - Properties
@@ -99,8 +113,47 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
-        if let secureURL = photoReference.imageURL.usingHTTPS {
-            print(secureURL)
+        guard let secureURL = photoReference.imageURL.usingHTTPS else { return }
+        
+        fetchImage(of: secureURL) { result in
+            if let image = try? result.get() {
+                DispatchQueue.main.async {
+                    cell.imageView.image = image
+                }
+            }
         }
+    }
+
+    /// Fetch an image from the Internet via a URL
+    /// - Parameters:
+    ///   - imageUrl: A secure URL to the image you want to load
+    ///   - completion: What do you want done with the downloaded image?
+    private func fetchImage(of imageUrl: URL, completion: @escaping (Result<UIImage, NetworkError>) -> Void) {
+        
+        var request = URLRequest(url: imageUrl)
+        request.httpMethod = HTTPMethod.get.rawValue
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                NSLog("Error receiving mars image data: \(error)")
+                completion(.failure(.otherNetworkError))
+                return
+            }
+            
+            guard let data = data else {
+                NSLog("nasa.gov responded with no image data.")
+                completion(.failure(.badData))
+                return
+            }
+            
+            guard let image = UIImage(data: data) else {
+                NSLog("Image data is incomplete or corrupt.")
+                completion(.failure(.badData))
+                return
+            }
+
+            completion(.success(image))
+
+        }.resume()
     }
 }
