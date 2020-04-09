@@ -134,8 +134,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
             
             if let image = try? result.get() {
+                self.imageCache.cache(value: image, for: cachedIndexPath.item)
                 DispatchQueue.main.async {
-                    self.imageCache.cache(value: image, for: cachedIndexPath.item)
+// Thread safe:                    self.imageCache.cache(value: image, for: cachedIndexPath.item)
 
                     cell.imageView.image = image
                 }
