@@ -9,13 +9,18 @@
 import Foundation
 
 class Cache<Key: Hashable, Value> {
-    private let memory: [Key: Value] = [:]
+    private var memory: [Key: Value] = [:]
+    private let cacheQueue = DispatchQueue(label: "CacheQueue")
     
-    func cache(value: Value, for: Key) {
-        
+    func cache(value: Value, for key: Key) {
+        cacheQueue.async {
+            self.memory[key] = value
+        }
     }
     
     func value(for key: Key) -> Value? {
-        return memory[key]
+        cacheQueue.sync {
+            return memory[key]
+        }
     }
 }

@@ -123,8 +123,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             self.cache.cache(value: data, for: photoReference.id)
             
             DispatchQueue.main.async {
-                let indexForVisibleCells = self.collectionView.indexPathsForVisibleItems
-                if indexForVisibleCells.contains(indexPath) {
+                let imageCell = self.collectionView.cellForItem(at: indexPath) as? ImageCollectionViewCell
+                if imageCell == cell {
                     cell.imageView.image = image
                 }
             }
