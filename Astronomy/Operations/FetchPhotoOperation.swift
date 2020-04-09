@@ -19,7 +19,10 @@ class FetchPhotoOperation: ConcurrentOperation {
     override func start() {
         state = .isExecuting
         
-        guard let imageURl = photoReference.imageURL.usingHTTPS else { return }
+        guard let imageURl = photoReference.imageURL.usingHTTPS else {
+            self.state = .isFinished
+            return
+        }
         
         fetchPhotoTask = URLSession.shared.dataTask(with: imageURl) { (data, response, error) in
             defer { self.state = .isFinished }
