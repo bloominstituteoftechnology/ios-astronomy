@@ -9,14 +9,22 @@
 import Foundation
 
 class Cache<Key: Hashable, Value> {
+
+    private var queue = DispatchQueue(label: "Cahce Queue")
+    
     var dict: [Key : Value] = [:]
     
     func cache(value: Value, for key: Key) {
-        dict[key] = value
+        queue.async {
+            self.dict[key] = value
+        }
+        #warning("should be async here?")
     }
     
     func value(for key: Key) -> Value? {
-        return dict[key] ?? nil
+        queue.sync {
+            return dict[key] ?? nil
+        }
     }
     
 }
