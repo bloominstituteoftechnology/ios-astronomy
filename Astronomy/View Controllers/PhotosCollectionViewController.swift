@@ -64,9 +64,32 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
-        
-        // TODO: Implement image loading here
+        let photoReference = photoReferences[indexPath.item]
+    
+        let imageURL = photoReference.imageURL.usingHTTPS!
+        var request = URLRequest(url: imageURL)
+        request.httpMethod = "GET"
+        URLSession.shared.dataTask(with: request) { (data, response, error) in
+            if let error = error {
+                NSLog("Error receiving pokemon image data: \(error)")
+                return
+            }
+            guard let data = data else {
+                NSLog("API responded with no image data")
+                return
+            }
+            
+            guard let image = UIImage(data: data) else {
+                NSLog("Image data is incomplete or currupted.")
+                return
+            }
+            
+            DispatchQueue.main.async {
+                cell.imageView.image = image
+                #warning("Abort if the index path for cell is not the same")
+            }
+            
+        }.resume()
     }
     
     // Properties
