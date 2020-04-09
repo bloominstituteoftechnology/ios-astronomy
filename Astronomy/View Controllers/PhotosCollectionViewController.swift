@@ -25,6 +25,7 @@ enum NetworkError: Error {
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
     // MARK: - Properties
+    private var imageCache = Cache<Int, UIImage>()
     
     private let client = MarsRoverClient()
     
@@ -110,12 +111,19 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
+        // Cache the indexPath for fetchImage completion to know whether cell has moved
         cell.indexPath = indexPath
         let cachedIndexPath = cell.indexPath
         
+        // Which photo information do we need to load?
         let photoReference = photoReferences[cachedIndexPath.item]
+
+        // Is the image cached? ... avoiding a network lookup.
+        if let image = imageCache.value(for: cachedIndexPath.item) {
+            print("Cached Image: \(cachedIndexPath.item)")
+            cell.imageView.image = image
+        }
         
-        // TODO: Implement image loading here
         guard let secureURL = photoReference.imageURL.usingHTTPS else { return }
         
         fetchImage(of: secureURL) { result in
@@ -127,6 +135,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             
             if let image = try? result.get() {
                 DispatchQueue.main.async {
+                    self.imageCache.cache(value: image, for: cachedIndexPath.item)
+
                     cell.imageView.image = image
                 }
             }
