@@ -73,6 +73,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         if let existingData = cache.value(for: photoReference.id) {
             let newImage = UIImage(data: existingData)
             cell.imageView.image = newImage
+            return
         }
         
         URLSession.shared.dataTask(with: request) { d, r, e in
@@ -83,6 +84,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             
             if let data = d {
                 DispatchQueue.main.async {
+                    self.cache.cache(value: data, for: photoReference.id)
                     let newImage = UIImage(data: data)
                     let checkCell = self.collectionView?.cellForItem(at: indexPath) as? ImageCollectionViewCell
                     if  checkCell == cell {
