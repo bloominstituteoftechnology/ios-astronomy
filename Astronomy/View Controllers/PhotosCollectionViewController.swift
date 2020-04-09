@@ -13,6 +13,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // Properties
     
     private let client = MarsRoverClient()
+    var cache = Cache<Int, Data>()
     
     private var roverInfo: MarsRover? {
         didSet {
@@ -97,6 +98,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         
         let photoURL = photoReference.imageURL.usingHTTPS!
+        if cache.value(forKey: photoReference.id) != nil,
+            let data = cache.value(forKey: photoReference.id),
+            let image = UIImage(data: data) {
+            cell.imageView.image = image
+            return
+        }
+        
         URLSession.shared.dataTask(with: photoURL) { (data, _, error) in
             if let error = error {
                 NSLog("Error fetching photo: \(error)")
@@ -109,6 +117,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
             
             // TODO: ask about testing if current index path is the same one i was asked to load
+            self.cache.cache(value: data, forKey: photoReference.id)
             let image = UIImage(data: data)
             DispatchQueue.main.async {
                 cell.imageView.image = image
