@@ -16,6 +16,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private let cache = Cache<Int, Data>()
     
+    private var photoFetchQueue = OperationQueue()
+    
+    private var operations = [Int: Operation]()
+    
     private var roverInfo: MarsRover? {
         didSet {
             solDescription = roverInfo?.solDescriptions[3]
@@ -98,7 +102,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoReference = photoReferences[indexPath.item]
         
-        guard let photoURL = photoReference.imageURL.usingHTTPS else { return }
+//        guard let photoURL = photoReference.imageURL.usingHTTPS else { return }
         
         if let imageData = cache.value(for: photoReference.id) {
             DispatchQueue.main.async {
@@ -108,26 +112,30 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
         }
         
-        URLSession.shared.dataTask(with: photoURL) { data, _, error in
-            if let error = error {
-                NSLog("Error fetching image from server: \(error)")
-                return
+        let fetchPhotoOperation = FetchPhotoOperation(photoReference: photoReference)
+        
+        let cacheOperation = BlockOperation {
+            if let data = fetchPhotoOperation.imageData {
+                self.cache.cache(value: data, for: photoReference.id)
             }
-            
-            guard let data = data else {
-                NSLog("No image data from server")
-                return
-            }
-            
-            self.cache.cache(value: data, for: photoReference.id)
-            guard let image = UIImage(data: data) else { return }
-            
-            DispatchQueue.main.async {
-                let imageCell = self.collectionView.cellForItem(at: indexPath) as? ImageCollectionViewCell
-                if imageCell == cell {
-                    cell.imageView.image = image
+        }
+        
+        let completionOperation = BlockOperation {
+            if let _ = self.collectionView.indexPath(for: cell) {
+                if let data = fetchPhotoOperation.imageData {
+                    cell.imageView.image = UIImage(data: data)
+                } else {
+                    return
                 }
             }
-        }.resume()
+        }
+        
+        cacheOperation.addDependency(fetchPhotoOperation)
+        completionOperation.addDependency(fetchPhotoOperation)
+        
+        photoFetchQueue.addOperations([fetchPhotoOperation, cacheOperation], waitUntilFinished: true)
+        
+        OperationQueue.main.addOperation(completionOperation)
+        operations[photoReference.id] = fetchPhotoOperation
     }
 }
