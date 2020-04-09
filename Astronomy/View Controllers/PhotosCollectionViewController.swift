@@ -65,27 +65,46 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        let url = photoReference.imageURL.usingHTTPS!
+        //let url = photoReference.imageURL.usingHTTPS!
         
         if let cacheData = cache.value(for: photoReference.id) {
             cell.imageView.image = UIImage(data: cacheData)
         }
         
-        URLSession.shared.dataTask(with: url) { (data,_,error) in
-            if let error = error {
-                NSLog("load image error: \(error)")
-                return
-            }
-            guard let data = data else {return}
-            
-            DispatchQueue.main.async {
-                let currentIndex = self.collectionView.indexPath(for: cell)
-                guard currentIndex == indexPath else {return}
-                cell.imageView.image = UIImage(data: data)
-                self.cache.cache(value: data, for: photoReference.id)
-            }
-
-        }.resume()
+//        URLSession.shared.dataTask(with: url) { (data,_,error) in
+//            if let error = error {
+//                NSLog("load image error: \(error)")
+//                return
+//            }
+//            guard let data = data else {return}
+//
+//            DispatchQueue.main.async {
+//                let currentIndex = self.collectionView.indexPath(for: cell)
+//                guard currentIndex == indexPath else {return}
+//                cell.imageView.image = UIImage(data: data)
+//                self.cache.cache(value: data, for: photoReference.id)
+//            }
+//
+//        }.resume()
+        let photoFetchOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+        let store = BlockOperation{
+            guard let data = photoFetchOperation.imageData else {return}
+            self.cache.cache(value: data, for: photoReference.id)
+        }
+        store.addDependency(photoFetchOperation)
+        photoFetchQueue.addOperation(store)
+        
+        
+        let checkReuse = BlockOperation{
+            let currentIndex = self.collectionView.indexPath(for: cell)
+            guard currentIndex == indexPath, let data = photoFetchOperation.imageData else {return}
+            cell.imageView.image = UIImage(data: data)
+        }
+        checkReuse.addDependency(photoFetchOperation)
+        OperationQueue.main.addOperation(checkReuse)
+        
+        photoFetchQueue.addOperation(photoFetchOperation)
+        operation[photoReference.id] = photoFetchOperation //store fetch operations by the associated photo reference id
     }
     
     // Properties
@@ -116,5 +135,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     @IBOutlet var collectionView: UICollectionView!
     var cache = Cache<Int, Data>()
-    
+    private var photoFetchQueue = OperationQueue()
+    var operation = [Int: Operation]()
 }
