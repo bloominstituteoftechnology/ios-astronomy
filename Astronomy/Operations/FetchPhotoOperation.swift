@@ -9,12 +9,19 @@
 import Foundation
 
 class FetchPhotoOperation: ConcurrentOperation {
+    
+    // MARK: - Properties
+    
     var photoReference: MarsPhotoReference
     var imageData: Data?
+    
+    // MARK: - Init
     
     init(photoReference: MarsPhotoReference) {
         self.photoReference = photoReference
     }
+    
+    // MARK: - Private
     
     override func start() {
         state = .isExecuting
