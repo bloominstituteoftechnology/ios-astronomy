@@ -28,37 +28,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     
-    // MARK: - Private
-    
-    private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
-        let photoReference = photoReferences[indexPath.item]
-        guard let imageURl = photoReference.imageURL.usingHTTPS else { return }
-        
-        URLSession.shared.dataTask(with: imageURl) { (data, response, error) in
-            if let error = error {
-                print("Error: \(error)")
-                return
-            }
-            
-            if let response = response as? HTTPURLResponse, !(200...299).contains(response.statusCode) {
-                print("Invalid response: \(response.statusCode)")
-                return
-            }
-            
-            guard let data = data, let image = UIImage(data: data) else { return }
-                
-            DispatchQueue.main.async {
-                guard self.collectionView.indexPath(for: cell) == indexPath else { return }
-                cell.imageView.image = image
-            }
-            
-        }.resume()
-        
-        // TODO: Implement image loading here
-    }
-    
-    // Properties
+    // MARK: - Private Properties
     
     private let client = MarsRoverClient()
     
@@ -82,6 +52,48 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         didSet {
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
+    }
+    
+    private var cache = Cache<Int, Data>()
+    
+    // MARK: - Private Methods
+    
+    private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        
+        let cachedData = cache.value(for: photoReference.id)
+        if let cachedData = cachedData, let image = UIImage(data: cachedData) {
+            DispatchQueue.main.async {
+                guard self.collectionView.indexPath(for: cell) == indexPath else { return }
+                cell.imageView.image = image
+            }
+            
+            return
+        }
+        
+        guard let imageURl = photoReference.imageURL.usingHTTPS else { return }
+        
+        URLSession.shared.dataTask(with: imageURl) { (data, response, error) in
+            if let error = error {
+                print("Error: \(error)")
+                return
+            }
+            
+            if let response = response as? HTTPURLResponse, !(200...299).contains(response.statusCode) {
+                print("Invalid response: \(response.statusCode)")
+                return
+            }
+            
+            guard let data = data, let image = UIImage(data: data) else { return }
+            
+            self.cache.cache(data, for: photoReference.id)
+            
+            DispatchQueue.main.async {
+                guard self.collectionView.indexPath(for: cell) == indexPath else { return }
+                cell.imageView.image = image
+            }
+            
+        }.resume()
     }
     
     // MARK: - Collection View Data Source & Delegate
