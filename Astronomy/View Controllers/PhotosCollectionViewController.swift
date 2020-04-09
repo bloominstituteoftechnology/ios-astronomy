@@ -83,9 +83,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
             
             if let data = d {
+                self.cache.cache(value: data, for: photoReference.id)
+                let newImage = UIImage(data: data)
                 DispatchQueue.main.async {
-                    self.cache.cache(value: data, for: photoReference.id)
-                    let newImage = UIImage(data: data)
                     let checkCell = self.collectionView?.cellForItem(at: indexPath) as? ImageCollectionViewCell
                     if  checkCell == cell {
                         checkCell?.imageView.image = newImage
