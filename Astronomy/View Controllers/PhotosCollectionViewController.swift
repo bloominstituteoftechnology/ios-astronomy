@@ -75,28 +75,36 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-    
-        let fetchPhotoOperation = FetchPhotoOperation(photo: photoReference)
         
-        let cacheImageData = BlockOperation {
-            self.cache.cache(value: fetchPhotoOperation.imageData!, for: photoReference.id)
-        }
+        if let cache = cache.value(for: photoReference.id) {
+            cell.imageView.image = UIImage(data: cache)
+            return
+        } else {
+            
+            let fetchPhotoOperation = FetchPhotoOperation(photo: photoReference)
+            
+            let cacheImageData = BlockOperation {
+                self.cache.cache(value: fetchPhotoOperation.imageData!, for: photoReference.id)
+            }
 
-        let setCellImage = BlockOperation {
-            DispatchQueue.main.async {
-                if self.collectionView.indexPath(for: cell) == indexPath {
-                    cell.imageView.image = UIImage(data: fetchPhotoOperation.imageData!)
-                } else {
-                    return
+            let setCellImage = BlockOperation {
+                DispatchQueue.main.async {
+                    if self.collectionView.indexPath(for: cell) == indexPath {
+                        cell.imageView.image = UIImage(data: fetchPhotoOperation.imageData!)
+                    } else {
+                        return
+                    }
                 }
             }
+
+            cacheImageData.addDependency(fetchPhotoOperation)
+            setCellImage.addDependency(fetchPhotoOperation)
+
+            photoFetchQueue.addOperations([fetchPhotoOperation, cacheImageData, setCellImage], waitUntilFinished: false)
+            operationsDict[photoReference.id] = fetchPhotoOperation
         }
-
-        cacheImageData.addDependency(fetchPhotoOperation)
-        setCellImage.addDependency(fetchPhotoOperation)
-
-        photoFetchQueue.addOperations([fetchPhotoOperation, cacheImageData, setCellImage], waitUntilFinished: true)
-        operationsDict[photoReference.id] = fetchPhotoOperation
+    
+        
         
         
     /*
