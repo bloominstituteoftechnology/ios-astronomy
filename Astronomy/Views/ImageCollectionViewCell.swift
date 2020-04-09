@@ -12,11 +12,12 @@ class ImageCollectionViewCell: UICollectionViewCell {
     
     override func prepareForReuse() {
         imageView.image = #imageLiteral(resourceName: "MarsPlaceholder")
-        
+        photoReferenceID = nil
         super.prepareForReuse()
     }
     
     // MARK: Properties
+    var photoReferenceID: Int?
     
     // MARK: IBOutlets
     

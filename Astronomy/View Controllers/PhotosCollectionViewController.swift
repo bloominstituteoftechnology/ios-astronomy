@@ -62,6 +62,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return pfq
     }()
     
+    private var fetchOperations: [Int: FetchPhotoOperation] = [:]
+    
     // MARK: - Private Methods
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
@@ -86,17 +88,20 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         cacheOperation.addDependency(fetchOperation)
         
         let updateCellOperation = BlockOperation {
+            self.fetchOperations.removeValue(forKey: photoReference.id)
             guard let imageData = fetchOperation.imageData,
                 let image = UIImage(data: imageData),
-                self.collectionView.indexPath(for: cell) == indexPath else { return }
+                cell.photoReferenceID == photoReference.id else { return }
             
-                cell.imageView.image = image
+            cell.imageView.image = image
         }
         
         updateCellOperation.addDependency(fetchOperation)
         
         photoFetchQueue.addOperations([fetchOperation, cacheOperation], waitUntilFinished: false)
         OperationQueue.main.addOperation(updateCellOperation)
+        
+        fetchOperations[photoReference.id] = fetchOperation
     }
     
     // MARK: - Collection View Data Source & Delegate
@@ -108,6 +113,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
         
+        cell.photoReferenceID = photoReferences[indexPath.item].id
         loadImage(forCell: cell, forItemAt: indexPath)
         
         return cell
@@ -132,5 +138,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
-    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        
+        fetchOperations[photoReference.id]?.cancel()
+        fetchOperations.removeValue(forKey: photoReference.id)
+    }
 }
