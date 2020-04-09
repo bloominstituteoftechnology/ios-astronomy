@@ -72,7 +72,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         URLSession.shared.dataTask(with: request) { d, r, e in
             if let error = e {
-                NSLog("Error connecting to mars : \(error)")
+                NSLog("Error connecting to mars: \(error)")
                 return
             }
             
