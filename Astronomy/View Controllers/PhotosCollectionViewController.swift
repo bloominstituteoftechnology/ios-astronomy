@@ -119,8 +119,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 return
             }
             
-            guard let image = UIImage(data: data) else { return }
             self.cache.cache(value: data, for: photoReference.id)
+            guard let image = UIImage(data: data) else { return }
             
             DispatchQueue.main.async {
                 let imageCell = self.collectionView.cellForItem(at: indexPath) as? ImageCollectionViewCell
