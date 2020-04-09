@@ -96,14 +96,17 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        operations[photoReference.id]?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        
-//        guard let photoURL = photoReference.imageURL.usingHTTPS else { return }
-        
+                
         if let imageData = cache.value(for: photoReference.id) {
             DispatchQueue.main.async {
                 if let image = UIImage(data: imageData) {
@@ -133,7 +136,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         cacheOperation.addDependency(fetchPhotoOperation)
         completionOperation.addDependency(fetchPhotoOperation)
         
-        photoFetchQueue.addOperations([fetchPhotoOperation, cacheOperation], waitUntilFinished: true)
+        photoFetchQueue.addOperations([fetchPhotoOperation, cacheOperation], waitUntilFinished: false)
         
         OperationQueue.main.addOperation(completionOperation)
         operations[photoReference.id] = fetchPhotoOperation
