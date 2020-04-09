@@ -70,6 +70,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let request = photoReference.imageURL.usingHTTPS!
         
+        if let existingData = cache.value(for: photoReference.id) {
+            let newImage = UIImage(data: existingData)
+            cell.imageView.image = newImage
+        }
+        
         URLSession.shared.dataTask(with: request) { d, r, e in
             if let error = e {
                 NSLog("Error connecting to mars: \(error)")
