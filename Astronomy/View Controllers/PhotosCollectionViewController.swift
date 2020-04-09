@@ -10,6 +10,36 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    // Properties
+    
+    private let client = MarsRoverClient()
+    
+    private var roverInfo: MarsRover? {
+        didSet {
+            solDescription = roverInfo?.solDescriptions[3]
+        }
+    }
+    private var solDescription: SolDescription? {
+        didSet {
+            if let rover = roverInfo,
+                let sol = solDescription?.sol {
+                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
+                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
+                    self.photoReferences = photoRefs ?? []
+                }
+            }
+        }
+    }
+    private var photoReferences = [MarsPhotoReference]() {
+        didSet {
+            DispatchQueue.main.async { self.collectionView?.reloadData() }
+        }
+    }
+    
+    @IBOutlet var collectionView: UICollectionView!
+    
+    
+    // MARK: - View lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -64,36 +94,28 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
-    }
-    
-    // Properties
-    
-    private let client = MarsRoverClient()
-    
-    private var roverInfo: MarsRover? {
-        didSet {
-            solDescription = roverInfo?.solDescriptions[3]
-        }
-    }
-    private var solDescription: SolDescription? {
-        didSet {
-            if let rover = roverInfo,
-                let sol = solDescription?.sol {
-                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
-                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
-                    self.photoReferences = photoRefs ?? []
-                }
+        let photoURL = photoReference.imageURL.usingHTTPS!
+        URLSession.shared.dataTask(with: photoURL) { (data, _, error) in
+            if let error = error {
+                NSLog("Error fetching photo: \(error)")
+                return
             }
-        }
-    }
-    private var photoReferences = [MarsPhotoReference]() {
-        didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
-        }
+            
+            guard let data = data else {
+                NSLog("No data returned by dataTask")
+                return
+            }
+            
+            // TODO: ask about testing if current index path is the same one i was asked to load
+            let image = UIImage(data: data)
+            DispatchQueue.main.async {
+                cell.imageView.image = image
+            }
+            
+        }.resume()
     }
     
-    @IBOutlet var collectionView: UICollectionView!
+    
 }
