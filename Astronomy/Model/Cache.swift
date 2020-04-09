@@ -15,7 +15,7 @@ class Cache<Key: Hashable, Value> {
         
     }
     
-    func value(for: Key) -> Value? {
-        return nil
+    func value(for key: Key) -> Value? {
+        return memory[key]
     }
 }

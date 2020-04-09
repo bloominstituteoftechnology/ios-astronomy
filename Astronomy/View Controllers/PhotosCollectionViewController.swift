@@ -14,11 +14,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private let client = MarsRoverClient()
     
+    private let cache = Cache<Int, Data>()
+    
     private var roverInfo: MarsRover? {
         didSet {
             solDescription = roverInfo?.solDescriptions[3]
         }
     }
+    
     private var solDescription: SolDescription? {
         didSet {
             if let rover = roverInfo,
@@ -30,6 +33,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
         }
     }
+    
     private var photoReferences = [MarsPhotoReference]() {
         didSet {
             DispatchQueue.main.async { self.collectionView?.reloadData() }
@@ -96,6 +100,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         guard let photoURL = photoReference.imageURL.usingHTTPS else { return }
         
+        if let imageData = cache.value(for: photoReference.id) {
+            DispatchQueue.main.async {
+                if let image = UIImage(data: imageData) {
+                    cell.imageView.image = image
+                }
+            }
+        }
+        
         URLSession.shared.dataTask(with: photoURL) { data, _, error in
             if let error = error {
                 NSLog("Error fetching image from server: \(error)")
@@ -108,6 +120,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
             
             guard let image = UIImage(data: data) else { return }
+            self.cache.cache(value: data, for: photoReference.id)
             
             DispatchQueue.main.async {
                 let indexForVisibleCells = self.collectionView.indexPathsForVisibleItems
