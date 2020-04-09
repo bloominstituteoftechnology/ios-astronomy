@@ -64,9 +64,22 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
+        let url = photoReference.imageURL.usingHTTPS!
         
-        // TODO: Implement image loading here
+        URLSession.shared.dataTask(with: url) { (data,_,error) in
+            if let error = error {
+                NSLog("load image error: \(error)")
+                return
+            }
+            guard let data = data else {return}
+            let currentIndex = self.collectionView.indexPath(for: cell)
+            guard currentIndex == indexPath else {return}
+            DispatchQueue.main.async {
+                cell.imageView.image = UIImage(data: data)
+            }
+
+        }.resume()
     }
     
     // Properties
