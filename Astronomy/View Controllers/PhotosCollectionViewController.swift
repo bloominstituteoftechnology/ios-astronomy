@@ -60,6 +60,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView,didEndDisplaying cell: UICollectionViewCell,forItemAt indexPath: IndexPath) {
+        let reference = photoReferences[indexPath.row]
+        guard let thisOperation = operation[reference.id] else {return}
+        thisOperation.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
