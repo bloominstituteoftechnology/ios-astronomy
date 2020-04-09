@@ -20,7 +20,7 @@ class FetchPhotoOperation: ConcurrentOperation {
         state = .isExecuting
         
         guard let imageURl = photoReference.imageURL.usingHTTPS else {
-            self.state = .isFinished
+            state = .isFinished
             return
         }
         

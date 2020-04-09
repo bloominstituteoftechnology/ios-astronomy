@@ -82,7 +82,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let cacheOperation = BlockOperation {
             guard let imageData = fetchOperation.imageData else { return }
-            self.cache.cache(imageData, for: photoReference.id)
+            let size = imageData.count
+            self.cache.cache(imageData, ofSize: size, for: photoReference.id)
         }
         
         cacheOperation.addDependency(fetchOperation)
@@ -138,6 +139,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    // Cancel fetch operations for cells off-screen
     func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
         let photoReference = photoReferences[indexPath.item]
         
