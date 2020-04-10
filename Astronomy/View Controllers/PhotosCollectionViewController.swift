@@ -92,25 +92,29 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         storeCache.addDependency(fetchOp)
         
         let lastOp = BlockOperation {
-            var visibleIndexPath: [IndexPath] = []
+//            var visibleIndexPath: [IndexPath] = []
+            var visibleCells: [UICollectionViewCell] = []
             DispatchQueue.main.sync {
-                visibleIndexPath = self.collectionView.indexPathsForVisibleItems
+//                visibleIndexPath = self.collectionView.indexPathsForVisibleItems
+                visibleCells = self.collectionView.visibleCells
             }
             DispatchQueue.main.async {
                 
-                guard let checkIndex = visibleIndexPath.firstIndex(where: {
-                    let tempCell = self.collectionView.cellForItem(at: $0) as! ImageCollectionViewCell
-                    print("Looking for tempcell with a photo ID of \(cell.photoId)")
-                    return tempCell.photoId == cell.photoId
-                }) else {
-                    print("Couldn't find cell with photo ID \(cell.photoId).")
-                    print("Here's' what I could find")
-                    for path in visibleIndexPath {
-                        let tempCell = self.collectionView.cellForItem(at: path) as! ImageCollectionViewCell
-                        print(tempCell.photoId)
-                    }
-                    return
-                }
+//                guard let checkIndex = visibleIndexPath.firstIndex(where: {
+//                    let tempCell = self.collectionView.cellForItem(at: $0) as! ImageCollectionViewCell
+//                    print("Looking for tempcell with a photo ID of \(cell.photoId)")
+//                    return tempCell.photoId == cell.photoId
+//                }) else {
+//                    print("Couldn't find cell with photo ID \(cell.photoId).")
+//                    print("Here's' what I could find")
+//                    for path in visibleIndexPath {
+//                        let tempCell = self.collectionView.cellForItem(at: path) as! ImageCollectionViewCell
+//                        print(tempCell.photoId)
+//                    }
+//                    return
+//                }
+                
+                
 //                guard let checkCell = checkCellExistence as? ImageCollectionViewCell else {
 //                    print("Error casting existing cell")
 //                    return
@@ -118,11 +122,20 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 guard let data = self.cache.value(for: photoReference.id) else {
                         NSLog("ERROR UNWRAPPING DATA ")
                         return }
-                guard let foundCell = self.collectionView.cellForItem(at: visibleIndexPath[checkIndex]) as? ImageCollectionViewCell else {
-                    print("Found index, but couldn't turn it into a cell")
-                    return
+                for visibleCell in visibleCells {
+                    guard let visibleCell = visibleCell as? ImageCollectionViewCell else {
+                        print("Couldn't cast cell")
+                        return
+                    }
+                    if visibleCell.photoId == cell.photoId {
+                        visibleCell.imageView.image = UIImage(data: data)
+                    }
                 }
-                foundCell.imageView.image = UIImage(data: data)
+//                guard let foundCell = self.collectionView.cellForItem(at: visibleIndexPath[checkIndex]) as? ImageCollectionViewCell else {
+//                    print("Found index, but couldn't turn it into a cell")
+//                    return
+//                }
+//                foundCell.imageView.image = UIImage(data: data)
 //                if  checkCell.photoId == cell.photoId {
 //                    checkCell.imageView.image = UIImage(data: data)
 //                }
