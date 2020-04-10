@@ -26,6 +26,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // MARK: - Properties
     private var imageCache = Cache<Int, UIImage>()
+    private let photoFetchQueue = OperationQueue()
+    private var fetchOperations: [Int: FetchPhotoOperation] = [:]
     
     private let client = MarsRoverClient()
     
@@ -122,26 +124,41 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         if let image = imageCache.value(for: cachedIndexPath.item) {
             print("Cached Image: \(cachedIndexPath.item)")
             cell.imageView.image = image
+            return
         }
         
-        guard let secureURL = photoReference.imageURL.usingHTTPS else { return }
+        // Don't have image. Need to retrieve it.
+        // ---- Operation to grab photo ---------------------------
+        let fetchPhotoOp = FetchPhotoOperation(marsPhotoReference: photoReference)
+        fetchOperations[photoReference.id] = fetchPhotoOp
         
-        fetchImage(of: secureURL) { result in
+        // ---- Operation to cache photo --------------------------
+        let cachePhotoOp = BlockOperation {
+            if let image = fetchPhotoOp.imageData {
+                // TODO: Is this tread safe? Yes?
+                self.imageCache.cache(value: image, for: cachedIndexPath.item)
+            }
+        }
+        
+        // ---- Operation to place photo in cell ------------------
+        let setImageOp = BlockOperation {
             if cachedIndexPath != cell.originalIndexPath {
                 // Cell was reused before image finished loading
                 // print("\(cachedIndexPath) != \(cell.indexPath)")
                 return
             }
-            
-            if let image = try? result.get() {
-                self.imageCache.cache(value: image, for: cachedIndexPath.item)
+                
+            if let image = fetchPhotoOp.imageData {
                 DispatchQueue.main.async {
-// Thread safe:                    self.imageCache.cache(value: image, for: cachedIndexPath.item)
-
                     cell.imageView.image = image
                 }
             }
         }
+        
+        cachePhotoOp.addDependency(fetchPhotoOp)
+        setImageOp.addDependency(fetchPhotoOp)
+        
+        photoFetchQueue.addOperations([fetchPhotoOp, cachePhotoOp, setImageOp], waitUntilFinished: false)
     }
 
     /// Fetch an image from the Internet via a URL
