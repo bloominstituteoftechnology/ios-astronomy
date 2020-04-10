@@ -92,18 +92,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         storeCache.addDependency(fetchOp)
         
         let lastOp = BlockOperation {
-            // Create array from visible cells
-            let visibleCells: [UICollectionViewCell] = self.collectionView.visibleCells
             
-            for visibleCell in visibleCells {
-                guard let visibleCell = visibleCell as? ImageCollectionViewCell,
-                let data = self.cache.value(for: visibleCell.photoId)else {
+            guard let data = fetchOp.imageData,
+                    cell.photoId == photoReference.id else {
                     print("Couldn't cast cell and/or get data")
                     return
                 }
-                // If it's in the array then it's on screen, so assign image.
-                visibleCell.imageView.image = UIImage(data: data)
-            } // For loop
+            
+                cell.imageView.image = UIImage(data: data)
             
         }
         lastOp.addDependency(fetchOp)
