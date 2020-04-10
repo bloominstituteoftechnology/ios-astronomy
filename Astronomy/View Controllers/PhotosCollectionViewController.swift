@@ -128,8 +128,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
     }
     
-    func collectionView(_ collectionView: UICollectionView, didEndDisplayingSupplementaryView view: UICollectionReusableView, forElementOfKind elementKind: String, at indexPath: IndexPath) {
-        <#code#>
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        if let operation = photoDictionary[indexPath.item] {
+            print("it found the operation")
+            operation.cancel()
+        }
     }
     
     @IBOutlet var collectionView: UICollectionView!
