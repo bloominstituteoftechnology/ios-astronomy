@@ -98,32 +98,39 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        let photoReference = photoReferences[indexPath.item]
-        let loadOperation = FetchPhotoOperation(reference: photoReference)
-        let updateCache = BlockOperation {
-            print("it called this update block")
-            self.cache.cache(value: loadOperation.imageData!, for: indexPath.item)
+        if let image = self.cache.value(for: indexPath.item) {
+            cell.imageView.image = UIImage(data: image)
+        } else {
+               let photoReference = photoReferences[indexPath.item]
+                let loadOperation = FetchPhotoOperation(reference: photoReference)
+                let updateCache = BlockOperation {
+                    print("it called this update block")
+                    self.cache.cache(value: loadOperation.imageData!, for: indexPath.item)
+                }
+                let setImages = BlockOperation {
+                    print("CALLS THE IMAGE BLOCK")
+                    if self.collectionView.indexPath(for: cell) == indexPath {
+                    if let image = self.cache.value(for: indexPath.item) {
+                        cell.imageView.image = UIImage(data: image)
+                    }
+                    }
+                }
+                
+                updateCache.addDependency(loadOperation)
+                setImages.addDependency(loadOperation)
+                
+                photoFetchQueue.addOperation(loadOperation)
+                photoFetchQueue.addOperation(updateCache)
+                OperationQueue.main.addOperation(setImages)
+            
+            photoDictionary[indexPath.item] = loadOperation
         }
-        let setImages = BlockOperation {
-            print("CALLS THE BLOCK")
-        //    if cell.reuseIdentifier == nil {
-                cell.imageView.image = UIImage(data: self.cache.value(for: indexPath.item)!)
-         //   }
-        }
-        
-        updateCache.addDependency(loadOperation)
-        setImages.addDependency(loadOperation)
-        
-        photoFetchQueue.addOperation(loadOperation)
-        photoFetchQueue.addOperation(updateCache)
-        OperationQueue.main.addOperation(setImages)
-    
-        photoDictionary[loadOperation.id] = loadOperation
         
     }
     
-    
-    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplayingSupplementaryView view: UICollectionReusableView, forElementOfKind elementKind: String, at indexPath: IndexPath) {
+        <#code#>
+    }
     
     @IBOutlet var collectionView: UICollectionView!
 }
