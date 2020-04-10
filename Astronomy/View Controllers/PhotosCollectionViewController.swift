@@ -135,7 +135,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // ---- Operation to cache photo --------------------------
         let cachePhotoOp = BlockOperation {
             if let image = fetchPhotoOp.imageData {
-                // TODO: Is this tread safe? Yes?
+                // TODO: ? Is this tread safe? Yes, because we're not going to a different thread.
                 self.imageCache.cache(value: image, for: cachedIndexPath.item)
             }
         }
