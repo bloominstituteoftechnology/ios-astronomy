@@ -37,7 +37,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     private var cache = Cache<Int, Data>()
-    
+    private var photoFetchQueue = OperationQueue()
+    var photoDictionary = [Int : Data]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -98,55 +99,22 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
+        let loadOperation = FetchPhotoOperation(reference: photoReference)
+        let updateCache = BlockOperation {
+            self.cache.cache(value: loadOperation.imageData!, for: indexPath.item)
+        }
+        let setImages = BlockOperation {
+            if cell.reuseIdentifier == nil {
+                cell.imageView.image = UIImage(data: self.cache.value(for: indexPath.item)!)
+            }
+        }
+        
+        updateCache.addDependency(loadOperation)
+        setImages.addDependency(loadOperation)
+        
         
         // TODO: Implement image loading here
-        
-   //     DispatchQueue.main.async {
-            
-            if let chhh = self.cache.value(for: indexPath.item), let newImage = UIImage(data: self.cache.value(for: indexPath.item)!) {
-                //       DispatchQueue.main.async {
-                cell.imageView.image = newImage
-                print("newImage")
-                //       }
-            } else {
-                
-      //      DispatchQueue.main.async {
-                
-                print("THERES NO IMAGE HERE")
-                let session = URLSession(configuration: .default)
-                
-                session.dataTask(with: photoReference.imageURL.usingHTTPS!) { (data, response, error) in
-                    if let error = error {
-                        print("Error downloading picture: \(error)")
-                        return
-                    } else {
-                        if let response = response as? HTTPURLResponse {
-                            if let imageData = data {
-                                let image = UIImage(data: imageData)
-                                
-                                DispatchQueue.main.async {
-                                if self.collectionView.indexPath(for: cell) == indexPath {
-                                    cell.imageView.image = image
-                                    self.cache.cache(value: UIImagePNGRepresentation(image!)!, for: indexPath.item)
-                                } else {
-                                    print("WRONG INDEXPATH")
-                                }
-                            }
-                                
-                            } else {
-                                print("No image available")
-                            }
-                        } else {
-                            print("Couldn't get response code")
-                        }
-                    }
-                }.resume()
-                
-             }
-                
-      //      }
-            
-     //   }
+    
     }
     
     

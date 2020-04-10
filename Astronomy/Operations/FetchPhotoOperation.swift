@@ -13,10 +13,17 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     var reference: MarsPhotoReference
     var imageData: Data?
-    private(set) var session = URLSession(configuration: .default)
+    var id: Int
+    
+    private(set) var session = URLSession()
     
     init(reference: MarsPhotoReference) {
         self.reference = reference
+        self.id = reference.id
+        
+        super.init()
+        
+        runDataTask()
         
     }
     
