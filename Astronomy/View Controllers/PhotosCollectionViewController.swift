@@ -92,31 +92,24 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         storeCache.addDependency(fetchOp)
         
         let lastOp = BlockOperation {
-            // Create empty array
-            var visibleCells: [UICollectionViewCell] = []
+            // Create array from visible cells
+            let visibleCells: [UICollectionViewCell] = self.collectionView.visibleCells
             
-            // Use main queue.sync to populate the array.
-            DispatchQueue.main.sync {
-                visibleCells = self.collectionView.visibleCells
-            }
-            
-            // Main.async to use this array to assign images
-            DispatchQueue.main.async {
-                for visibleCell in visibleCells {
-                    guard let visibleCell = visibleCell as? ImageCollectionViewCell,
-                    let data = self.cache.value(for: visibleCell.photoId)else {
-                        print("Couldn't cast cell and/or get data")
-                        return
-                    }
-                    // If it's in the array then it's on screen, so assign image.
-                    visibleCell.imageView.image = UIImage(data: data)
-                } // For loop
-            } // End of Async call
+            for visibleCell in visibleCells {
+                guard let visibleCell = visibleCell as? ImageCollectionViewCell,
+                let data = self.cache.value(for: visibleCell.photoId)else {
+                    print("Couldn't cast cell and/or get data")
+                    return
+                }
+                // If it's in the array then it's on screen, so assign image.
+                visibleCell.imageView.image = UIImage(data: data)
+            } // For loop
             
         }
         lastOp.addDependency(fetchOp)
         
-        photoFetchQueue.addOperations([fetchOp, storeCache, lastOp], waitUntilFinished: false)
+        photoFetchQueue.addOperations([fetchOp, storeCache], waitUntilFinished: false)
+        OperationQueue.main.addOperation(lastOp)
         
         
         if opDic[photoReference.id] == nil {
