@@ -78,18 +78,17 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     
     override func start() {
+        print("Starting fetch for marsReference id: \(marsReference.id)")
         self.state = .isExecuting
-        
-        task = URLSession.shared.dataTask(with: marsReference.imageURL.usingHTTPS!) {d,_,e in
+        task = sesh.dataTask(with: marsReference.imageURL.usingHTTPS!) {d,_,e in
+            defer { self.state = .isFinished}
             if let error = e {
                 NSLog("Error : \(error)")
-                self.state = .isFinished
                 return
             }
             
             if let data = d {
                 self.imageData = data
-                self.state = .isFinished
                 return
             }
         }
@@ -98,6 +97,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     override func cancel() {
         task.cancel()
+        print("Ending fetch for marsReference id: \(marsReference.id)")
     }
     
 }

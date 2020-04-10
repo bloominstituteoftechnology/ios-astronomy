@@ -63,6 +63,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
         let photoReference = photoReferences[indexPath.item]
         opDic[photoReference.id]?.cancel()
+        print("Cancelled opdic entry for id: \(photoReference.id)")
+        
     }
     
     // MARK: - Private
@@ -72,7 +74,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        
+        cell.photoId = photoReference.id
 //         TODO: Implement image loading here
         
 //        let request = photoReference.imageURL.usingHTTPS!
@@ -88,24 +90,42 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
         storeCache.addDependency(fetchOp)
         
-        
         let lastOp = BlockOperation {
-            var newImage: UIImage?
-                if let existingData = self.cache.value(for: photoReference.id) {
-                    newImage = UIImage(data: existingData)!
-                } else {
-                    if let data = fetchOp.imageData {
-                        newImage = UIImage(data: data)
-                    }
-                }
+//            var newImage: UIImage?
+//                if let existingData = self.cache.value(for: photoReference.id),
+//                    let imageData = UIImage(data: existingData) {
+//                    newImage = imageData
+//                } else {
+//                    if let data = fetchOp.imageData {
+//                        newImage = UIImage(data: data)
+//                    }
+//                }
             DispatchQueue.main.async {
-                let checkCell = self.collectionView?.cellForItem(at: indexPath) as? ImageCollectionViewCell
+                guard let checkCell = self.collectionView?.cellForItem(at: indexPath) as? ImageCollectionViewCell,
+                    let data = self.cache.value(for: photoReference.id) else { return }
                 if  checkCell == cell {
-                    
-                        checkCell?.imageView.image = newImage
+                    checkCell.imageView.image = UIImage(data: data)
                 }
             }
         }
+//        let lastOp = BlockOperation {
+//            var newImage: UIImage?
+//                if let existingData = self.cache.value(for: photoReference.id),
+//                    let imageData = UIImage(data: existingData) {
+//                    newImage = imageData
+//                } else {
+//                    if let data = fetchOp.imageData {
+//                        newImage = UIImage(data: data)
+//                    }
+//                }
+//            DispatchQueue.main.async {
+//                let checkCell = self.collectionView?.cellForItem(at: indexPath) as? ImageCollectionViewCell
+//                if  checkCell == cell {
+//
+//                        checkCell?.imageView.image = newImage
+//                }
+//            }
+//        }
         lastOp.addDependency(fetchOp)
 //        let reuseCheck = BlockOperation {
 //
@@ -121,7 +141,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 //        }
         
         photoFetchQueue.addOperations([fetchOp, storeCache, lastOp], waitUntilFinished: false)
+        
+        
         opDic[photoReference.id] = fetchOp
+        print("created a dictionary entry for id \(photoReference.id)")
         
 //        URLSession.shared.dataTask(with: request) { d, r, e in
 //            if let error = e {
@@ -143,6 +166,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 //
 //        }.resume()
         
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard let cell = collectionView.cellForItem(at: indexPath) as? ImageCollectionViewCell else { return }
+        print(cell.photoId)
+        loadImage(forCell: cell, forItemAt: indexPath)
     }
     
     // Properties
