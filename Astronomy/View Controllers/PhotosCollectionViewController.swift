@@ -155,6 +155,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
         }
         
+        /// TODO: ? Do I need have an operation that removes FetchPhotoOperation from fetchOperations? And have 2 dependancies? setImageOp and cachePhotoOp. Or does overwriting it at a later time cause it to be garbage collected?
+        
         cachePhotoOp.addDependency(fetchPhotoOp)
         setImageOp.addDependency(fetchPhotoOp)
         
