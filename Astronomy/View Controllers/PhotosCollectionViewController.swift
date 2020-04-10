@@ -93,7 +93,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let lastOp = BlockOperation {
             DispatchQueue.main.async {
                 
-                guard let checkCellIndex = self.collectionView?.indexPath(for: cell) else {
+                guard let checkCellIndex = self.collectionView?.indexPath(for: cell as UICollectionViewCell) else {
                     print("Error finding a cell to check's index. ID: \(cell.photoId)")
                     return
                 }
