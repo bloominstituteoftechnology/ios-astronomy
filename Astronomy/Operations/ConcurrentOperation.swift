@@ -78,7 +78,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     
     override func start() {
-        print("Starting fetch for marsReference id: \(marsReference.id)")
+//        print("Starting fetch for marsReference id: \(marsReference.id)")
         self.state = .isExecuting
         task = sesh.dataTask(with: marsReference.imageURL.usingHTTPS!) {d,r,e in
             defer { self.state = .isFinished}
@@ -88,7 +88,7 @@ class FetchPhotoOperation: ConcurrentOperation {
             }
             
             if let response = r as? HTTPURLResponse {
-                NSLog(" RE CE  IV  E D A RE S PO N SE   WITH   STATUS    CODE: \(response.statusCode)  FOR   ID   \(self.marsReference.id)")
+//                NSLog(" RE CE  IV  E D A RE S PO N SE   WITH   STATUS    CODE: \(response.statusCode)  FOR   ID   \(self.marsReference.id)")
             }
             
             if let data = d {
@@ -101,7 +101,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     override func cancel() {
         task.cancel()
-        print("Ending fetch for marsReference id: \(marsReference.id)")
+//        print("Ending fetch for marsReference id: \(marsReference.id)")
     }
     
 }

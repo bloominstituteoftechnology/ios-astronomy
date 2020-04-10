@@ -34,8 +34,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
-        
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell else { fatalError() }
+        cell.indexPath = indexPath
         loadImage(forCell: cell, forItemAt: indexPath)
         
         return cell
@@ -77,14 +77,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         cell.photoId = photoReference.id
 //         TODO: Implement image loading here
         
-//        let request = photoReference.imageURL.usingHTTPS!
-        
-        
-        
         let fetchOp = FetchPhotoOperation(marsReference: photoReference)
+        
         let storeCache = BlockOperation {
             if let data = fetchOp.imageData {
                 self.cache.cache(value: data, for: photoReference.id)
+            } else {
+                print("NO DATA TO STORE IN STORECAHCE OP")
             }
             
         }
@@ -93,20 +92,36 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let lastOp = BlockOperation {
             DispatchQueue.main.async {
                 
-                guard let checkCellIndex = self.collectionView?.indexPath(for: cell as UICollectionViewCell) else {
-                    print("Error finding a cell to check's index. ID: \(cell.photoId)")
+                let visibleIndexPath = self.collectionView.indexPathsForVisibleItems
+                
+                guard let checkIndex = visibleIndexPath.firstIndex(where: {
+                    let tempCell = self.collectionView.cellForItem(at: $0) as! ImageCollectionViewCell
+                    print("Looking for tempcell with a photo ID of \(cell.photoId)")
+                    return tempCell.photoId == cell.photoId
+                }) else {
+                    print("Couldn't find cell with photo ID \(cell.photoId).")
+                    print("Here's' what I could find")
+                    for path in visibleIndexPath {
+                        let tempCell = self.collectionView.cellForItem(at: path) as! ImageCollectionViewCell
+                        print(tempCell.photoId)
+                    }
                     return
                 }
-                guard let checkCell = self.collectionView.cellForItem(at: checkCellIndex) as? ImageCollectionViewCell else {
-                    print("Error finding a cell after getting the index.")
-                    return
-                }
+//                guard let checkCell = checkCellExistence as? ImageCollectionViewCell else {
+//                    print("Error casting existing cell")
+//                    return
+//                }
                 guard let data = self.cache.value(for: photoReference.id) else {
                         NSLog("ERROR UNWRAPPING DATA ")
                         return }
-                if  checkCell.photoId == cell.photoId {
-                    checkCell.imageView.image = UIImage(data: data)
+                guard let foundCell = self.collectionView.cellForItem(at: visibleIndexPath[checkIndex]) as? ImageCollectionViewCell else {
+                    print("Found index, but couldn't turn it into a cell")
+                    return
                 }
+                foundCell.imageView.image = UIImage(data: data)
+//                if  checkCell.photoId == cell.photoId {
+//                    checkCell.imageView.image = UIImage(data: data)
+//                }
             }
         }
         lastOp.addDependency(fetchOp)
@@ -123,6 +138,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         guard let cell = collectionView.cellForItem(at: indexPath) as? ImageCollectionViewCell else { return }
         print(cell.photoId)
         loadImage(forCell: cell, forItemAt: indexPath)
+        print("Fetched for index path: \(indexPath)")
     }
     
     // Properties
