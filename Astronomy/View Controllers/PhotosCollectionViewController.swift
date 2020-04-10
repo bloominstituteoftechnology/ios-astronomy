@@ -22,7 +22,7 @@ enum NetworkError: Error {
     case badUrl
 }
 
-class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UICollectionViewDelegate {
     
     // MARK: - Properties
     private var imageCache = Cache<Int, UIImage>()
@@ -192,5 +192,16 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             completion(.success(image))
 
         }.resume()
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        
+        // What photo were we trying to load
+        let photoReference = photoReferences[indexPath.item]
+
+        if let fetchPhotoOperation = fetchOperations[photoReference.id] {
+            // A photo is trying to be loaded.
+            fetchPhotoOperation.cancel()
+        }
     }
 }
