@@ -62,3 +62,46 @@ class ConcurrentOperation: Operation {
     }
     
 }
+
+// MARK: - Subclass
+
+class FetchPhotoOperation: ConcurrentOperation {
+    var marsReference: MarsPhotoReference
+    var imageData: Data?
+    private var sesh = URLSession(configuration: .default)
+    private var task = URLSessionDataTask()
+    
+    init(marsReference: MarsPhotoReference) {
+        self.marsReference = marsReference
+    }
+    
+    
+    
+    override func start() {
+//        print("Starting fetch for marsReference id: \(marsReference.id)")
+        self.state = .isExecuting
+        task = sesh.dataTask(with: marsReference.imageURL.usingHTTPS!) {d,r,e in
+            defer { self.state = .isFinished}
+            if let error = e {
+                NSLog("Error  RECEIVING    DATA    FROM    MARS: \(error)")
+                return
+            }
+            
+            if let response = r as? HTTPURLResponse {
+//                NSLog(" RE CE  IV  E D A RE S PO N SE   WITH   STATUS    CODE: \(response.statusCode)  FOR   ID   \(self.marsReference.id)")
+            }
+            
+            if let data = d {
+                self.imageData = data
+                return
+            }
+        }
+        task.resume()
+    }
+    
+    override func cancel() {
+        task.cancel()
+//        print("Ending fetch for marsReference id: \(marsReference.id)")
+    }
+    
+}

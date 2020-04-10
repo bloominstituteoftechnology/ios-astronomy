@@ -34,8 +34,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
         
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell else { fatalError() }
+        let photoReference = photoReferences[indexPath.item]
+        cell.indexPath = indexPath
+        cell.photoId = photoReference.id
         loadImage(forCell: cell, forItemAt: indexPath)
         
         return cell
@@ -60,16 +63,70 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        opDic[photoReference.id]?.cancel()
+        print("Cancelled opdic entry for id: \(photoReference.id)")
+        
+    }
+    
     // MARK: - Private
+    
+    private var opDic: [Int : FetchPhotoOperation] = [ : ]
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
+//         TODO: Implement image loading here
         
-        // TODO: Implement image loading here
+        let fetchOp = FetchPhotoOperation(marsReference: photoReference)
+        
+        let storeCache = BlockOperation {
+            if let data = fetchOp.imageData {
+                self.cache.cache(value: data, for: photoReference.id)
+            } else {
+                print("NO DATA TO STORE IN STORECAHCE OP")
+            }
+            
+        }
+        storeCache.addDependency(fetchOp)
+        
+        let lastOp = BlockOperation {
+            
+            guard let data = fetchOp.imageData,
+                    cell.photoId == photoReference.id else {
+                    print("Couldn't cast cell and/or get data")
+                    return
+                }
+            
+                cell.imageView.image = UIImage(data: data)
+            
+        }
+        lastOp.addDependency(fetchOp)
+        
+        photoFetchQueue.addOperations([fetchOp, storeCache], waitUntilFinished: false)
+        OperationQueue.main.addOperation(lastOp)
+        
+        
+        if opDic[photoReference.id] == nil {
+            opDic[photoReference.id] = fetchOp
+            print("created a dictionary entry for id \(photoReference.id)")
+        }
+        
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard let cell = collectionView.cellForItem(at: indexPath) as? ImageCollectionViewCell else { return }
+        print(cell.photoId)
+        loadImage(forCell: cell, forItemAt: indexPath)
+        print("Fetched for index path: \(indexPath)")
     }
     
     // Properties
+    
+    private var photoFetchQueue = OperationQueue()
+    
+    let cache = Cache<Int, Data>()
     
     private let client = MarsRoverClient()
     
