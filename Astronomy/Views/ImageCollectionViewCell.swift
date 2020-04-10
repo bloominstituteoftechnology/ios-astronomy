@@ -19,7 +19,7 @@ class ImageCollectionViewCell: UICollectionViewCell {
     // MARK: Properties
     
     // TODO: ? Is this how folks figured out if cell moved out from under you?
-    var indexPath = IndexPath()
+    var originalIndexPath = IndexPath()
     
     // MARK: IBOutlets
     

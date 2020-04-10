@@ -112,8 +112,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         // Cache the indexPath for fetchImage completion to know whether cell has moved
-        cell.indexPath = indexPath
-        let cachedIndexPath = cell.indexPath
+        cell.originalIndexPath = indexPath
+        let cachedIndexPath = cell.originalIndexPath
         
         // Which photo information do we need to load?
         let photoReference = photoReferences[cachedIndexPath.item]
@@ -127,7 +127,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         guard let secureURL = photoReference.imageURL.usingHTTPS else { return }
         
         fetchImage(of: secureURL) { result in
-            if cachedIndexPath != cell.indexPath {
+            if cachedIndexPath != cell.originalIndexPath {
                 // Cell was reused before image finished loading
                 // print("\(cachedIndexPath) != \(cell.indexPath)")
                 return
