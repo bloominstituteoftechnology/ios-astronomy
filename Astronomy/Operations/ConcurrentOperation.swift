@@ -80,11 +80,15 @@ class FetchPhotoOperation: ConcurrentOperation {
     override func start() {
         print("Starting fetch for marsReference id: \(marsReference.id)")
         self.state = .isExecuting
-        task = sesh.dataTask(with: marsReference.imageURL.usingHTTPS!) {d,_,e in
+        task = sesh.dataTask(with: marsReference.imageURL.usingHTTPS!) {d,r,e in
             defer { self.state = .isFinished}
             if let error = e {
-                NSLog("Error : \(error)")
+                NSLog("Error  RECEIVING    DATA    FROM    MARS: \(error)")
                 return
+            }
+            
+            if let response = r as? HTTPURLResponse {
+                NSLog(" RE CE  IV  E D A RE S PO N SE   WITH   STATUS    CODE: \(response.statusCode)  FOR   ID   \(self.marsReference.id)")
             }
             
             if let data = d {
