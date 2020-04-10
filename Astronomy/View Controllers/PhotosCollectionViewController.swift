@@ -114,7 +114,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
         
         let fetchData = FetchPhotoOperation(photoReference: photoReference)
-        fetchData.start()
+        //fetchData.start()
         
         
         let storeDataOperation = BlockOperation {
@@ -143,25 +143,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         storedOperations[photoReference.id] = fetchData
         
-//        URLSession.shared.dataTask(with: photoURL) { (data, _, error) in
-//            if let error = error {
-//                NSLog("Error fetching photo: \(error)")
-//                return
-//            }
-//
-//            guard let data = data else {
-//                NSLog("No data returned by dataTask")
-//                return
-//            }
-//
-//            // TODO: ask about testing if current index path is the same one i was asked to load
-//            self.cache.cache(value: data, forKey: photoReference.id)
-//            let image = UIImage(data: data)
-//            DispatchQueue.main.async {
-//                cell.imageView.image = image
-//            }
-//
-//        }.resume()
     }
     
     

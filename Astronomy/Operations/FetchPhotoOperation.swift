@@ -12,13 +12,17 @@ class FetchPhotoOperation: ConcurrentOperation {
     let marsPhotoReference: MarsPhotoReference
     var imageData: Data?
     
-    private var dataTask: URLSessionDataTask { URLSession.shared.dataTask(with: marsPhotoReference.imageURL) { (data, _, error) in
-        if let error = error {
-            NSLog("Error fetching image data: \(error)")
-            return
+    private var dataTask: URLSessionDataTask {
+        let imageURL: URL = marsPhotoReference.imageURL.usingHTTPS!
+        return URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+            if let error = error {
+                NSLog("Error fetching image data: \(error)")
+                return
+            }
+            self.imageData = data
+            defer { self.state = .isFinished }
         }
-        self.imageData = data
-        }}
+    }
     
     init(photoReference: MarsPhotoReference) {
         self.marsPhotoReference = photoReference
@@ -28,8 +32,6 @@ class FetchPhotoOperation: ConcurrentOperation {
         state = .isExecuting
         
         dataTask.resume()
-        
-        defer { state = .isFinished }
     }
     
     override func cancel() {
