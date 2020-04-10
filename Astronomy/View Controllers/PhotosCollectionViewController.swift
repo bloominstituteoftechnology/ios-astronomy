@@ -71,7 +71,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-         let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
 //         TODO: Implement image loading here
         
@@ -81,18 +81,22 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let fetchOp = FetchPhotoOperation(marsReference: photoReference)
         let storeCache = BlockOperation {
-            self.cache.cache(value: fetchOp.imageData!, for: photoReference.id)
+            if let data = fetchOp.imageData {
+                self.cache.cache(value: data, for: photoReference.id)
+            }
+            
         }
         storeCache.addDependency(fetchOp)
         
         
         let lastOp = BlockOperation {
-                
-                let newImage: UIImage
+            var newImage: UIImage?
                 if let existingData = self.cache.value(for: photoReference.id) {
                     newImage = UIImage(data: existingData)!
                 } else {
-                    newImage = UIImage(data: fetchOp.imageData!)!
+                    if let data = fetchOp.imageData {
+                        newImage = UIImage(data: data)
+                    }
                 }
             DispatchQueue.main.async {
                 let checkCell = self.collectionView?.cellForItem(at: indexPath) as? ImageCollectionViewCell
@@ -116,7 +120,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 //            }
 //        }
         
-        OperationQueue().addOperations([fetchOp, storeCache, lastOp], waitUntilFinished: true)
+        photoFetchQueue.addOperations([fetchOp, storeCache, lastOp], waitUntilFinished: false)
         opDic[photoReference.id] = fetchOp
         
 //        URLSession.shared.dataTask(with: request) { d, r, e in
