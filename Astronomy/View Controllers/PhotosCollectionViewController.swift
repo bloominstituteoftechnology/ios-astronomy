@@ -60,9 +60,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        opDic[photoReference.id]?.cancel()
+    }
+    
     // MARK: - Private
     
-    private var opDic: [Int : BlockOperation] = [ : ]
+    private var opDic: [Int : FetchPhotoOperation] = [ : ]
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
@@ -82,19 +87,22 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         
         let lastOp = BlockOperation {
-            DispatchQueue.main.async {
-                let checkCell = self.collectionView?.cellForItem(at: indexPath) as? ImageCollectionViewCell
+                
                 let newImage: UIImage
                 if let existingData = self.cache.value(for: photoReference.id) {
                     newImage = UIImage(data: existingData)!
                 } else {
                     newImage = UIImage(data: fetchOp.imageData!)!
                 }
+            DispatchQueue.main.async {
+                let checkCell = self.collectionView?.cellForItem(at: indexPath) as? ImageCollectionViewCell
                 if  checkCell == cell {
-                    checkCell?.imageView.image = newImage
+                    
+                        checkCell?.imageView.image = newImage
                 }
             }
         }
+        lastOp.addDependency(fetchOp)
 //        let reuseCheck = BlockOperation {
 //
 //
@@ -109,7 +117,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 //        }
         
         OperationQueue().addOperations([fetchOp, storeCache, lastOp], waitUntilFinished: true)
-        
+        opDic[photoReference.id] = fetchOp
         
 //        URLSession.shared.dataTask(with: request) { d, r, e in
 //            if let error = e {
