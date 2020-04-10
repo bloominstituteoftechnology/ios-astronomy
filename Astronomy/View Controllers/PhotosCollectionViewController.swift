@@ -14,6 +14,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private let client = MarsRoverClient()
     var cache = Cache<Int, Data>()
+    private let photoFetchQueue = OperationQueue()
+    let queue = OperationQueue.main
+    var storedOperations: [Int : Operation] = [:]
     
     private var roverInfo: MarsRover? {
         didSet {
@@ -72,6 +75,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        let fetchOpereation = storedOperations[photoReference.id]
+        fetchOpereation?.cancel()
+    }
+    
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -97,7 +106,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoReference = photoReferences[indexPath.item]
         
-        let photoURL = photoReference.imageURL.usingHTTPS!
         if cache.value(forKey: photoReference.id) != nil,
             let data = cache.value(forKey: photoReference.id),
             let image = UIImage(data: data) {
@@ -105,25 +113,55 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             return
         }
         
-        URLSession.shared.dataTask(with: photoURL) { (data, _, error) in
-            if let error = error {
-                NSLog("Error fetching photo: \(error)")
-                return
-            }
+        let fetchData = FetchPhotoOperation(photoReference: photoReference)
+        fetchData.start()
+        
+        
+        let storeDataOperation = BlockOperation {
+            guard let data = fetchData.imageData else {
+                NSLog("fetchData.imageData does not have valid data")
+                return }
             
-            guard let data = data else {
-                NSLog("No data returned by dataTask")
-                return
-            }
-            
-            // TODO: ask about testing if current index path is the same one i was asked to load
             self.cache.cache(value: data, forKey: photoReference.id)
-            let image = UIImage(data: data)
-            DispatchQueue.main.async {
+        }
+        
+        let setImageViewOperation = BlockOperation {
+            if (self.collectionView .cellForItem(at: indexPath) != nil),
+                let data = fetchData.imageData,
+                let image = UIImage(data: data) {
+                
                 cell.imageView.image = image
+                return
             }
-            
-        }.resume()
+        }
+        storeDataOperation.addDependency(fetchData)
+        setImageViewOperation.addDependency(fetchData)
+        
+        photoFetchQueue.addOperations([fetchData, storeDataOperation], waitUntilFinished: true)
+        
+        queue.addOperation(setImageViewOperation)
+        
+        storedOperations[photoReference.id] = fetchData
+        
+//        URLSession.shared.dataTask(with: photoURL) { (data, _, error) in
+//            if let error = error {
+//                NSLog("Error fetching photo: \(error)")
+//                return
+//            }
+//
+//            guard let data = data else {
+//                NSLog("No data returned by dataTask")
+//                return
+//            }
+//
+//            // TODO: ask about testing if current index path is the same one i was asked to load
+//            self.cache.cache(value: data, forKey: photoReference.id)
+//            let image = UIImage(data: data)
+//            DispatchQueue.main.async {
+//                cell.imageView.image = image
+//            }
+//
+//        }.resume()
     }
     
     
