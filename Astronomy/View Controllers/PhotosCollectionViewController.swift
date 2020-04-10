@@ -92,59 +92,27 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         storeCache.addDependency(fetchOp)
         
         let lastOp = BlockOperation {
-//            var visibleIndexPath: [IndexPath] = []
+            // Create empty array
             var visibleCells: [UICollectionViewCell] = []
+            
+            // Use main queue.sync to populate the array.
             DispatchQueue.main.sync {
-//                visibleIndexPath = self.collectionView.indexPathsForVisibleItems
                 visibleCells = self.collectionView.visibleCells
             }
+            
+            // Main.async to use this array to assign images
             DispatchQueue.main.async {
-                
-//                guard let checkIndex = visibleIndexPath.firstIndex(where: {
-//                    let tempCell = self.collectionView.cellForItem(at: $0) as! ImageCollectionViewCell
-//                    print("Looking for tempcell with a photo ID of \(cell.photoId)")
-//                    return tempCell.photoId == cell.photoId
-//                }) else {
-//                    print("Couldn't find cell with photo ID \(cell.photoId).")
-//                    print("Here's' what I could find")
-//                    for path in visibleIndexPath {
-//                        let tempCell = self.collectionView.cellForItem(at: path) as! ImageCollectionViewCell
-//                        print(tempCell.photoId)
-//                    }
-//                    return
-//                }
-                
-                
-//                guard let checkCell = checkCellExistence as? ImageCollectionViewCell else {
-//                    print("Error casting existing cell")
-//                    return
-//                }
-//                guard let data = self.cache.value(for: photoReference.id) else {
-//                        NSLog("ERROR UNWRAPPING DATA ")
-//                        return }
                 for visibleCell in visibleCells {
-                    guard let visibleCell = visibleCell as? ImageCollectionViewCell else {
-                        print("Couldn't cast cell")
+                    guard let visibleCell = visibleCell as? ImageCollectionViewCell,
+                    let data = self.cache.value(for: visibleCell.photoId)else {
+                        print("Couldn't cast cell and/or get data")
                         return
                     }
-                    guard let data = self.cache.value(for: visibleCell.photoId) else {
-                    NSLog("ERROR UNWRAPPING DATA ")
-                        return
-                    }
+                    // If it's in the array then it's on screen, so assign image.
                     visibleCell.imageView.image = UIImage(data: data)
-//                    if visibleCell.photoId == cell.photoId {
-//                        visibleCell.imageView.image = UIImage(data: data)
-//                    }
-                }
-//                guard let foundCell = self.collectionView.cellForItem(at: visibleIndexPath[checkIndex]) as? ImageCollectionViewCell else {
-//                    print("Found index, but couldn't turn it into a cell")
-//                    return
-//                }
-//                foundCell.imageView.image = UIImage(data: data)
-//                if  checkCell.photoId == cell.photoId {
-//                    checkCell.imageView.image = UIImage(data: data)
-//                }
-            }
+                } // For loop
+            } // End of Async call
+            
         }
         lastOp.addDependency(fetchOp)
         
