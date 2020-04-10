@@ -119,17 +119,22 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 //                    print("Error casting existing cell")
 //                    return
 //                }
-                guard let data = self.cache.value(for: photoReference.id) else {
-                        NSLog("ERROR UNWRAPPING DATA ")
-                        return }
+//                guard let data = self.cache.value(for: photoReference.id) else {
+//                        NSLog("ERROR UNWRAPPING DATA ")
+//                        return }
                 for visibleCell in visibleCells {
                     guard let visibleCell = visibleCell as? ImageCollectionViewCell else {
                         print("Couldn't cast cell")
                         return
                     }
-                    if visibleCell.photoId == cell.photoId {
-                        visibleCell.imageView.image = UIImage(data: data)
+                    guard let data = self.cache.value(for: visibleCell.photoId) else {
+                    NSLog("ERROR UNWRAPPING DATA ")
+                        return
                     }
+                    visibleCell.imageView.image = UIImage(data: data)
+//                    if visibleCell.photoId == cell.photoId {
+//                        visibleCell.imageView.image = UIImage(data: data)
+//                    }
                 }
 //                guard let foundCell = self.collectionView.cellForItem(at: visibleIndexPath[checkIndex]) as? ImageCollectionViewCell else {
 //                    print("Found index, but couldn't turn it into a cell")
