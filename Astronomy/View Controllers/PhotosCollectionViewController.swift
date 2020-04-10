@@ -38,7 +38,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var cache = Cache<Int, Data>()
     private var photoFetchQueue = OperationQueue()
-    var photoDictionary = [Int : Data]()
+    var photoDictionary = [Int : FetchPhotoOperation]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -101,20 +101,25 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         let loadOperation = FetchPhotoOperation(reference: photoReference)
         let updateCache = BlockOperation {
+            print("it called this update block")
             self.cache.cache(value: loadOperation.imageData!, for: indexPath.item)
         }
         let setImages = BlockOperation {
-            if cell.reuseIdentifier == nil {
+            print("CALLS THE BLOCK")
+        //    if cell.reuseIdentifier == nil {
                 cell.imageView.image = UIImage(data: self.cache.value(for: indexPath.item)!)
-            }
+         //   }
         }
         
         updateCache.addDependency(loadOperation)
         setImages.addDependency(loadOperation)
         
-        
-        // TODO: Implement image loading here
+        photoFetchQueue.addOperation(loadOperation)
+        photoFetchQueue.addOperation(updateCache)
+        OperationQueue.main.addOperation(setImages)
     
+        photoDictionary[loadOperation.id] = loadOperation
+        
     }
     
     
