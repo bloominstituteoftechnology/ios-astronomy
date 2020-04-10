@@ -34,8 +34,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell else { fatalError() }
+        let photoReference = photoReferences[indexPath.item]
         cell.indexPath = indexPath
+        cell.photoId = photoReference.id
         loadImage(forCell: cell, forItemAt: indexPath)
         
         return cell
@@ -74,7 +77,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        cell.photoId = photoReference.id
 //         TODO: Implement image loading here
         
         let fetchOp = FetchPhotoOperation(marsReference: photoReference)

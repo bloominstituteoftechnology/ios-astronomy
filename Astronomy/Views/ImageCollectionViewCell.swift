@@ -15,7 +15,7 @@ class ImageCollectionViewCell: UICollectionViewCell {
     
     override func prepareForReuse() {
         imageView.image = #imageLiteral(resourceName: "MarsPlaceholder")
-        
+        photoId = 0
         super.prepareForReuse()
     }
     
