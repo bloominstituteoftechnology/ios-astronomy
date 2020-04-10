@@ -92,9 +92,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         storeCache.addDependency(fetchOp)
         
         let lastOp = BlockOperation {
+            var visibleIndexPath: [IndexPath] = []
+            DispatchQueue.main.sync {
+                visibleIndexPath = self.collectionView.indexPathsForVisibleItems
+            }
             DispatchQueue.main.async {
-                
-                let visibleIndexPath = self.collectionView.indexPathsForVisibleItems
                 
                 guard let checkIndex = visibleIndexPath.firstIndex(where: {
                     let tempCell = self.collectionView.cellForItem(at: $0) as! ImageCollectionViewCell
