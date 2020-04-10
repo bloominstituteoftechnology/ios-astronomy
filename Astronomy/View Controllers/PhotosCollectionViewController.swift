@@ -133,9 +133,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         photoFetchQueue.addOperations([fetchOp, storeCache, lastOp], waitUntilFinished: false)
         
         
+        if opDic[photoReference.id] == nil {
+            opDic[photoReference.id] = fetchOp
+            print("created a dictionary entry for id \(photoReference.id)")
+        }
         
-        opDic[photoReference.id] = fetchOp
-        print("created a dictionary entry for id \(photoReference.id)")
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
