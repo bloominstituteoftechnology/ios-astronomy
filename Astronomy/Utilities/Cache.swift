@@ -16,8 +16,13 @@ class Cache<Key: Hashable, Value> {
     
     func cache(value: Value, for key: Key) {
         cacheQueue.async {
-           
+            
             self.dict[key] = value
+        }
+    }
+    func value(for key: Key) -> Value? {
+        cacheQueue.sync {
+            self.dict[key]
         }
     }
 }
