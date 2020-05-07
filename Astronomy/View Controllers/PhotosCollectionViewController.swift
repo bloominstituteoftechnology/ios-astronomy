@@ -69,8 +69,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
          let photoReference = photoReferences[indexPath.item]
         guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
         
-       
-//        URLSession.shared.dataTask(with: photoReference.imageURL.usingHTTPS ?? photoReference.imageURL)
+       if let cache = cache.value(for: photoReference.id) {
+           cell.imageView.image = UIImage(data: cache)
+           return
+       } else {
         
         URLSession.shared.dataTask(with: imageURL) { data, _, error in
                
@@ -91,7 +93,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
         }.resume()
         // TODO: Implement image loading here
-        
+        }
     }
     
     // Properties
