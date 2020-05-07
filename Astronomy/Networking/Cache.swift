@@ -11,7 +11,7 @@ import Foundation
 class Cache<Key: Hashable, Value> {
     private var cache = [Key: Value]()
     
-    private let cacheQueue = DispatchQueue(label: "com.org.app.cacheQueue<\(Key.self), \(Value.self)")
+    private let cacheQueue = DispatchQueue(label: "com.LambdaSchool.Astronomy.cacheQueue<\(Key.self), \(Value.self)")
     
     func cache(_ value: Value?, for key: Key) {
         cacheQueue.async {
