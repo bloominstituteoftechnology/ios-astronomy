@@ -13,6 +13,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        photoFetchQueue.name = "com.LambdaSchool.Astronomy.fetch-photo-queue"
+        
         client.fetchMarsRover(named: "curiosity") { (rover, error) in
             if let error = error {
                 NSLog("Error fetching info for curiosity: \(error)")
@@ -60,22 +62,57 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        fetchOperations[indexPath]?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        if let image = cachedImages[photoReference.id] {
+            cell.imageView.image = image
+            return
+        }
+        
+        let savedIndexPath = indexPath
+        
+        let fetchPhoto = FetchPhotoOperation(photoReference: photoReference)
+        let storeInCache = BlockOperation {
+            guard let imageData = fetchPhoto.imageData,
+                let image = UIImage(data: imageData) else { return }
+            
+            self.cachedImages[photoReference.id] = image
+        }
+        let setImageToCell = BlockOperation {
+            guard let imageData = fetchPhoto.imageData,
+                let image = UIImage(data: imageData),
+                savedIndexPath == indexPath else { return }
+            
+            cell.imageView.image = image
+        }
+        fetchOperations[indexPath] = fetchPhoto
+        
+        storeInCache.addDependency(fetchPhoto)
+        setImageToCell.addDependency(fetchPhoto)
+                
+        photoFetchQueue.addOperations([fetchPhoto, storeInCache], waitUntilFinished: false)
+        OperationQueue.main.addOperation(setImageToCell)
     }
     
     // Properties
     
     private let client = MarsRoverClient()
     
+    private var cachedImages = Cache<Int, UIImage>()
+    private var fetchOperations = Cache<IndexPath, FetchPhotoOperation>()
+    private let photoFetchQueue = OperationQueue()
+    
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
