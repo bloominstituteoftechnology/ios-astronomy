@@ -66,7 +66,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let savedIndexPath = indexPath
         let photoReference = photoReferences[indexPath.item]
-        if let image = cachedImages.value(for: photoReference.id) {
+        if let image = cachedImages[photoReference.id] {
             cell.imageView.image = image
             return
         }
@@ -86,8 +86,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             
             guard let image = UIImage(data: data),
                 savedIndexPath == indexPath else { return }
-            self.cachedImages.cache(value: image, for: photoReference.id)
-                        
+            self.cachedImages[photoReference.id] = image
+            
             DispatchQueue.main.async {
                 cell.imageView.image = image
             }
