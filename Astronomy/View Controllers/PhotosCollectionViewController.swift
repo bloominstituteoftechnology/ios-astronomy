@@ -10,6 +10,8 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    let cache = Cache<Int,Data>()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
