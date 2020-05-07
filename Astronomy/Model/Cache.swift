@@ -8,7 +8,9 @@
 
 import Foundation
 
-class Cache {
+class Cache<Key: Hashable, Value> {
+
+    private var cache = [Key : Value]()
 
 
     
