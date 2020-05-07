@@ -26,7 +26,10 @@ class FetchPhotoOperation: ConcurrentOperation {
     }
     
     private lazy var loadImageDataTask = BlockOperation {
-        defer { self.state = .isFinished }
+        print("Fetch started")
+        defer {
+            self.state = .isFinished
+        }
         guard let imageURL = self.photoReference.imageURL.usingHTTPS else { return }
         
         URLSession.shared.dataTask(with: imageURL) { data, _, error in
@@ -41,8 +44,8 @@ class FetchPhotoOperation: ConcurrentOperation {
             }
             
             self.imageData = data
-        }
-        .resume()
+            print("Fetch finished")
+        }.resume()
     }
     
 }

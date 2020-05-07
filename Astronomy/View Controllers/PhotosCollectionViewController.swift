@@ -13,6 +13,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        photoFetchQueue.name = "com.LambdaSchool.Astronomy.fetch-photo-queue"
+        
         client.fetchMarsRover(named: "curiosity") { (rover, error) in
             if let error = error {
                 NSLog("Error fetching info for curiosity: \(error)")
@@ -64,42 +66,68 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        let savedIndexPath = indexPath
         let photoReference = photoReferences[indexPath.item]
+        
         if let image = cachedImages[photoReference.id] {
             cell.imageView.image = image
             return
         }
         
-        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
+        let savedIndexPath = indexPath
         
-        URLSession.shared.dataTask(with: imageURL) { data, _, error in
-            if let error = error {
-                NSLog("Could not fetch image with error: \(error)")
-                return
-            }
+        let fetchPhoto = FetchPhotoOperation(photoReference: photoReference)
+        let storeInCache = BlockOperation {
+            print("Store started")
+            guard let imageData = fetchPhoto.imageData,
+                let image = UIImage(data: imageData) else { return }
             
-            guard let data = data else {
-                NSLog("Returned with no data")
-                return
-            }
-            
-            guard let image = UIImage(data: data),
-                savedIndexPath == indexPath else { return }
             self.cachedImages[photoReference.id] = image
-            
-            DispatchQueue.main.async {
-                cell.imageView.image = image
-            }
         }
-        .resume()
+        let setImageToCell = BlockOperation {
+            print("Set started")
+            guard let imageData = fetchPhoto.imageData,
+                let image = UIImage(data: imageData),
+                savedIndexPath == indexPath else { return }
+            
+            cell.imageView.image = image
+        }
+        
+        storeInCache.addDependency(fetchPhoto)
+        setImageToCell.addDependency(fetchPhoto)
+        
+        photoFetchQueue.addOperations([fetchPhoto, storeInCache, setImageToCell], waitUntilFinished: false)
+        
+//        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
+//
+//        URLSession.shared.dataTask(with: imageURL) { data, _, error in
+//            if let error = error {
+//                NSLog("Could not fetch image with error: \(error)")
+//                return
+//            }
+//
+//            guard let data = data else {
+//                NSLog("Returned with no data")
+//                return
+//            }
+//
+//            guard let image = UIImage(data: data),
+//                savedIndexPath == indexPath else { return }
+//            self.cachedImages[photoReference.id] = image
+//
+//            DispatchQueue.main.async {
+//                cell.imageView.image = image
+//            }
+//        }
+//        .resume()
     }
     
     // Properties
     
     private let client = MarsRoverClient()
     
-    var cachedImages = Cache<Int, UIImage>()
+    private var cachedImages = Cache<Int, UIImage>()
+    private let photoFetchQueue = OperationQueue()
+    private let mainQueue = DispatchQueue.main
     
     private var roverInfo: MarsRover? {
         didSet {
