@@ -10,6 +10,23 @@ import Foundation
 
 class ConcurrentOperation: Operation {
     
+    
+     private(set) var imageData: Data?
+        let id: Int
+        let sol: Int
+        let camera: Camera
+        let earthDate: Date
+        let imageURL: URL
+
+        init(marsPhotoReference: MarsPhotoReference) {
+            self.id = marsPhotoReference.id
+            self.camera = marsPhotoReference.camera
+            self.sol = marsPhotoReference.sol
+            self.earthDate = marsPhotoReference.earthDate
+            self.imageURL = marsPhotoReference.imageURL
+        }
+
+       
     // MARK: Types
     
     enum State: String {
