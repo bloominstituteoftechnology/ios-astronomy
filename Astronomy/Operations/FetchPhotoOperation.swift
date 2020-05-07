@@ -18,21 +18,20 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     override func start() {
         state = .isExecuting
+        
         loadImageDataTask.start()
     }
     
     override func cancel() {
         loadImageDataTask.cancel()
+        print("Canceled fetching \(photoReference.id)")
     }
     
     private lazy var loadImageDataTask = BlockOperation {
-        print("Fetch started")
-        defer {
-            self.state = .isFinished
-        }
         guard let imageURL = self.photoReference.imageURL.usingHTTPS else { return }
         
         URLSession.shared.dataTask(with: imageURL) { data, _, error in
+            defer { self.state = .isFinished }
             if let error = error {
                 NSLog("Failed to fetch photo with error: \(error)")
                 return
@@ -44,7 +43,6 @@ class FetchPhotoOperation: ConcurrentOperation {
             }
             
             self.imageData = data
-            print("Fetch finished")
         }.resume()
     }
     
