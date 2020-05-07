@@ -14,10 +14,10 @@ class Cache<Key: Hashable, Value> {
     private var cache = [Key : Value]()
 
     // created a serial queue
-    private var queue = DispatchQueue(label: "placeholder")
+    private var queue = DispatchQueue(label: "com.LambdaSchool.Astronomy.ConcurrentOperationStateQueue")
 
     // add items to the cache of type dictionary
-    func cache(value: Value, key: Key) {
+    func cache(key: Key, value: Value) {
         queue.async {
             self.cache[key] = value
         }
