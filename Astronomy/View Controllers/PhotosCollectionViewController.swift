@@ -87,7 +87,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async {
                 cell.imageView.image = image
             }
-        }
+        }.resume()
         // TODO: Implement image loading here
         
     }
