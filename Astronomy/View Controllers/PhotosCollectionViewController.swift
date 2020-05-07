@@ -23,6 +23,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     
+    //MARK: - Properties
+    let cache = Cache<Int, Data>()
+    
     // UICollectionViewDataSource/Delegate
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -66,6 +69,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         //TODO: Check if the current index path for cell is the same one you were asked to load
         
+        
         let photoReference = photoReferences[indexPath.item]
         
         //Unwrap URL
@@ -77,30 +81,56 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "GET"
         
-        // Load in Image
-        URLSession.shared.dataTask(with: urlRequest) { (data, response, error) in
-            
-            //Check for error's
-            if let error = error {
-                print("Error with URL in loadImage: \(error)")
+        //Image isn't stored in the Cache
+        if cache.value(for: photoReference.id) == nil {
+            // Load in Image
+            URLSession.shared.dataTask(with: urlRequest) { (data, response, error) in
+                
+                //Check for error's
+                if let error = error {
+                    print("Error with URL in loadImage: \(error)")
+                    return
+                }
+                
+                //Unwrap Data
+                guard let tempData = data else {
+                    print("Bad Data in Load Image")
+                    return
+                }
+                
+                //Go Back to the main thread and assign the image to the cell imageView.image
+                DispatchQueue.main.async {
+                    
+                    //Store Data in Cache
+                    let photoReference = self.photoReferences[indexPath.item]
+                    self.cache.cache(value: tempData, for: photoReference.id)
+                    
+                    let currentIndex = self.collectionView.indexPath(for: cell)
+                    if currentIndex == indexPath {
+                        let image = UIImage(data: tempData)
+                        cell.imageView.image = image
+                    } else {
+                        return
+                    }
+                }
+                
+            }.resume()
+        } else {
+            //Assign Cached Image
+            let imageData = cache.value(for: photoReference.id)
+            guard let tempData = imageData else {
+                print("Error Image Data was nil")
                 return
             }
             
-            //Unwrap Data
-            guard let tempData = data else {
-                print("Bad Data in Load Image")
-                return
-            }
-            
-            //Go Back to the main thread and assign the image to the cell imageView.image
-            DispatchQueue.main.async {
-                let image = UIImage(data: tempData)
-                cell.imageView.image = image
-            }
-            
-        }.resume()
+            let image = UIImage(data: tempData)
+            cell.imageView.image = image
+        }
         
+    }
     
+    //Check if the current index path for cell is the same one you were asked to load
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
     }
     
     // Properties
