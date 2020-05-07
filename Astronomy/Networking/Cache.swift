@@ -11,11 +11,11 @@ import Foundation
 class Cache<Key: Hashable, Value> {
     private var cachedItems = [Key: Value]()
     
-    func cache(value: Value, for: Key) {
-        
+    func cache(value: Value, for key: Key) {
+        cachedItems[key] = value
     }
     
-    func value(for: Key) {
-        
+    func value(for key: Key) -> Value? {
+        return cachedItems[key]
     }
 }
