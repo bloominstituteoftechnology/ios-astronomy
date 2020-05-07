@@ -11,6 +11,8 @@ import UIKit
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
     let cache = Cache<Int, Data>()
+    private var photoFetchQueue = OperationQueue()
+    var operation = [Int: Operation]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -62,35 +64,62 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    // Implement Cancellation of Operations
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let reference = photoReferences[indexPath.item]
+        operation[reference.id]?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         let photoReference = photoReferences[indexPath.item]
-        let requestURL = photoReference.imageURL.usingHTTPS!
+       // let requestURL = photoReference.imageURL.usingHTTPS!
         
         if let cacheData = cache.value(for: photoReference.id) {
             cell.imageView.image = UIImage(data: cacheData)
         }
         
+        let photoFetchOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+        let store = BlockOperation {
+            guard let data = photoFetchOperation.imageData else { return }
+            self.cache.cache(value: data, for: photoReference.id)
+        }
         
-        URLSession.shared.dataTask(with: requestURL) { (data, _, error) in
-            if let error = error {
-                NSLog("Error getting image data: \(error)")
-                return
-            }
-            guard let data = data else {
-                NSLog("No image data")
-                return
-            }
-            
-            DispatchQueue.main.async {
-                let currentIndex = self.collectionView.indexPath(for: cell)
-                guard currentIndex == indexPath else { return }
-                cell.imageView.image = UIImage(data: data)
-                self.cache.cache(value: data, for: photoReference.id)
-                }
-        }.resume()
+        store.addDependency(photoFetchOperation)
+        photoFetchQueue.addOperation(store)
+        
+        let checkReuse = BlockOperation{
+            let currentIndex = self.collectionView.indexPath(for: cell)
+            guard currentIndex == indexPath, let data = photoFetchOperation.imageData else {return}
+            cell.imageView.image = UIImage(data: data)
+        }
+        checkReuse.addDependency(photoFetchOperation)
+        OperationQueue.main.addOperation(checkReuse)
+
+        photoFetchQueue.addOperation(photoFetchOperation)
+        operation[photoReference.id] = photoFetchOperation
+        
     }
+        
+//        URLSession.shared.dataTask(with: requestURL) { (data, _, error) in
+//            if let error = error {
+//                NSLog("Error getting image data: \(error)")
+//                return
+//            }
+//            guard let data = data else {
+//                NSLog("No image data")
+//                return
+//            }
+//
+//            DispatchQueue.main.async {
+//                let currentIndex = self.collectionView.indexPath(for: cell)
+//                guard currentIndex == indexPath else { return }
+//                cell.imageView.image = UIImage(data: data)
+//                self.cache.cache(value: data, for: photoReference.id)
+//                }
+//        }.resume()
+  
     
     // Properties
     
