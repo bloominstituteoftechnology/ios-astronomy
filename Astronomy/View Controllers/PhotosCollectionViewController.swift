@@ -76,7 +76,17 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 NSLog("error in getting image: \(error)")
                 return
             }
-            
+            guard let data = data else {
+                NSLog("Could not load with API given")
+                return
+            }
+            guard let image = UIImage(data: data) else {
+                NSLog("Could not fetch image with data")
+                return
+            }
+            DispatchQueue.main.async {
+                cell.imageView.image = image
+            }
         }
         // TODO: Implement image loading here
         
