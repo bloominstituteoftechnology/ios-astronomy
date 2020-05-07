@@ -9,6 +9,15 @@
 import Foundation
 
 class Cache<Key: Hashable, Value> {
+    
+    private var cacheQueue = DispatchQueue(label: "MyCacheSerialQueue")
+    
     private var dict: [Key: Value] = [:]
     
+    func cache(value: Value, for key: Key) {
+        cacheQueue.async {
+           
+            self.dict[key] = value
+        }
+    }
 }
