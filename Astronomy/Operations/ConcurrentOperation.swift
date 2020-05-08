@@ -11,13 +11,11 @@ import Foundation
 class ConcurrentOperation: Operation {
     
     // MARK: Types
-    
     enum State: String {
         case isReady, isExecuting, isFinished
     }
     
     // MARK: Properties
-    
     private var _state = State.isReady
     
     private let stateQueue = DispatchQueue(label: "com.LambdaSchool.Astronomy.ConcurrentOperationStateQueue")
@@ -44,7 +42,6 @@ class ConcurrentOperation: Operation {
     }
     
     // MARK: NSOperation
-    
     override dynamic var isReady: Bool {
         return super.isReady && state == .isReady
     }

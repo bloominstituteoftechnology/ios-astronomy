@@ -25,6 +25,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     //MARK: - Properties
     let cache = Cache<Int, Data>()
+    private var fetchPhotoOperation = FetchPhotoOperation()
     
     // UICollectionViewDataSource/Delegate
     
@@ -64,11 +65,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     // MARK: - Private
-    
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
-        //TODO: Check if the current index path for cell is the same one you were asked to load
-        
+    
+        //Give FetchPhotoOperation Cache
+        fetchPhotoOperation.cache = cache
         
         let photoReference = photoReferences[indexPath.item]
         
@@ -83,38 +83,17 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         //Image isn't stored in the Cache
         if cache.value(for: photoReference.id) == nil {
-            // Load in Image
-            URLSession.shared.dataTask(with: urlRequest) { (data, response, error) in
-                
-                //Check for error's
-                if let error = error {
-                    print("Error with URL in loadImage: \(error)")
-                    return
-                }
-                
-                //Unwrap Data
-                guard let tempData = data else {
-                    print("Bad Data in Load Image")
-                    return
-                }
-                
-                //Go Back to the main thread and assign the image to the cell imageView.image
-                DispatchQueue.main.async {
-                    
-                    //Store Data in Cache
-                    let photoReference = self.photoReferences[indexPath.item]
-                    self.cache.cache(value: tempData, for: photoReference.id)
-                    
-                    let currentIndex = self.collectionView.indexPath(for: cell)
-                    if currentIndex == indexPath {
-                        let image = UIImage(data: tempData)
-                        cell.imageView.image = image
-                    } else {
-                        return
-                    }
-                }
-                
-            }.resume()
+            fetchPhotoOperation.photoReference = photoReference
+            fetchPhotoOperation.start()
+            
+            let imageData = cache.value(for: photoReference.id)
+            guard let tempData = imageData else {
+                print("Error Image Data was nil")
+                return
+            }
+            
+            let image = UIImage(data: tempData)
+            cell.imageView.image = image
         } else {
             //Assign Cached Image
             let imageData = cache.value(for: photoReference.id)
@@ -134,7 +113,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     // Properties
-    
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
