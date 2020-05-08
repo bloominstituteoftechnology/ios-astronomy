@@ -10,8 +10,10 @@ import Foundation
 import UIKit
 
 class PhotoFetchOperation: ConcurrentOperation {
+    
     var marsPhotoReference: MarsPhotoReference
     var imageData: UIImage?
+    private var dataTask = URLSessionDataTask()
     
     init(marsPhotoReference: MarsPhotoReference) {
         self.marsPhotoReference = marsPhotoReference
