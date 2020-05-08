@@ -12,7 +12,7 @@ import UIKit
 class PhotoFetchOperation: ConcurrentOperation {
     
     var photoReference: MarsPhotoReference
-    var imageData: UIImage?
+    var imageData: Data?
     private var theDataTask = URLSessionDataTask()
     
     init(photoReference: MarsPhotoReference) {
@@ -34,7 +34,7 @@ class PhotoFetchOperation: ConcurrentOperation {
             
             guard let data = data else { return }
             
-            self.imageData = UIImage(data: data)
+            self.imageData = data
             self.state = .isFinished
         })
         theDataTask.resume()
