@@ -23,6 +23,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     
+    //MARK: - Properties
+    let cache = Cache<Int, Data>()
+    private var fetchPhotoOperation = FetchPhotoOperation()
+    
     // UICollectionViewDataSource/Delegate
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -61,16 +65,54 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     // MARK: - Private
-    
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+    
+        //Give FetchPhotoOperation Cache
+        fetchPhotoOperation.cache = cache
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        //Unwrap URL
+        guard let url = photoReference.imageURL.usingHTTPS else {
+            print("Bad URL in Load Image")
+            return
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+        
+        //Image isn't stored in the Cache
+        if cache.value(for: photoReference.id) == nil {
+            fetchPhotoOperation.photoReference = photoReference
+            fetchPhotoOperation.start()
+            
+            let imageData = cache.value(for: photoReference.id)
+            guard let tempData = imageData else {
+                print("Error Image Data was nil")
+                return
+            }
+            
+            let image = UIImage(data: tempData)
+            cell.imageView.image = image
+        } else {
+            //Assign Cached Image
+            let imageData = cache.value(for: photoReference.id)
+            guard let tempData = imageData else {
+                print("Error Image Data was nil")
+                return
+            }
+            
+            let image = UIImage(data: tempData)
+            cell.imageView.image = image
+        }
+        
+    }
+    
+    //Check if the current index path for cell is the same one you were asked to load
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
     }
     
     // Properties
-    
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
