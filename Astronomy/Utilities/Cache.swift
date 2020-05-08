@@ -10,7 +10,7 @@ import Foundation
 
 class Cache<Key: Hashable, Value> {
     
-    private var cacheQueue = DispatchQueue(label: "MyCacheSerialQueue")
+    private var cacheQueue = DispatchQueue(label: "MyCacheSerialQueue") // safe thread!
     
     private var dict: [Key: Value] = [:]
     
