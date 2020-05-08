@@ -45,6 +45,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
+  
+    
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -125,6 +127,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private var photoReferences = [MarsPhotoReference]() {
         didSet {
             DispatchQueue.main.async { self.collectionView?.reloadData() }
+        }
+    }
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+         let photoReference = photoReferences[indexPath.item]
+        if let operationAction = photoDictionary[photoReference.id] {
+        operationAction.cancel()
         }
     }
     
