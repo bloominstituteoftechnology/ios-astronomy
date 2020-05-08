@@ -11,15 +11,40 @@ import UIKit
 
 class PhotoFetchOperation: ConcurrentOperation {
     
-    var marsPhotoReference: MarsPhotoReference
+    var photoReference: MarsPhotoReference
     var imageData: UIImage?
-    private var dataTask = URLSessionDataTask()
+    private var theDataTask = URLSessionDataTask()
     
-    init(marsPhotoReference: MarsPhotoReference) {
-        self.marsPhotoReference = marsPhotoReference
+    init(photoReference: MarsPhotoReference) {
+        self.photoReference = photoReference
     }
     
     override func start() {
         state = .isExecuting
+        guard let photoURL = photoReference.imageURL.usingHTTPS else { return }
+        let imageURL = photoURL
+        var request = URLRequest(url: imageURL)
+        request.httpMethod = "GET"
+        
+        theDataTask = URLSession.shared.dataTask(with: request, completionHandler: { data, response, error in
+            if let error = error {
+                NSLog("error in getting photo: \(error)")
+                return
+            }
+            
+            guard let data = data else { return }
+            
+            self.imageData = UIImage(data: data)
+            self.state = .isFinished
+        })
+        theDataTask.resume()
+        
     }
+   
+    override func cancel() {
+        theDataTask.cancel()
+    }
+    
+    
+   
 }
