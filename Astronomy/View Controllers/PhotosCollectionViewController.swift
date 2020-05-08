@@ -11,6 +11,8 @@ import UIKit
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
     let cache = Cache<Int,Data>()
+    private let photoFetchQueue = OperationQueue()
+    var photoDictionary: [Int: OperationQueue] = [:]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -73,25 +75,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
            cell.imageView.image = UIImage(data: cache)
            return
        } else {
+        let fetchedPhoto = PhotoFetchOperation(photoReference: photoReference)
         
-        URLSession.shared.dataTask(with: imageURL) { data, _, error in
-               
-            if let error = error {
-                NSLog("error in getting image: \(error)")
-                return
-            }
-            guard let data = data else {
-                NSLog("Could not load with API given")
-                return
-            }
-            guard let image = UIImage(data: data) else {
-                NSLog("Could not fetch image with data")
-                return
-            }
-            DispatchQueue.main.async {
-                cell.imageView.image = image
-            }
-        }.resume()
         // TODO: Implement image loading here
         }
     }
