@@ -7,3 +7,17 @@
 //
 
 import Foundation
+import UIKit
+
+class PhotoFetchOperation: ConcurrentOperation {
+    var marsPhotoReference: MarsPhotoReference
+    var imageData: UIImage?
+    
+    init(marsPhotoReference: MarsPhotoReference) {
+        self.marsPhotoReference = marsPhotoReference
+    }
+    
+    override func start() {
+        state = .isExecuting
+    }
+}
