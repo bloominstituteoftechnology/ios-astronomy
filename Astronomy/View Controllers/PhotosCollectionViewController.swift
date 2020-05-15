@@ -64,9 +64,29 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
+        
+        let photoURL = photoReference.imageURL.usingHTTPS!
+        let request = URLRequest(url: photoURL)
+        let dataTask = URLSession.shared.dataTask(with: request) { (data, _ , error) in
+            if let error = error {
+                print("Error getting the datakTask: \(error)")
+                return
+                
+            }
+            guard let data = data else {
+                return
+            }
+            
+            do {
+                let jsonDecoder = JSONDecoder()
+                
+                let image = try jsonDecoder.decode(<#T##type: Decodable.Protocol##Decodable.Protocol#>, from: <#T##Data#>)
+            }
+            
+        }
     }
     
     // Properties
