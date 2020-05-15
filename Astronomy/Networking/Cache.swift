@@ -12,18 +12,26 @@ import Foundation
 // 2. The generic Key type will need to be constrained to conform to Hashable.
 class Cache <Key: Hashable, Value> {
     
+    // MARK: - Private Properties
     // 3. Create a private property that is a dictionary to be used to actually store the cached items. The type of the dictionary should be [Key : Value]. Make sure you initialize it with an empty dictionary.
     private var cacheDictionary: [Key: Value] = [:]
     
+    // Queue
+    private let queue = DispatchQueue(label: "Cache Queue")
+    
     // 4. Implement cache(value:, for:) to add items to the cache and value(for:) to return the associated value from the cache.
     func cache(value: Value, for key: Key) {
-        cacheDictionary[key] = value
+        queue.async {
+            self.cacheDictionary[key] = value
+        }
     }
     
     func value(for key: Key) -> Value? {
-        return cacheDictionary[key]
+        queue.sync {
+            return cacheDictionary[key]
+        }
+        
     }
-    
 }
 
 
