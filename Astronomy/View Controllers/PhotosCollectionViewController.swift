@@ -64,12 +64,44 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
+        
+        if let cachedImage = cache.value(for: photoReference.id) {
+            cell.imageView.image = cachedImage
+            print("Images were set from cache")
+            return
+        }
         
         // TODO: Implement image loading here
+        
+        let secureURL = photoReference.imageURL.usingHTTPS!
+        
+        let task = URLSession.shared.dataTask(with: secureURL) { (data, _, error) in
+            
+            if let error = error {
+                NSLog("could not load image: \(error)")
+                return
+            }
+            
+            guard let data = data else {
+                NSLog("Could not retrieve any data")
+                return
+            }
+            
+            let photo = UIImage(data: data)
+            self.cache.cache(value: photo!, for: photoReference.id)
+            
+            DispatchQueue.main.async {
+                cell.imageView.image = photo
+            }
+            
+        }
+        task.resume()
     }
     
     // Properties
+    
+    var cache = Cache<Int, UIImage>()
     
     private let client = MarsRoverClient()
     
