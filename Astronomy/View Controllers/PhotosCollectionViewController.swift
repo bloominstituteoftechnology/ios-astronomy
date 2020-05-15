@@ -69,14 +69,19 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         URLSession.shared.dataTask(with: imageURL) { data, _, error in
             guard error == nil else {
                 print("Error: \(error!)")
-                fatalError()
+                return
             }
-            guard let data = data else { fatalError() }
+            guard let data = data else {
+                print("No data")
+                return
+            }
             guard let image = UIImage(data: data) else { fatalError() }
-            // TODO: check for different indexPath
-            //guard let currentCell = self.collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell else { fatalError() }
-            //guard cell == currentCell else { fatalError("cell was different") }
+            
             DispatchQueue.main.async {
+                if let currentIndexPath = self.collectionView.indexPath(for: cell),
+                    currentIndexPath != indexPath {
+                    return
+                }
                 cell.imageView.image = image
             }
         
