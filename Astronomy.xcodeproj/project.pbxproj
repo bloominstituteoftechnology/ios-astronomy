@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		110A8731246E3FE50037E681 /* MarsPhotoFetchOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110A8730246E3FE50037E681 /* MarsPhotoFetchOperation.swift */; };
 		1150ED7F246E390F009F9651 /* Cache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1150ED7E246E390F009F9651 /* Cache.swift */; };
 		9DBD20092140D1300047905E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DBD20082140D1300047905E /* AppDelegate.swift */; };
 		9DBD20102140D1300047905E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9DBD200F2140D1300047905E /* Assets.xcassets */; };
@@ -24,6 +25,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		110A8730246E3FE50037E681 /* MarsPhotoFetchOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarsPhotoFetchOperation.swift; sourceTree = "<group>"; };
 		1150ED7E246E390F009F9651 /* Cache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cache.swift; sourceTree = "<group>"; };
 		9DBD20052140D1300047905E /* Astronomy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Astronomy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9DBD20082140D1300047905E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -135,6 +137,7 @@
 			isa = PBXGroup;
 			children = (
 				9DBD20362140E46E0047905E /* ConcurrentOperation.swift */,
+				110A8730246E3FE50037E681 /* MarsPhotoFetchOperation.swift */,
 			);
 			path = Operations;
 			sourceTree = "<group>";
@@ -210,6 +213,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				110A8731246E3FE50037E681 /* MarsPhotoFetchOperation.swift in Sources */,
 				9DBD20382140E46E0047905E /* ConcurrentOperation.swift in Sources */,
 				9DBD20322140DE100047905E /* URL+Secure.swift in Sources */,
 				9DBD201C2140D19D0047905E /* ImageCollectionViewCell.swift in Sources */,
