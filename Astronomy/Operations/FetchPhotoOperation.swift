@@ -44,6 +44,8 @@ class FetchPhotoOperation: ConcurrentOperation {
             
             self.imageData = data
         }
+        
+        loadImageDataTask?.resume()
     }
     
     // 7. Override cancel(), which will be called if the operation is cancelled. In your implementation, call cancel() on the dataTask.

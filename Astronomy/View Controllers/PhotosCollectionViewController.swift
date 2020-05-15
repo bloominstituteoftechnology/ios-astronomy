@@ -68,10 +68,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         let photoReference = photoReferences[indexPath.item]
         
         // 2. Get the URL for the associated image using the imageURL property. Use .usingHTTPS (provided in URL+Secure.swift) to make sure the URL is an https URL. By default, the API returns http URLs.
-        guard let imageURL = photoReference.imageURL.usingHTTPS else {
-            NSLog("Error getting image URL")
-            return
-        }
+//        guard let imageURL = photoReference.imageURL.usingHTTPS else {
+//            NSLog("Error getting image URL")
+//            return
+//        }
+        
+        
         // Check to see if the cache already exists
         if let cacheData = cache.value(for: photoReference.id),
             let image = UIImage(data: cacheData) {
@@ -79,34 +81,56 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 return
             }
         
-        // 3. Create and run a data task to load the image data from the imageURL.
-        let dataTask = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
-            // 4. In the data task's completion handler, check for an error, and return early if there is one. Otherwise, create a UIImage from the received data.
-            if let error = error {
-                NSLog("Error getting image \(error)")
-                return
-            }
-            
-            // 6. If the cell hasn't been reused, set its imageView's image to the UIImage you just created.
-            
-            guard let data = data else {
-                NSLog("No data received")
-                return
-                
-            }
-            
-            // Save the data in the cache
+        let photoFetchOperation = FetchPhotoOperation(photoReference: photoReference)
+        let store = BlockOperation {
+            guard let data = photoFetchOperation.imageData else { return }
             self.cache.cache(value: data, for: photoReference.id)
-            
-            DispatchQueue.main.async {
-                // 5. Important: Check to see if the current index path for cell is the same one you were asked to load. If not, this means that that item has scrolled off screen and the UICollectionViewCell instance has been reused for a different index path. If this happens, abort setting the image.
-                guard self.collectionView.indexPath(for: cell) == indexPath else { return }
-                
-                cell.imageView.image = UIImage(data: data)
-            }
-            
         }
-        dataTask.resume()
+
+        let isReused = BlockOperation {
+            let currentIndex = self.collectionView.indexPath(for: cell)
+            guard currentIndex == indexPath, let data = photoFetchOperation.imageData else { return }
+            cell.imageView.image = UIImage(data: data)
+        }
+        
+        store.addDependency(photoFetchOperation)
+        isReused.addDependency(photoFetchOperation)
+        
+        
+        photoFetchQueue.addOperation(photoFetchOperation)
+        photoFetchQueue.addOperation(store)
+        OperationQueue.main.addOperation(isReused)
+        operation[photoReference.id] = photoFetchOperation
+        
+        
+//        // 3. Create and run a data task to load the image data from the imageURL.
+//        let dataTask = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+//            // 4. In the data task's completion handler, check for an error, and return early if there is one. Otherwise, create a UIImage from the received data.
+//            if let error = error {
+//                NSLog("Error getting image \(error)")
+//                return
+//            }
+//
+//            // 6. If the cell hasn't been reused, set its imageView's image to the UIImage you just created.
+//
+//            guard let data = data else {
+//                NSLog("No data received")
+//                return
+//
+//            }
+//
+//            // Save the data in the cache
+//            self.cache.cache(value: data, for: photoReference.id)
+//
+//            DispatchQueue.main.async {
+//                // 5. Important: Check to see if the current index path for cell is the same one you were asked to load. If not, this means that that item has scrolled off screen and the UICollectionViewCell instance has been reused for a different index path. If this happens, abort setting the image.
+//                guard self.collectionView.indexPath(for: cell) == indexPath else { return }
+//
+//                cell.imageView.image = UIImage(data: data)
+//            }
+//
+//        }
+//        dataTask.resume()
     }
     
     // Properties
@@ -114,6 +138,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private let client = MarsRoverClient()
     
     private let cache = Cache<Int, Data>()
+    
+    private let photoFetchQueue = OperationQueue()
+    
+    var operation = [Int: Operation]()
      
     private var roverInfo: MarsRover? {
         didSet {
