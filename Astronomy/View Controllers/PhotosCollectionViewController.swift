@@ -11,6 +11,8 @@ import UIKit
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
     let imageCache = Cache<Int, UIImage>()
+    private let photoFetchQueue = OperationQueue()
+    var dictionaryFetchOperations: [Int : Operation] = [:]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -62,6 +64,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        dictionaryFetchOperations[photoReference.id]?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
@@ -73,31 +80,35 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             cell.imageView.image = cache
             return
         } else {
-            // TODO: Implement image loading here
-            let url = URL(string: "\(photoReference.imageURL.usingHTTPS!)")
-            let request = URLRequest(url: url!)
             
-            URLSession.shared.dataTask(with: request) { (data, _, error) in
-                if let error = error {
-                    print("Error with dataTask: \(error)")
-                    return
+            // TODO: Implement image loading here
+            let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+            
+            let photoDataCacheOperation = BlockOperation {
+                if let imageData = fetchPhotoOperation.imageData {
+                    guard let image: UIImage = UIImage(data: imageData) else { return }
+                    self.imageCache.cache(value: image, for: photoReference.id)
                 }
-                
-                let imageData: UIImage = UIImage(data: data!)!
-                
-                if cell == cell {
-                    DispatchQueue.main.async {
-                        cell.imageView.image = imageData
-                        self.imageCache.cache(value: imageData, for: photoReference.id)
+            }
+            
+            let cellStatus = BlockOperation {
+                DispatchQueue.main.async {
+                    if self.collectionView.cellForItem(at: indexPath) == cell {
+                        guard let imageData = fetchPhotoOperation.imageData else { return }
+                        cell.imageView.image = UIImage(data: imageData)
+                    } else {
+                        return
                     }
-                } else {
-                    print("Gone baby")
-                    return
                 }
-                
-            }.resume()
+            }
+            
+            photoDataCacheOperation.addDependency(fetchPhotoOperation)
+            cellStatus.addDependency(fetchPhotoOperation)
+            
+            photoFetchQueue.addOperations([fetchPhotoOperation, photoDataCacheOperation, cellStatus], waitUntilFinished: false)
+            
+            dictionaryFetchOperations[photoReference.id] = fetchPhotoOperation
         }
-        
         
     }
     
@@ -129,3 +140,4 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     @IBOutlet var collectionView: UICollectionView!
 }
+
