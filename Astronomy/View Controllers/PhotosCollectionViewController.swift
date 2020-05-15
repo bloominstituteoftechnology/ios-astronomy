@@ -64,9 +64,44 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        // 1. Get the MarsPhotoReference instance for the passed in indexPath from the photoReferences array property.
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        // 2. Get the URL for the associated image using the imageURL property. Use .usingHTTPS (provided in URL+Secure.swift) to make sure the URL is an https URL. By default, the API returns http URLs.
+        guard let imageURL = photoReference.imageURL.usingHTTPS else {
+            NSLog("Error getting image URL")
+            return
+        }
+        
+        // 3. Create and run a data task to load the image data from the imageURL.
+        let dataTask = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+            // 4. In the data task's completion handler, check for an error, and return early if there is one. Otherwise, create a UIImage from the received data.
+            if let error = error {
+                NSLog("Error getting image \(error)")
+                return
+            }
+            
+            
+            
+            // 6. If the cell hasn't been reused, set its imageView's image to the UIImage you just created.
+            
+            // 7. Make sure you do all UIKit API calls on the main queue.
+            
+            guard let data = data else {
+                NSLog("No data received")
+                return
+                
+            }
+            
+            DispatchQueue.main.async {
+                // 5. Important: Check to see if the current index path for cell is the same one you were asked to load. If not, this means that that item has scrolled off screen and the UICollectionViewCell instance has been reused for a different index path. If this happens, abort setting the image.
+                guard self.collectionView.indexPath(for: cell) == indexPath else { return }
+                
+                cell.imageView.image = UIImage(data: data)
+            }
+            
+        }
+        dataTask.resume()
     }
     
     // Properties
@@ -75,7 +110,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[150]
         }
     }
     private var solDescription: SolDescription? {
