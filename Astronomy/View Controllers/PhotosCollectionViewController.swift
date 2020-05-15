@@ -10,6 +10,8 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    let imageCache = Cache<Int, UIImage>()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -66,29 +68,35 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
          let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
-        let url = URL(string: "\(photoReference.imageURL.usingHTTPS!)")
-        let request = URLRequest(url: url!)
-        
-        URLSession.shared.dataTask(with: request) { (data, _, error) in
-            if let error = error {
-                print("Error with dataTask: \(error)")
-                return
-            }
+        // Checking if image is already in cache
+        if let cache = imageCache.value(for: photoReference.id) {
+            cell.imageView.image = cache
+            return
+        } else {
+            // TODO: Implement image loading here
+            let url = URL(string: "\(photoReference.imageURL.usingHTTPS!)")
+            let request = URLRequest(url: url!)
             
-            let imageData: UIImage = UIImage(data: data!)!
-            
-            if cell == cell {
-                DispatchQueue.main.async {
-                    cell.imageView.image = imageData
+            URLSession.shared.dataTask(with: request) { (data, _, error) in
+                if let error = error {
+                    print("Error with dataTask: \(error)")
+                    return
                 }
-            } else {
-                print("Gone baby")
-                return
-            }
-            
-        }.resume()
-        
+                
+                let imageData: UIImage = UIImage(data: data!)!
+                
+                if cell == cell {
+                    DispatchQueue.main.async {
+                        cell.imageView.image = imageData
+                        self.imageCache.cache(value: imageData, for: photoReference.id)
+                    }
+                } else {
+                    print("Gone baby")
+                    return
+                }
+                
+            }.resume()
+        }
         
         
     }
