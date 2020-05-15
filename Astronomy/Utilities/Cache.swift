@@ -10,13 +10,18 @@ import Foundation
 
 class Cache<Key: Hashable, Value> {
     
-    var items: [Key: Value] = [:]
+    private var items: [Key: Value] = [:]
+    private let queue: DispatchQueue = .init(label: "com.chadparker.lambda.astronomyqueue")
     
     func cache(value: Value, for key: Key) {
-        items[key] = value
+        queue.sync {
+            items[key] = value
+        }
     }
     
     func value(for key: Key) -> Value? {
-        items[key]
+        queue.sync {
+            items[key]
+        }
     }
 }
