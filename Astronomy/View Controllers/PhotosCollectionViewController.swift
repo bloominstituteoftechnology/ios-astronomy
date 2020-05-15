@@ -77,9 +77,19 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
             
             let imageData: UIImage = UIImage(data: data!)!
+            
+            if cell == cell {
+                DispatchQueue.main.async {
+                    cell.imageView.image = imageData
+                }
+            } else {
+                print("Gone baby")
+                return
+            }
+            
         }.resume()
         
-        let 
+        
         
     }
     
