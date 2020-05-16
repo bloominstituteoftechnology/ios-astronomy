@@ -13,7 +13,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     
     let reference: MarsPhotoReference
     var imageData: Data?
-    private var dataTask = URLSessionDataTask()
+    private var dataTask: URLSessionDataTask?
     
     init(photoReference: MarsPhotoReference) {
         self.reference = photoReference
@@ -24,7 +24,6 @@ class FetchPhotoOperation: ConcurrentOperation {
         state = .isExecuting
         
         guard let imageURL = reference.imageURL.usingHTTPS else { fatalError() }
-        print(imageURL)
         dataTask = URLSession.shared.dataTask(with: imageURL) { data, _, error in
             defer { self.state = .isFinished }
             guard error == nil else {
@@ -34,14 +33,13 @@ class FetchPhotoOperation: ConcurrentOperation {
             guard let data = data else {
                 fatalError("no data")
             }
-            print(data)
             self.imageData = data
         }
-        dataTask.resume()
+        dataTask?.resume()
     }
     
     override func cancel() {
         
-        dataTask.cancel()
+        dataTask?.cancel()
     }
 }
