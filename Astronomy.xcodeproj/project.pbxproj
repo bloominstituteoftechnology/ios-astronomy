@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		131310DF243FB99100F96D5A /* Cache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131310DE243FB99100F96D5A /* Cache.swift */; };
+		13A26050243FC4D000D1D43E /* FetchPhotoOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13A2604F243FC4D000D1D43E /* FetchPhotoOperation.swift */; };
 		9DBD20092140D1300047905E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DBD20082140D1300047905E /* AppDelegate.swift */; };
 		9DBD20102140D1300047905E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9DBD200F2140D1300047905E /* Assets.xcassets */; };
 		9DBD20132140D1300047905E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9DBD20112140D1300047905E /* LaunchScreen.storyboard */; };
@@ -23,6 +25,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		131310DE243FB99100F96D5A /* Cache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cache.swift; sourceTree = "<group>"; };
+		13A2604F243FC4D000D1D43E /* FetchPhotoOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchPhotoOperation.swift; sourceTree = "<group>"; };
 		9DBD20052140D1300047905E /* Astronomy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Astronomy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9DBD20082140D1300047905E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9DBD200F2140D1300047905E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -51,6 +55,25 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		131310E0243FBF1400F96D5A /* Application */ = {
+			isa = PBXGroup;
+			children = (
+				9DBD20082140D1300047905E /* AppDelegate.swift */,
+				9DBD200F2140D1300047905E /* Assets.xcassets */,
+				9DBD20142140D1300047905E /* Info.plist */,
+			);
+			path = Application;
+			sourceTree = "<group>";
+		};
+		131310E1243FBF1E00F96D5A /* Storyboards */ = {
+			isa = PBXGroup;
+			children = (
+				9DBD201E2140D1AE0047905E /* Main.storyboard */,
+				9DBD20112140D1300047905E /* LaunchScreen.storyboard */,
+			);
+			path = Storyboards;
+			sourceTree = "<group>";
+		};
 		9DBD1FFC2140D1300047905E = {
 			isa = PBXGroup;
 			children = (
@@ -70,17 +93,14 @@
 		9DBD20072140D1300047905E /* Astronomy */ = {
 			isa = PBXGroup;
 			children = (
-				9DBD20082140D1300047905E /* AppDelegate.swift */,
+				131310E0243FBF1400F96D5A /* Application */,
 				9DBD20272140D31B0047905E /* Model */,
 				9DBD20282140D31F0047905E /* Views */,
 				9DBD20262140D3130047905E /* View Controllers */,
 				9DBD202B2140D3600047905E /* Networking */,
 				9DBD20352140E45D0047905E /* Operations */,
 				9DBD20302140DDCF0047905E /* Utilities */,
-				9DBD200F2140D1300047905E /* Assets.xcassets */,
-				9DBD201E2140D1AE0047905E /* Main.storyboard */,
-				9DBD20112140D1300047905E /* LaunchScreen.storyboard */,
-				9DBD20142140D1300047905E /* Info.plist */,
+				131310E1243FBF1E00F96D5A /* Storyboards */,
 			);
 			path = Astronomy;
 			sourceTree = "<group>";
@@ -124,6 +144,7 @@
 			isa = PBXGroup;
 			children = (
 				9DBD20312140DE100047905E /* URL+Secure.swift */,
+				131310DE243FB99100F96D5A /* Cache.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -132,6 +153,7 @@
 			isa = PBXGroup;
 			children = (
 				9DBD20362140E46E0047905E /* ConcurrentOperation.swift */,
+				13A2604F243FC4D000D1D43E /* FetchPhotoOperation.swift */,
 			);
 			path = Operations;
 			sourceTree = "<group>";
@@ -211,6 +233,8 @@
 				9DBD20322140DE100047905E /* URL+Secure.swift in Sources */,
 				9DBD201C2140D19D0047905E /* ImageCollectionViewCell.swift in Sources */,
 				9DBD20342140DF1D0047905E /* PhotosCollectionViewController.swift in Sources */,
+				131310DF243FB99100F96D5A /* Cache.swift in Sources */,
+				13A26050243FC4D000D1D43E /* FetchPhotoOperation.swift in Sources */,
 				9DBD20252140D30F0047905E /* MarsRover.swift in Sources */,
 				9DBD202A2140D35B0047905E /* MarsRoverClient.swift in Sources */,
 				9DBD20232140D30F0047905E /* SolDescription.swift in Sources */,
@@ -354,7 +378,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = VXUQXR6S56;
-				INFOPLIST_FILE = Astronomy/Info.plist;
+				INFOPLIST_FILE = Astronomy/Application/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -372,7 +396,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = VXUQXR6S56;
-				INFOPLIST_FILE = Astronomy/Info.plist;
+				INFOPLIST_FILE = Astronomy/Application/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
