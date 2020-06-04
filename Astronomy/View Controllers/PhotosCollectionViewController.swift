@@ -10,6 +10,10 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    let imageCache = Cache<Int, UIImage>()
+    private let photoFetchQueue = OperationQueue()
+    var dictionaryFetchOperations: [Int : Operation] = [:]
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -60,13 +64,52 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        dictionaryFetchOperations[photoReference.id]?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        // Checking if image is already in cache
+        if let cache = imageCache.value(for: photoReference.id) {
+            cell.imageView.image = cache
+            return
+        } else {
+            
+            // TODO: Implement image loading here
+            let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+            
+            let photoDataCacheOperation = BlockOperation {
+                if let imageData = fetchPhotoOperation.imageData {
+                    guard let image: UIImage = UIImage(data: imageData) else { return }
+                    self.imageCache.cache(value: image, for: photoReference.id)
+                }
+            }
+            
+            let cellStatus = BlockOperation {
+                DispatchQueue.main.async {
+                    if self.collectionView.cellForItem(at: indexPath) == cell {
+                        guard let imageData = fetchPhotoOperation.imageData else { return }
+                        cell.imageView.image = UIImage(data: imageData)
+                    } else {
+                        return
+                    }
+                }
+            }
+            
+            photoDataCacheOperation.addDependency(fetchPhotoOperation)
+            cellStatus.addDependency(fetchPhotoOperation)
+            
+            photoFetchQueue.addOperations([fetchPhotoOperation, photoDataCacheOperation, cellStatus], waitUntilFinished: false)
+            
+            dictionaryFetchOperations[photoReference.id] = fetchPhotoOperation
+        }
+        
     }
     
     // Properties
@@ -97,3 +140,4 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     @IBOutlet var collectionView: UICollectionView!
 }
+
