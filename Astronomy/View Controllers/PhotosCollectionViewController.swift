@@ -23,6 +23,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     
+    //MARK: - Properties
+    var cache: Cache<Int,Data>
+    
     // UICollectionViewDataSource/Delegate
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -64,10 +67,36 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
+        
+        let photoReferenceURL = photoReference.imageURL.usingHTTPS!
         
         // TODO: Implement image loading here
+        
+        
+        
+        let task = URLSession.shared.dataTask(with: photoReferenceURL) { (data, _, error) in
+            if let error = error {
+                print("Error receiving image, error: \(error)")
+                return
+            }
+            guard let data = data else {
+                return
+            }
+            let image = UIImage(data: data)
+            DispatchQueue.main.async {
+                if let currentIndexPath = self.collectionView.indexPath(for: cell) {
+                    if currentIndexPath != indexPath {
+                        print("Image has gone off the screen")
+                        return
+                    }
+                }
+                cell.imageView.image = image
+            }
+        }
+        task.resume()
     }
+    
     
     // Properties
     
