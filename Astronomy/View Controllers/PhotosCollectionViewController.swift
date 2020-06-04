@@ -9,7 +9,36 @@
 import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+
+        @IBOutlet var collectionView: UICollectionView!
+
+    // Properties
+
+       private let client = MarsRoverClient()
+
+       private var roverInfo: MarsRover? {
+           didSet {
+               solDescription = roverInfo?.solDescriptions[3]
+           }
+       }
+       private var solDescription: SolDescription? {
+           didSet {
+               if let rover = roverInfo,
+                   let sol = solDescription?.sol {
+                   client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
+                       if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
+                       self.photoReferences = photoRefs ?? []
+                   }
+               }
+           }
+       }
     
+       private var photoReferences = [MarsPhotoReference]() {
+           didSet {
+               DispatchQueue.main.async { self.collectionView?.reloadData() }
+           }
+       }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -92,31 +121,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
     }
     
-    // Properties
+
     
-    private let client = MarsRoverClient()
-    
-    private var roverInfo: MarsRover? {
-        didSet {
-            solDescription = roverInfo?.solDescriptions[3]
-        }
-    }
-    private var solDescription: SolDescription? {
-        didSet {
-            if let rover = roverInfo,
-                let sol = solDescription?.sol {
-                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
-                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
-                    self.photoReferences = photoRefs ?? []
-                }
-            }
-        }
-    }
-    private var photoReferences = [MarsPhotoReference]() {
-        didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
-        }
-    }
-    
-    @IBOutlet var collectionView: UICollectionView!
+
 }
