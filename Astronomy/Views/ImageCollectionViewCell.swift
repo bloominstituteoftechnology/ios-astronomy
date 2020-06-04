@@ -20,5 +20,6 @@ class ImageCollectionViewCell: UICollectionViewCell {
     
     // MARK: IBOutlets
     
+    @IBOutlet weak var indexLabel: UILabel!
     @IBOutlet var imageView: UIImageView!
 }
