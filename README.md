@@ -1,6 +1,6 @@
 # Astronomy
 
-For this project, you'll build an app that uses [NASA's Mars Rover API](https://api.nasa.gov/api.html#MarsPhotos) to display images taken by the rovers on Mars.
+For this project, you'll build an app that uses NASA's Mars Rover API to display images taken by the rovers on Mars.
 
 This project will help you practice the concepts learned in the Concurrency III - iOS Concurrency module of Sprint 7. After completing the lesson material and this project, you should be able to:
 
@@ -19,6 +19,13 @@ This is a large project with a lot of pieces. In order to allow you to focus on 
 1. Fork this repository to your own GitHub account.
 2. Clone your fork to your local machine.
 3. Open Astronomy.xcodeproj
+
+To view the API documentation on NASA's website, follow these steps:
+
+* [Go to the NASA API website](https://api.nasa.gov)
+* Click on _Browse APIs_
+* Type in “mars” into the search box
+* Click on __Mars Rover Photos__ for the documentation
 
 ## Part 1 - Implement Basic Collection View
 
