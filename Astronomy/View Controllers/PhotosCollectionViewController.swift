@@ -14,14 +14,16 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 
     // Properties
 
-       private let client = MarsRoverClient()
+        private let photoCache = Cache<Int, Data>()
 
-       private var roverInfo: MarsRover? {
+        private let client = MarsRoverClient()
+
+        private var roverInfo: MarsRover? {
            didSet {
                solDescription = roverInfo?.solDescriptions[3]
            }
        }
-       private var solDescription: SolDescription? {
+        private var solDescription: SolDescription? {
            didSet {
                if let rover = roverInfo,
                    let sol = solDescription?.sol {
@@ -95,30 +97,38 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
          let photoReference = photoReferences[indexPath.item]
 
-        guard let url = photoReference.imageURL.usingHTTPS else { return }
-
-        let dataTask = URLSession.shared.dataTask(with: url) { (data, _, error) in
-
-            if let error = error {
-                NSLog("Error getting image: \(error)")
-                return
-            }
-
-            guard let data = data else {
-                NSLog("No data.")
-                return
-            }
-
-            let image = UIImage(data: data)
-            DispatchQueue.main.async {
-                if self.collectionView.indexPath(for: cell) == indexPath {
-                    cell.imageView.image = image
-                }
-            }
+        if let cacheData = photoCache.value(key: photoReference.id),
+            let image = UIImage(data: cacheData) {
+            cell.imageView.image = image
+            return
         }
 
-        dataTask.resume()
-        
+
+
+//        guard let url = photoReference.imageURL.usingHTTPS else { return }
+//
+//        let dataTask = URLSession.shared.dataTask(with: url) { (data, _, error) in
+//
+//            if let error = error {
+//                NSLog("Error getting image: \(error)")
+//                return
+//            }
+//
+//            guard let data = data else {
+//                NSLog("No data.")
+//                return
+//            }
+//
+//            let image = UIImage(data: data)
+//            DispatchQueue.main.async {
+//                if self.collectionView.indexPath(for: cell) == indexPath {
+//                    cell.imageView.image = image
+//                }
+//            }
+//        }
+//
+//        dataTask.resume()
+//
     }
     
 
