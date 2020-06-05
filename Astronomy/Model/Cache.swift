@@ -23,8 +23,8 @@ class Cache<Key: Hashable, Value> {
 
     // return items from the dictionary(cache)
     func value(key: Key) -> Value? {
-        return queue.sync {
-            cache[key]
+         queue.sync {
+            self.cache[key]
         }
     }
 }
