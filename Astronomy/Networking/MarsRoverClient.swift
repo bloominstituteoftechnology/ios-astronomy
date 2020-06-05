@@ -39,6 +39,9 @@ class MarsRoverClient {
         }
     }
     
+    
+    
+    
     // MARK: - Private
     
     private func fetch<T: Codable>(from url: URL,
@@ -66,7 +69,7 @@ class MarsRoverClient {
     }
     
     private let baseURL = URL(string: "https://api.nasa.gov/mars-photos/api/v1")!
-    private let apiKey = "qzGsj0zsKk6CA9JZP1UjAbpQHabBfaPg2M5dGMB7"
+    private let apiKey = "Dyb5JbnvtXrqDTx1Emx0zxHU7E4bcxG1DORGPojH"
 
     private func url(forInfoForRover roverName: String) -> URL {
         var url = baseURL
