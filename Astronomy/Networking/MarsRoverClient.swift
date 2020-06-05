@@ -39,19 +39,6 @@ class MarsRoverClient {
         }
     }
     
-    func fetchImageData(from imageURL: String,
-                        using session: URLSession = URLSession.shared,
-                        completion: @escaping ([MarsPhotoReference], Error?) -> Void) {
-        
-        let url = self.url(forImageURL: [MarsPhotoReference].imageURL)
-        fetch(from: url, using: session) { (dictionary: [String : [MarsPhotoReference]]?, error: Error?) in
-            guard let imageURL = dictionary?["photo_manifest"] else {
-                completion(nil, error)
-                return
-            }
-            completion(imageURL, nil)
-        }
-    }
     
     
     
