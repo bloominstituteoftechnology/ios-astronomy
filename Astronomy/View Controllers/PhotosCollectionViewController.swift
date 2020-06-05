@@ -10,6 +10,10 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    let cache = Cache<Int,Data>()
+    private let photoFetchQueue = OperationQueue()
+    var photoDictionary: [Int: Operation] = [:]
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -41,6 +45,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
+  
+    
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -64,9 +70,38 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
         
+       if let cache = cache.value(for: photoReference.id) {
+           cell.imageView.image = UIImage(data: cache)
+           return
+       } else {
+        let fetchedPhoto = PhotoFetchOperation(photoReference: photoReference)
+        
+        let cachePhotoData = BlockOperation {
+            if let imageData = fetchedPhoto.imageData {
+                self.cache.cache(value: imageData, for: photoReference.id)
+            }
+        }
+        
+        let cellPhotoData = BlockOperation {
+            guard let imageData = fetchedPhoto.imageData else { return }
+            DispatchQueue.main.async {
+                if self.collectionView.indexPath(for: cell) == indexPath {
+                    cell.imageView.image = UIImage(data: imageData)
+                } else {
+                    return
+                }
+            }
+        }
+        
+        cachePhotoData.addDependency(fetchedPhoto)
+        cellPhotoData.addDependency(fetchedPhoto)
+        
+        photoFetchQueue.addOperations([cachePhotoData, cellPhotoData, fetchedPhoto], waitUntilFinished: false)
+        photoDictionary[photoReference.id] = fetchedPhoto
         // TODO: Implement image loading here
+        }
     }
     
     // Properties
@@ -92,6 +127,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private var photoReferences = [MarsPhotoReference]() {
         didSet {
             DispatchQueue.main.async { self.collectionView?.reloadData() }
+        }
+    }
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+         let photoReference = photoReferences[indexPath.item]
+        if let operationAction = photoDictionary[photoReference.id] {
+        operationAction.cancel()
         }
     }
     
