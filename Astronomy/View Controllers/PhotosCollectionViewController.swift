@@ -8,8 +8,57 @@
 
 import UIKit
 
-class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+enum HTTPMethod: String {
+    case get = "GET"
+    case post = "POST"
+}
+
+enum NetworkError: Error {
+    case noAuth
+    case badAuth
+    case otherNetworkError
+    case badData
+    case noDecode
+    case badUrl
+}
+
+class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UICollectionViewDelegate {
     
+    // MARK: - Properties
+    private var imageCache = Cache<Int, UIImage>()
+    private let photoFetchQueue = OperationQueue()
+    private var fetchOperations: [Int: FetchPhotoOperation] = [:]
+    
+    private let client = MarsRoverClient()
+    
+    private var roverInfo: MarsRover? {
+        didSet {
+            solDescription = roverInfo?.solDescriptions[3]
+        }
+    }
+    private var solDescription: SolDescription? {
+        didSet {
+            if let rover = roverInfo,
+                let sol = solDescription?.sol {
+                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
+                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
+                    self.photoReferences = photoRefs ?? []
+                }
+            }
+        }
+    }
+    private var photoReferences = [MarsPhotoReference]() {
+        didSet {
+            DispatchQueue.main.async { self.collectionView?.reloadData() }
+        }
+    }
+    
+    // MARK: - Outlets
+
+    @IBOutlet var collectionView: UICollectionView!
+
+    // MARK: - Functions
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -64,36 +113,97 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        // Cache the indexPath for fetchImage completion to know whether cell has moved
+        cell.originalIndexPath = indexPath
+        let cachedIndexPath = cell.originalIndexPath
         
-        // TODO: Implement image loading here
-    }
-    
-    // Properties
-    
-    private let client = MarsRoverClient()
-    
-    private var roverInfo: MarsRover? {
-        didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+        // Which photo information do we need to load?
+        let photoReference = photoReferences[cachedIndexPath.item]
+
+        // Is the image cached? ... avoiding a network lookup.
+        if let image = imageCache.value(for: cachedIndexPath.item) {
+            print("Cached Image: \(cachedIndexPath.item)")
+            cell.imageView.image = image
+            return
         }
-    }
-    private var solDescription: SolDescription? {
-        didSet {
-            if let rover = roverInfo,
-                let sol = solDescription?.sol {
-                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
-                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
-                    self.photoReferences = photoRefs ?? []
+        
+        // Don't have image. Need to retrieve it.
+        // ---- Operation to grab photo ---------------------------
+        let fetchPhotoOp = FetchPhotoOperation(marsPhotoReference: photoReference)
+        fetchOperations[photoReference.id] = fetchPhotoOp
+        
+        // ---- Operation to cache photo --------------------------
+        let cachePhotoOp = BlockOperation {
+            if let image = fetchPhotoOp.imageData {
+                // TODO: ? Is this tread safe? Yes, because we're not going to a different thread.
+                self.imageCache.cache(value: image, for: cachedIndexPath.item)
+            }
+        }
+        
+        // ---- Operation to place photo in cell ------------------
+        let setImageOp = BlockOperation {
+            if cachedIndexPath != cell.originalIndexPath {
+                // Cell was reused before image finished loading
+                // print("\(cachedIndexPath) != \(cell.indexPath)")
+                return
+            }
+                
+            if let image = fetchPhotoOp.imageData {
+                DispatchQueue.main.async {
+                    cell.imageView.image = image
                 }
             }
         }
+        
+        /// TODO: ? Do I need have an operation that removes FetchPhotoOperation from fetchOperations? And have 2 dependancies? setImageOp and cachePhotoOp. Or does overwriting it at a later time cause it to be garbage collected?
+        
+        cachePhotoOp.addDependency(fetchPhotoOp)
+        setImageOp.addDependency(fetchPhotoOp)
+        
+        photoFetchQueue.addOperations([fetchPhotoOp, cachePhotoOp, setImageOp], waitUntilFinished: false)
     }
-    private var photoReferences = [MarsPhotoReference]() {
-        didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
-        }
+
+    /// Fetch an image from the Internet via a URL
+    /// - Parameters:
+    ///   - imageUrl: A secure URL to the image you want to load
+    ///   - completion: What do you want done with the downloaded image?
+    private func fetchImage(of imageUrl: URL, completion: @escaping (Result<UIImage, NetworkError>) -> Void) {
+        
+        var request = URLRequest(url: imageUrl)
+        request.httpMethod = HTTPMethod.get.rawValue
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                NSLog("Error receiving mars image data: \(error)")
+                completion(.failure(.otherNetworkError))
+                return
+            }
+            
+            guard let data = data else {
+                NSLog("nasa.gov responded with no image data.")
+                completion(.failure(.badData))
+                return
+            }
+            
+            guard let image = UIImage(data: data) else {
+                NSLog("Image data is incomplete or corrupt.")
+                completion(.failure(.badData))
+                return
+            }
+
+            completion(.success(image))
+
+        }.resume()
     }
     
-    @IBOutlet var collectionView: UICollectionView!
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        
+        // What photo were we trying to load
+        let photoReference = photoReferences[indexPath.item]
+
+        if let fetchPhotoOperation = fetchOperations[photoReference.id] {
+            // A photo is trying to be loaded.
+            fetchPhotoOperation.cancel()
+        }
+    }
 }
