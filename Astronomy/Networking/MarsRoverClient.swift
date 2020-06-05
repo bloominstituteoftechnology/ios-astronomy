@@ -6,6 +6,19 @@
 //  Copyright © 2018 Lambda School. All rights reserved.
 //
 
+enum NetworkError: Error {
+    case failedSignUp
+    case failedSignIn
+    case noData
+    case badData
+    case noAuth
+    case badAuth
+    case otherError
+    case noDecode
+    case badImage
+    case noEncode
+}
+
 import Foundation
 
 class MarsRoverClient {
