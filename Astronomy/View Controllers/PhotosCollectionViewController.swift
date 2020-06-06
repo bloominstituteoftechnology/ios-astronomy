@@ -77,8 +77,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                     print("No data returned from fetch")
                     return
                 }
-                
+                let image = UIImage(data: data)
+                DispatchQueue.main.async {
+                    if self.collectionView.indexPath(for: cell) == indexPath {
+                        cell.imageView.image = image
+                    }
+                }
             }
+            task.resume()
         }
         
     }
@@ -87,11 +93,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private let client = MarsRoverClient()
     
+    // mars rover structs that gathers the rover
     private var roverInfo: MarsRover? {
         didSet {
             solDescription = roverInfo?.solDescriptions[3]
         }
     }
+    
+    // talks about the particular day that the picture was taken on
     private var solDescription: SolDescription? {
         didSet {
             if let rover = roverInfo,
@@ -103,6 +112,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
         }
     }
+    
+    // depending on the rover and the day it was taken it will populate and reload the table view with that information.
     private var photoReferences = [MarsPhotoReference]() {
         didSet {
             DispatchQueue.main.async { self.collectionView?.reloadData() }
