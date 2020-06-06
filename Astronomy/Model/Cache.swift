@@ -24,6 +24,7 @@ class Cache<Key: Hashable, Value> {
     }
     
     // have a function to return items that are cache, optional in case it doesn't exist
+        // this code needs to sync w/ another thread/ operation happening, can't return a value before it's been cached, works w/ the cache func
     func value(for key: Key) -> Value? {
         return queue.sync {
             cache[key]
