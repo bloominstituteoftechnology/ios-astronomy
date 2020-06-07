@@ -20,7 +20,7 @@
 		9DBD20322140DE100047905E /* URL+Secure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DBD20312140DE100047905E /* URL+Secure.swift */; };
 		9DBD20342140DF1D0047905E /* PhotosCollectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DBD20332140DF1D0047905E /* PhotosCollectionViewController.swift */; };
 		9DBD20382140E46E0047905E /* ConcurrentOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DBD20362140E46E0047905E /* ConcurrentOperation.swift */; };
-		B4B0073B2489B250002ED086 /* Cache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4B0073A2489B24F002ED086 /* Cache.swift */; };
+		B43B8C7C248CA48B00996D1C /* Cache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B43B8C7B248CA48B00996D1C /* Cache.swift */; };
 		B4B0073D2489B2D6002ED086 /* FetchPhotoOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4B0073C2489B2D6002ED086 /* FetchPhotoOperation.swift */; };
 /* End PBXBuildFile section */
 
@@ -40,7 +40,7 @@
 		9DBD20312140DE100047905E /* URL+Secure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "URL+Secure.swift"; sourceTree = "<group>"; };
 		9DBD20332140DF1D0047905E /* PhotosCollectionViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotosCollectionViewController.swift; sourceTree = "<group>"; };
 		9DBD20362140E46E0047905E /* ConcurrentOperation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConcurrentOperation.swift; sourceTree = "<group>"; };
-		B4B0073A2489B24F002ED086 /* Cache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cache.swift; sourceTree = "<group>"; };
+		B43B8C7B248CA48B00996D1C /* Cache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cache.swift; sourceTree = "<group>"; };
 		B4B0073C2489B2D6002ED086 /* FetchPhotoOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchPhotoOperation.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -104,6 +104,7 @@
 				9DBD20222140D30F0047905E /* MarsRover.swift */,
 				9DBD20202140D30F0047905E /* SolDescription.swift */,
 				9DBD202E2140D7720047905E /* Camera.swift */,
+				B43B8C7B248CA48B00996D1C /* Cache.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -120,7 +121,6 @@
 			isa = PBXGroup;
 			children = (
 				9DBD20292140D35A0047905E /* MarsRoverClient.swift */,
-				B4B0073A2489B24F002ED086 /* Cache.swift */,
 			);
 			path = Networking;
 			sourceTree = "<group>";
@@ -217,8 +217,8 @@
 				9DBD20322140DE100047905E /* URL+Secure.swift in Sources */,
 				9DBD201C2140D19D0047905E /* ImageCollectionViewCell.swift in Sources */,
 				9DBD20342140DF1D0047905E /* PhotosCollectionViewController.swift in Sources */,
-				B4B0073B2489B250002ED086 /* Cache.swift in Sources */,
 				B4B0073D2489B2D6002ED086 /* FetchPhotoOperation.swift in Sources */,
+				B43B8C7C248CA48B00996D1C /* Cache.swift in Sources */,
 				9DBD20252140D30F0047905E /* MarsRover.swift in Sources */,
 				9DBD202A2140D35B0047905E /* MarsRoverClient.swift in Sources */,
 				9DBD20232140D30F0047905E /* SolDescription.swift in Sources */,
@@ -361,7 +361,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = VXUQXR6S56;
+				DEVELOPMENT_TEAM = JKA99996Q5;
 				INFOPLIST_FILE = Astronomy/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -379,7 +379,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = VXUQXR6S56;
+				DEVELOPMENT_TEAM = JKA99996Q5;
 				INFOPLIST_FILE = Astronomy/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
