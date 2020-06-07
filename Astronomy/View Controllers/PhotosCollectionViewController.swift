@@ -170,6 +170,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // when completion op is ready to go then we can move back to the main queue to ensure that all the other work on the background thread has completed.
         OperationQueue.main.addOperation(completionOp)
         
+        operations[photoReference.id] = fetchOp // line up the fetch up w/ the cell it is trying to pull up if it ends up canceling.
+        
     }
 }
 
