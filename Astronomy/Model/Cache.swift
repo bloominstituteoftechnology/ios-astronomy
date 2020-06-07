@@ -17,7 +17,7 @@ class Cache<Key: Hashable, Value> {
     private let queue = DispatchQueue(label: "com.LambdaSchool.Astronomy.CacheQueue")
     
     // have a function to add items to the cache
-    func cache(value: Value, for key: Key) {
+    func cache(key: Key, value: Value) {
         queue.async {
             self.cache[key] = value
         }
@@ -25,7 +25,7 @@ class Cache<Key: Hashable, Value> {
     
     // have a function to return items that are cache, optional in case it doesn't exist
         // this code needs to sync w/ another thread/ operation happening, can't return a value before it's been cached, works w/ the cache func
-    func value(for key: Key) -> Value? {
+    func value(key: Key) -> Value? {
         return queue.sync {
             cache[key]
         }
