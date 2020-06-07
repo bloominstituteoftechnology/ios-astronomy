@@ -68,6 +68,7 @@ class MarsRoverClient {
     private let baseURL = URL(string: "https://api.nasa.gov/mars-photos/api/v1")!
     private let apiKey = "qzGsj0zsKk6CA9JZP1UjAbpQHabBfaPg2M5dGMB7"
 
+    // if you just want to change your endpoint, these functions are running in tandem with the one above making cleaner code.
     private func url(forInfoForRover roverName: String) -> URL {
         var url = baseURL
         url.appendPathComponent("manifests")
