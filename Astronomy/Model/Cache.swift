@@ -11,6 +11,8 @@ import Foundation
 class Cache<Key: Hashable, Value>{
     
     private var storedCache:[Key : Value] = [:]
+    
+    // Creating a private queue for caching so our dictionary isn't being accessed by multiple threads
     private let queue = DispatchQueue(label: "private queue for our Cache")
     
     func storeInCache(value: Value, for key: Key){
