@@ -64,6 +64,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
          let photoReference = photoReferences[indexPath.item]
+        
+        // Checking if image has been cached and if it is, loading the image before the network call
+        if let cachedImage = cache.getValue(for: photoReference.id){
+            cell.imageView.image = UIImage(data: cachedImage)
+            return
+        }
+        
         // TODO: Implement image loading here
         guard let imageURL = photoReference.imageURL.usingHTTPS else {
             print("Error getting image")
@@ -81,7 +88,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                     return
             }
             
+            // Saving the image to our cache for later use
+            self.cache.storeInCache(value: data, for: photoReference.id)
+            
             DispatchQueue.main.async {
+                // Checking to see if the indexpath of the cell is the one being called to load the image
                 guard self.collectionView.indexPath(for: cell) == indexPath else { return }
                 cell.imageView.image = UIImage(data: data)
             }
@@ -90,6 +101,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     // Properties
+    
+    private let cache = Cache<Int, Data>()
     
     private let client = MarsRoverClient()
     
