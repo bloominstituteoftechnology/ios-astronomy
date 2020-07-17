@@ -10,6 +10,15 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    typealias CompletionHandler = (Result<Bool, NetworkError>) -> Void
+    
+    enum NetworkError: Error {
+       
+        case otherError(Error)
+        case noData
+        case decodeFailed
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -62,11 +71,38 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // MARK: - Private
     
-    private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+    private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath, completion: @escaping CompletionHandler = { _ in }) {
         
-        // let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
+        guard let photoUrl = photoReference.imageURL.usingHTTPS else { return }
+        let imageURL = photoUrl
+        URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+            
+            if let error = error {
+                NSLog("Error fetching image: \(error)")
+                DispatchQueue.main.async {
+                    completion(.failure(.otherError(error)))
+                }
+                return
+            }
+
+            guard let data = data else {
+                NSLog("Error: No image returned from fetch")
+                DispatchQueue.main.async {
+                    completion(.failure(.noData))
+                }
+                return
+            }
+            // Evidently wrong
+            DispatchQueue.main.async {
+                let photoImage = UIImage(data: data)
+                cell.imageView.image = photoImage
+            }
+                completion(.success(true))
+        }
+        .resume()
     }
     
     // Properties
