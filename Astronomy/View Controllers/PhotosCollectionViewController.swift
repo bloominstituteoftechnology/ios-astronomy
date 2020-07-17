@@ -69,8 +69,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // TODO: Implement image loading here
         let imageURL = photoReference.imageURL.usingHTTPS!
         
-        if photoCache.value(forKey: photoReference.id) != {
+        if let data = photoCache.value(forKey: photoReference.id) {
             
+            cell.imageView.image = UIImage(data: data)
         }
         
         URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
@@ -82,6 +83,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             guard let data = data else { return }
             
             let image = UIImage(data: data)
+            self.photoCache.cache(data, forKey: photoReference.id)
             
             DispatchQueue.main.async {
                 cell.imageView.image = image
