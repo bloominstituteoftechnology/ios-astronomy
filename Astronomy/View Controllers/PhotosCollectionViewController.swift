@@ -78,7 +78,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         // TODO: Implement image loading here
         guard let photoUrl = photoReference.imageURL.usingHTTPS else { return }
         let imageURL = photoUrl
-        let imageGet = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+        URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
             
             if let error = error {
                 NSLog("Error fetching image: \(error)")
@@ -96,19 +96,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 return
             }
             // Evidently wrong
-            do {
-                let decoder = JSONDecoder()
-                let imageData = try decoder.decode(String.self, from: data)
-                let image = UIImage(contentsOfFile: imageData)
-                cell.imageView.image = image
-                completion(.success(true))
-            } catch {
-                print("Error decoding image: \(error)")
-                completion(.failure(.decodeFailed))
-                return
+            DispatchQueue.main.async {
+                let photoImage = UIImage(data: data)
+                cell.imageView.image = photoImage
             }
+                completion(.success(true))
         }
-        imageGet.resume()
+        .resume()
     }
     
     // Properties
