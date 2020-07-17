@@ -38,6 +38,8 @@ class MarsRoverClient {
             completion(photos, nil)
         }
     }
+
+
     
     // MARK: - Private
     
