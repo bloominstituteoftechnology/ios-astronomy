@@ -9,6 +9,10 @@
 import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+
+    var cache = Cache<Int, Data>()
+    private var photoFetchQueue = OperationQueue()
+    private var fetchOperations: [Int : FetchPhotoOperation] = [ : ]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,6 +28,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     // UICollectionViewDataSource/Delegate
+
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let image = photoReferences[indexPath.item]
+        if let operation = fetchOperations[image.id] {
+            operation.cancel()
+        }
+    }
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         return 1
@@ -64,9 +75,36 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
+
+        let photoFetchOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+
+        if let imageData = cache.value(for: photoReference.id) {
+            let image = UIImage(data: imageData)
+            cell.imageView.image = image
+            return
+        }
+
+        let cachePhotoOperation = BlockOperation {
+            self.cache.cache(value: photoFetchOperation.imageData, for: photoReference.id)
+        }
+
+        let updateUIIMageCellOperation = BlockOperation {
+            if let imageData = photoFetchOperation.imageData {
+                cell.imageView.image = UIImage(data: imageData)
+            }
+        }
+
+        cachePhotoOperation.addDependency(photoFetchOperation)
+        updateUIIMageCellOperation.addDependency(photoFetchOperation)
+        fetchOperations[photoReference.id] = photoFetchOperation
+
+        photoFetchQueue.addOperation(photoFetchOperation)
+        photoFetchQueue.addOperation(cachePhotoOperation)
+
+        OperationQueue.main.addOperation(updateUIIMageCellOperation)
     }
     
     // Properties
