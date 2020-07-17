@@ -64,7 +64,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-         let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
         // TODO: Implement image loading here
         
@@ -76,6 +76,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 return
                 
             }
+            
             guard let data = data else {
                 return
             }
@@ -83,10 +84,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             do {
                 let jsonDecoder = JSONDecoder()
                 
-                let image = try jsonDecoder.decode(<#T##type: Decodable.Protocol##Decodable.Protocol#>, from: <#T##Data#>)
+                let image = try jsonDecoder.decode(photoURL, from: data)
             }
             
-        }
+        }.resume()
     }
     
     // Properties
