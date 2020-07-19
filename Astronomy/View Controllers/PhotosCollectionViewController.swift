@@ -61,16 +61,51 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     // MARK: - Private
-    
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
+        guard let url = photoReference.imageURL.usingHTTPS else { return }
         
-        // TODO: Implement image loading here
+        if let image = cache.value(for: photoReference.id) { //grab image that corresponds with this image
+            cell.imageView.image = image
+        } else {
+        
+        
+        //Create and run a data task to load the image data from the imageURL
+        //Create a UIImage from the received data
+        URLSession.shared.dataTask(with: url) { (data, _, error) in
+            if let error = error {
+                NSLog("Error fetching image: \(error)")
+                return
+            }
+            
+            guard let imageData = data else {
+                NSLog("No data returned by data task")
+                return
+            }
+            
+            guard let image = UIImage(data: imageData) else {
+                NSLog("No data from image")
+                
+                return
+            }
+            
+            self.cache.cache(value: image, for: photoReference.id)
+            
+            DispatchQueue.main.async {
+                guard let currentIndexPath = self.collectionView.indexPath(for: cell) else { return }
+
+                if currentIndexPath == indexPath {
+                    cell.imageView.image = image
+                } else {
+                    return
+                }
+            }
+        }.resume()
+        }
     }
     
     // Properties
-    
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
@@ -94,6 +129,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    
+    var cache: Cache<Int, UIImage> = Cache()
     
     @IBOutlet var collectionView: UICollectionView!
 }
