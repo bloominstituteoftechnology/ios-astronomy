@@ -9,23 +9,21 @@
 import Foundation
 
 class Cache <Key,Value> where Key: Hashable {
- 
-    private let serialQueue = DispatchQueue(label: "com.nick.SerialQueue")
-    private var cache : [Key: Value] = [:]
-    
-    func cache(value: Value,for key: Key) {
-        serialQueue.async {
-             self.cache[key] = value
-        }
-       
+  
+  private let serialQueue = DispatchQueue(label: "com.nick.SerialQueue")
+  
+  private var cache : [Key: Value] = [:]
+  
+  func cache(value: Value,for key: Key) {
+    serialQueue.async {
+      self.cache[key] = value
     }
     
-    func value(for key: Key) -> Value? {
-        serialQueue.sync {
-              return self.cache[key]
-        }
-      
+  }
+  
+  func value(for key: Key) -> Value? {
+    serialQueue.sync {
+      return self.cache[key] ?? nil
     }
-    
-    
+  }
 }

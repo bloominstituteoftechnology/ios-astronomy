@@ -74,17 +74,13 @@
 		9DBD20072140D1300047905E /* Astronomy */ = {
 			isa = PBXGroup;
 			children = (
-				9DBD20082140D1300047905E /* AppDelegate.swift */,
 				9DBD20272140D31B0047905E /* Model */,
 				9DBD20282140D31F0047905E /* Views */,
 				9DBD20262140D3130047905E /* View Controllers */,
 				9DBD202B2140D3600047905E /* Networking */,
 				9DBD20352140E45D0047905E /* Operations */,
 				9DBD20302140DDCF0047905E /* Utilities */,
-				9DBD200F2140D1300047905E /* Assets.xcassets */,
-				9DBD201E2140D1AE0047905E /* Main.storyboard */,
-				9DBD20112140D1300047905E /* LaunchScreen.storyboard */,
-				9DBD20142140D1300047905E /* Info.plist */,
+				B62A306424C66D2B0023A4D3 /* Resources */,
 			);
 			path = Astronomy;
 			sourceTree = "<group>";
@@ -140,6 +136,18 @@
 				B674B613241AD5120066251B /* PhotoFetchOperation.swift */,
 			);
 			path = Operations;
+			sourceTree = "<group>";
+		};
+		B62A306424C66D2B0023A4D3 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9DBD200F2140D1300047905E /* Assets.xcassets */,
+				9DBD201E2140D1AE0047905E /* Main.storyboard */,
+				9DBD20112140D1300047905E /* LaunchScreen.storyboard */,
+				9DBD20142140D1300047905E /* Info.plist */,
+				9DBD20082140D1300047905E /* AppDelegate.swift */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -363,7 +371,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = VXUQXR6S56;
-				INFOPLIST_FILE = Astronomy/Info.plist;
+				INFOPLIST_FILE = Astronomy/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -381,7 +389,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = VXUQXR6S56;
-				INFOPLIST_FILE = Astronomy/Info.plist;
+				INFOPLIST_FILE = Astronomy/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
