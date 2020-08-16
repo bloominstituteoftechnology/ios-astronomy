@@ -60,13 +60,53 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        guard let fetchPhotoOperation = operations[photoReferences[indexPath.item].id] else { return }
+        fetchPhotoOperation.cancel()
+    }
+    
     // MARK: - Private
+    
+    
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
+        if let image = cache.value(for: photoReference.id) {
+            cell.imageView.image = UIImage(data: image)
+            print("This image is cached")
+            return
+        }
+
+    
+        let fetchPhotoOperation = FetchPhotoOperation(photo: photoReference)
         
-        // TODO: Implement image loading here
+        let cacheOperation = BlockOperation {
+            guard let imageData = fetchPhotoOperation.imageData else { return }
+            self.cache.cache(value: imageData, for: photoReference.id)
+        }
+        
+        let setImageAndUpdateUIOperation = BlockOperation {
+
+            DispatchQueue.main.async {
+                guard let imageData = fetchPhotoOperation.imageData else { return }
+                print("image is fetched")
+                if self.collectionView.indexPath(for: cell)?.item == indexPath.item {
+                    let image = UIImage(data: imageData)
+                    cell.imageView.image = image
+                }
+            }
+        }
+        
+        cacheOperation.addDependency(fetchPhotoOperation)
+        setImageAndUpdateUIOperation.addDependency(fetchPhotoOperation)
+        
+        operations[photoReference.id] = fetchPhotoOperation
+        
+        
+        photoFetchQueue.addOperations([fetchPhotoOperation, cacheOperation], waitUntilFinished: false)
+        OperationQueue.main.addOperation(setImageAndUpdateUIOperation)
+
     }
     
     // Properties
@@ -75,7 +115,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
@@ -96,4 +136,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     @IBOutlet var collectionView: UICollectionView!
+    
+    private let photoFetchQueue = OperationQueue()
+    private var cache = Cache<Int, Data>()
+    private var operations = [Int : FetchPhotoOperation]()
 }
