@@ -31,7 +31,7 @@ class PhotosCollectionViewController: UIViewController {
     
     let photoReference = photoReferences[indexPath.item]
     
-    // TODO: Implement image loading here
+    // Async image loading
     
     if let cachedImage = cache.value(for: photoReference.id) {
       cell.imageView.image = UIImage(data: cachedImage)
@@ -39,7 +39,7 @@ class PhotosCollectionViewController: UIViewController {
     }
     let photoFetchOperation = PhotoFetchOperation(photoReference: photoReference) //1
     
-    let cacheOpration = BlockOperation { //2
+    let cacheOperation = BlockOperation { //2
       if let data = photoFetchOperation.imageData {
         self.cache.cache(value: data, for: photoReference.id)
       }
@@ -47,7 +47,8 @@ class PhotosCollectionViewController: UIViewController {
     let completionOperation = BlockOperation { //3
       defer { self.fetchOperations.removeValue(forKey: photoReference.id) }
       
-      if let currentIndexPath = self.collectionView.indexPath(for: cell), currentIndexPath != indexPath {
+      if let currentIndexPath = self.collectionView.indexPath(for: cell),
+        currentIndexPath != indexPath {
         print("Cell has not been used")
         return
       }
@@ -57,11 +58,11 @@ class PhotosCollectionViewController: UIViewController {
       }
       
     }
-    cacheOpration.addDependency(photoFetchOperation)
+    cacheOperation.addDependency(photoFetchOperation)
     completionOperation.addDependency(photoFetchOperation)
     
     photoFetchQueue.addOperation(photoFetchOperation)
-    photoFetchQueue.addOperation(cacheOpration)
+    photoFetchQueue.addOperation(cacheOperation)
     OperationQueue.main.addOperation(completionOperation)
     
     fetchOperations[photoReference.id] = photoFetchOperation
@@ -139,6 +140,6 @@ extension PhotosCollectionViewController: UICollectionViewDataSource, UICollecti
   func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
     let photoReference = photoReferences[indexPath.item]
     fetchOperations[photoReference.id]?.cancel()
-    print("Cancelling.")
+    print("Cancelled.")
   }
 }
