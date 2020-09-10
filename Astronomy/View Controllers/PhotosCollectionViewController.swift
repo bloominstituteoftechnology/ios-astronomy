@@ -12,6 +12,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // Properties
     let cache = Cache<Int,Data>()
+    private let photoFetchQueue = OperationQueue()
+    
+ 
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -71,34 +74,35 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoReference = photoReferences[indexPath.item]
         
-        if let cacheData = cache.value(key: photoReference.id),
-            let image = UIImage(data: cacheData) {
-            cell.imageView.image = image
+        if let cacheData = cache.value(key: photoReference.id) {
+            cell.imageView.image = UIImage(data: cacheData)
             return
-        }
-        
-        if let photoURL = photoReference.imageURL.usingHTTPS {
+        } else {
             
-            let task = URLSession.shared.dataTask(with: photoURL) { (data, _, error) in
-                if let error = error {
-                    print("Error fetching image: \(error)")
-                    return
+            let fetchPhoto = FetchPhotoOperation(photoReference: photoReference)
+            
+            let cachePhoto = BlockOperation {
+                if let imageData = fetchPhoto.imageData {
+                    self.cache.cache(value: imageData, for: photoReference.id)
                 }
-                
-                guard let data = data else {
-                    print("No data")
-                    return
-                }
-                
-                let image = UIImage(data: data)
+            }
+        
+            let cellData = BlockOperation {
+                guard let imageData = fetchPhoto.imageData else { return }
                 DispatchQueue.main.async {
                     if self.collectionView.indexPath(for: cell) == indexPath {
-                        cell.imageView.image = image
+                        cell.imageView.image = UIImage(data: imageData)
+                    } else {
+                        return
                     }
                 }
-                
             }
-            task.resume()
+        
+            cachePhoto.addDependency(fetchPhoto)
+            cellData.addDependency(fetchPhoto)
+            
+            photoFetchQueue.addOperations([cachePhoto, cellData, fetchPhoto], waitUntilFinished: false)
+            
             
         }//
         
