@@ -7,3 +7,24 @@
 //
 
 import Foundation
+
+class Cache<Key: Hashable, Value> {
+   
+    private var cacheQueue = DispatchQueue(label: "com.LambdaSchool.Astronomy.CacheQueue")
+    
+    private var dict: [Key: Value] = [:]
+    
+    func cache(value: Value, for key: Key) {
+        cacheQueue.async {
+            self.dict[key] = value
+        }
+    }
+    
+    func value(key: Key) -> Value? {
+        return cacheQueue.sync {
+            self.dict[key]
+        }
+    }
+    
+    
+}//
