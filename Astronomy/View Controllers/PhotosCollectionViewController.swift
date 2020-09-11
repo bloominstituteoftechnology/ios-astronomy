@@ -95,12 +95,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 print("No currentPath")
                 return
             }
+            if let imageData = photoOperation.imageData {
+                      cell.imageView.image = UIImage(data: imageData)
+                  }
             
         }
         
-        if let imageData = photoOperation.imageData {
-            cell.imageView.image = UIImage(data: imageData)
-        }
+      
         
         storeCacheData.addDependency(photoOperation)
         completeOp.addDependency(photoOperation)
