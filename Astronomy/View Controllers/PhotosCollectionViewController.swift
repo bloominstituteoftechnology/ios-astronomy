@@ -36,6 +36,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
         
+        
         loadImage(forCell: cell, forItemAt: indexPath)
         
         return cell
@@ -64,9 +65,29 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
-        
         // TODO: Implement image loading here
+                let photoReference = photoReferences[indexPath.item]
+        //create the url and set it equal to the photoReference's imageURL and then adding .usingHTTPS
+                if let imageURL = photoReference.imageURL.usingHTTPS {
+        
+                    let task = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+                        if let error = error {
+                            print("Error fetching image: \(error)")
+                            return
+                        }
+                        guard let data = data else {
+                            print("No data returned from fetch")
+                            return
+                        }
+                        let image = UIImage(data: data)
+                        DispatchQueue.main.async {
+                            if self.collectionView.indexPath(for: cell) == indexPath {
+                                cell.imageView.image = image
+                            }
+                        }
+                    }
+                    task.resume()
+        }
     }
     
     // Properties
