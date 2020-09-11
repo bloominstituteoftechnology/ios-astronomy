@@ -18,6 +18,8 @@ class ImageCollectionViewCell: UICollectionViewCell {
     
     // MARK: Properties
     
+    var photoID: Int = 0
+    
     // MARK: IBOutlets
     
     @IBOutlet var imageView: UIImageView!

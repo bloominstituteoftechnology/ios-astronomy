@@ -12,8 +12,8 @@ class Cache<Key: Hashable, Value> {
     var dictionary: [Key: Value] = [:]
     
     func cache(key: Key, value: Value) {
-        queue.sync {
-            dictionary[key] = value
+        queue.async {
+            self.dictionary[key] = value
         }
     }
     
