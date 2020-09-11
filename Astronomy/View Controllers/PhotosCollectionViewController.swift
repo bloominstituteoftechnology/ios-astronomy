@@ -60,18 +60,53 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        if let cell = cell as? ImageCollectionViewCell {
+            let task = fetchDictionary[cell.photoID]
+            task?.cancel()
+        }
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
-        
-        // TODO: Implement image loading here
+        let photoReference = photoReferences[indexPath.item]
+        let photoID = photoReference.id
+        cell.photoID = photoID
+        if let imageData = cache[photoID] {
+            cell.imageView.image = UIImage(data: imageData)
+        } else {
+            let fetchImage = FetchPhotoOperation(photoReference: photoReference)
+            let cacheImage = BlockOperation {
+                if let data = fetchImage.imageData {
+                    self.cache.cache(key: photoID, value: data)
+                }
+            }
+            let setImage = BlockOperation {
+                if let data = fetchImage.imageData {
+                    DispatchQueue.main.async {
+                        guard cell.photoID == photoID else { return }
+                        cell.imageView.image = UIImage(data: data)
+                    }
+                }
+            }
+            cacheImage.addDependency(fetchImage)
+            setImage.addDependency(fetchImage)
+            photoFetchQueue.addOperations([fetchImage, cacheImage, setImage], waitUntilFinished: false)
+            fetchDictionary[photoID] = fetchImage
+        }
     }
     
     // Properties
     
     private let client = MarsRoverClient()
+    
+    var cache = Cache<Int, Data>()
+    
+    private let photoFetchQueue = OperationQueue()
+    
+    var fetchDictionary: [Int: FetchPhotoOperation] = [:]
     
     private var roverInfo: MarsRover? {
         didSet {
