@@ -65,27 +65,35 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         let photoReference = photoReferences[indexPath.item]
-        let url = photoReference.imageURL.usingHTTPS!
-        let request = URLRequest(url: url)
-        URLSession.shared.dataTask(with: request) { (data, _, error) in
-            if let error = error {
-                print("Error retrieving image: \(error)")
-                return
-            }
-            if let data = data {
-                let image = UIImage(data: data)
-                DispatchQueue.main.async {
-                    guard self.collectionView.indexPath(for: cell) == indexPath else { return }
-                    cell.imageView.image = image
+        let photoID = photoReference.id
+        if let imageData = cache[photoID] {
+            cell.imageView.image = UIImage(data: imageData)
+        } else {
+            let url = photoReference.imageURL.usingHTTPS!
+            let request = URLRequest(url: url)
+            URLSession.shared.dataTask(with: request) { (data, _, error) in
+                if let error = error {
+                    print("Error retrieving image: \(error)")
+                    return
                 }
-                return
-            }
-        }.resume()
+                if let data = data {
+                    let image = UIImage(data: data)
+                    DispatchQueue.main.async {
+//                        guard self.collectionView.indexPath(for: cell) == indexPath else { return }
+                        cell.imageView.image = image
+                        self.cache.cache(key: photoID, value: data)
+                    }
+                    return
+                }
+            }.resume()
+        }
     }
     
     // Properties
     
     private let client = MarsRoverClient()
+    
+    var cache = Cache<Int, Data>()
     
     private var roverInfo: MarsRover? {
         didSet {
