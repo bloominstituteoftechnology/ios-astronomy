@@ -77,13 +77,13 @@ You can aleviate problem #4 by implementing a caching system. Instead of reloadi
 Implement a simple cache in your app:
 
 1. Create a new file called `Cache.swift`.
-2. Create a class called `Cache`. It should be generic with respect to the type it stores, and its keys. e.g. `Cache<Key, Value>`.
+2. Create a class called `Cache`. It should be generic with respect to the type it stores, and its keys. e.g. `Cache`.<Key, Value>
 3. The generic `Key` type will need to be constrained to conform to `Hashable`.
 4. Create a private property that is a dictionary to be used to actually store the cached items. The type of the dictionary should be `[Key : Value]`. Make sure you initialize it with an empty dictionary.
 5. Implement `cache(value:, for:)` to add items to the cache and `value(for:)` to return the associated value from the cache.
 6. Add a `cache` proeprty to `PhotosCollectionViewController`. Its keys should be `Int`s as you'll use `MarsPhotoReference` `id`s for the keys. Its values should be `Data` objects, as you'll be caching image data. (You could also cache `UIImage`s directly.)
 6. In your `PhotosCollectionViewController.loadImage(forCell:, forItemAt:)` method, before starting a data task, first check to see if the cache already contains data for the given photo reference's id. If it exists, set the cell's image immediately without doing a network request.
-7. In your network request completion handler, save the just-received image data to the cache so it is available later.
+7. In your network request completion handler, save the just-received image data to the cache so it is available later. line 91 cache.cashe(value: data. for: )
 
 ### Test for Thread Safety
 
