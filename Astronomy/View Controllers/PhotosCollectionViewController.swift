@@ -60,44 +60,82 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let currentFetchOperation = photoReferences[indexPath.item]
+        guard let currentOperaion = operation[currentFetchOperation.id] else { return }
+        currentOperaion.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
          let photoReference = photoReferences[indexPath.item]
         
+        if let cachedImage = cache.getValue(for: photoReference.id){
+            cell.imageView.image = UIImage(data: cachedImage)
+            return
+        }
+        
+        let photoFetchRequest = FetchPhotoOperation(photo: photoReference)
+
+        let storeData = BlockOperation {
+            guard let data = photoFetchRequest.imageData else { return }
+            self.cache.storeInCache(value: data, for: photoReference.id)
+        }
+        
         // TODO: Implement image loading here
         
-        guard let imageURL = photoReference.imageURL.usingHTTPS else {
-                print("Error getting image")
-                return
-            }
+        let beenReused = BlockOperation {
+            let currentIndex = self.collectionView.indexPath(for: cell)
+            guard currentIndex == indexPath, let data = photoFetchRequest.imageData else { return }
+            cell.imageView.image = UIImage(data: data)
+        }
 
-            let task = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
-                if let error = error{
-                    print("Error fetching image: \(error)")
-                    return
-                }
+        storeData.addDependency(photoFetchRequest)
+        beenReused.addDependency(photoFetchRequest)
 
-                guard let data = data else {
-                        print("No data returned")
-                        return
-                }
+        photoFetchQueue.addOperation(photoFetchRequest)
+        photoFetchQueue.addOperation(storeData)
+        OperationQueue.main.addOperation(beenReused)
 
-
-
-                DispatchQueue.main.async {
-                    guard self.collectionView.indexPath(for: cell) == indexPath else { return }
-                    cell.imageView.image = UIImage(data: data)
-                }
-            }
-            task.resume()
+        operation[photoReference.id] = photoFetchRequest
+        
+//        guard let imageURL = photoReference.imageURL.usingHTTPS else {
+//                print("Error getting image")
+//                return
+//            }
+//
+//            let task = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+//                if let error = error{
+//                    print("Error fetching image: \(error)")
+//                    return
+//                }
+//
+//                self.cache.storeInCache(value: data!, for: photoReference.id)
+//
+//                guard let data = data else {
+//                        print("No data returned")
+//                        return
+//                }
+//
+//
+//
+//                DispatchQueue.main.async {
+//                    guard self.collectionView.indexPath(for: cell) == indexPath else { return }
+//                    cell.imageView.image = UIImage(data: data)
+//                }
+//            }
+//            task.resume()
 
         }
 
     
     // Properties
     
+    private let cache = Cache<Int, Data>()
+    private let photoFetchQueue = OperationQueue()
+    var operation = [Int: Operation]()
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
