@@ -16,6 +16,11 @@ class Cache<Key:Hashable, Value> {
     func cache(value: Value, for key: Key) {
         queue.async {
             self.cacheDictionary[key] = value
+            // This sets the limit on how many images is saved in the memory, if it gets to high it dumps the data.
+            if self.cacheDictionary.count > 25 {
+                self.cacheDictionary.removeAll()
+                print("Clearing data")
+            }
         }
     }
     
