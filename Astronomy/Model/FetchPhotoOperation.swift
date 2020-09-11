@@ -26,7 +26,7 @@ class FetchPhotoOperation: ConcurrentOperation {
         
         dataTask = URLSession.shared.dataTask(with: request, completionHandler: { (data, _, error) in
             if let error = error {
-                NSLog("Error creating dataTask: \(error)")
+                preconditionFailure("Error creating dataTask: \(error)")
             }
             
             self.imageData = data
