@@ -87,7 +87,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
 
 
                 DispatchQueue.main.async {
-                    cell.imageView = UIImage(data: data)
+                    guard self.collectionView.indexPath(for: cell) == indexPath else { return }
+                    cell.imageView.image = UIImage(data: data)
                 }
             }
             task.resume()
@@ -101,7 +102,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
