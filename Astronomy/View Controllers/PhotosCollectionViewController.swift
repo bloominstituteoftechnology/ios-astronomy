@@ -10,6 +10,9 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    //MARK: - Properties -
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -22,6 +25,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             self.roverInfo = rover
         }
     }
+    
+    let imageCache = Cache<Int, UIImage>()
+    private let photoFetchQueue = OperationQueue()
+    var dictionaryFetchOperation: [Int : Operation] = [:]
     
     // UICollectionViewDataSource/Delegate
     
@@ -64,13 +71,37 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
+        let imageURL = photoReference.imageURL.usingHTTPS!
+        
+        if let cachedImage = cache.value(for: photoReference.id) {
+            cell.imageView.image = cachedImage
+            print("Images were set from cache")
+            return
+        }
         
         // TODO: Implement image loading here
+        
+        let task = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+            if let error = error {
+                preconditionFailure("Could not load image: \(error)")
+            }
+            guard let data = data else {
+                preconditionFailure("Could not fetch image data")
+            }
+            let photo = UIImage(data: data)
+            self.cache.cache(value: photo!, for: photoReference.id)
+            
+            DispatchQueue.main.async {
+                cell.imageView.image = UIImage(data: data)
+            }
+        }
+        task.resume()
     }
     
-    // Properties
+    //MARK: - Properties-
     
+    var cache = Cache<Int, UIImage>()
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
