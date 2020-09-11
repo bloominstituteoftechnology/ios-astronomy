@@ -10,6 +10,12 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    // Properties
+    let cache = Cache<Int,Data>()
+    private let photoFetchQueue = OperationQueue()
+    
+    private let operations = [Int : Operation]()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -60,11 +66,58 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    
+    // Cancel
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        
+        let photoRefence = photoReferences[indexPath.item]
+        operations[photoRefence.id]?.cancel()
+    }
+    
+    
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
         // let photoReference = photoReferences[indexPath.item]
+        
+        let photoReference = photoReferences[indexPath.item]
+        
+        if let cacheData = cache.value(key: photoReference.id) {
+            cell.imageView.image = UIImage(data: cacheData)
+            return
+        } else {
+            
+            let fetchPhoto = FetchPhotoOperation(photoReference: photoReference)
+            
+            let cachePhoto = BlockOperation {
+                if let imageData = fetchPhoto.imageData {
+                    self.cache.cache(value: imageData, for: photoReference.id)
+                }
+            }
+        
+            let cellData = BlockOperation {
+                guard let imageData = fetchPhoto.imageData else { return }
+                DispatchQueue.main.async {
+                    if self.collectionView.indexPath(for: cell) == indexPath {
+                        cell.imageView.image = UIImage(data: imageData)
+                    } else {
+                        return
+                    }
+                }
+            }
+        
+            cachePhoto.addDependency(fetchPhoto)
+            cellData.addDependency(fetchPhoto)
+            
+            photoFetchQueue.addOperations([cachePhoto, cellData, fetchPhoto], waitUntilFinished: false)
+            
+            
+        }//
+        
+        
         
         // TODO: Implement image loading here
     }
