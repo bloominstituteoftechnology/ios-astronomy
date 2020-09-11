@@ -14,7 +14,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     let cache = Cache<Int,Data>()
     private let photoFetchQueue = OperationQueue()
     
- 
+    private let operations = [Int : Operation]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -65,6 +65,17 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
+    
+    
+    // Cancel
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        
+        let photoRefence = photoReferences[indexPath.item]
+        operations[photoRefence.id]?.cancel()
+    }
+    
+    
     
     // MARK: - Private
     
