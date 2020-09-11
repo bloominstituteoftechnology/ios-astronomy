@@ -10,7 +10,9 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
 
-    
+    var cashe = Cache<Int, Data>()
+    var operations : [Int : Operation] = [:]
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -67,28 +69,70 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
          let photoReference = photoReferences[indexPath.item]
 
+
+
+        if let id = cashe.getValue(for: photoReference.id) {
+            if self.collectionView.indexPath(for: cell) == indexPath {
+                cell.imageView.image = UIImage(data: id)
+                return
+            }
+        }
+
+        let photoOperation = FethchPhotoOperation(marsPhotoReference: photoReference)
+        let storeCacheData = BlockOperation {
+            if let fetchOP = photoOperation.imageData {
+                self.cashe.cache(value: fetchOP, for: photoReference.id)
+            }
+        }
+
+        let completeOp = BlockOperation {
+            defer {
+                self.operations.removeValue(forKey: photoReference.id)
+            }
+
+            if let currentPath = self.collectionView.indexPath(for: cell), currentPath != indexPath {
+                return
+            }
+        }
+
+        if let someimage = photoOperation.imageData {
+            cell.imageView.image = UIImage(data: someimage)
+        }
+
+        storeCacheData.addDependency(photoOperation)
+        completeOp.addDependency(photoOperation)
+        photoFetchQueue.addOperations([photoOperation, storeCacheData], waitUntilFinished: false)
+        OperationQueue.main.addOperations([completeOp], waitUntilFinished: false)
+        self.operations.updateValue(photoOperation, forKey: photoReference.id)
+
+
+
 //         TODO: Implement image loading here
 //        create the url and set it equal to the photoReference's imageURL and then adding .usingHTTPS
-        if let imageURL = photoReference.imageURL.usingHTTPS {
-
-            let task = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
-                if let error = error {
-                    print("Error fetching image: \(error)")
-                    return
-                }
-                guard let data = data else {
-                    print("No data returned from fetch")
-                    return
-                }
-                let image = UIImage(data: data)
-                DispatchQueue.main.async {
-                    if self.collectionView.indexPath(for: cell) == indexPath {
-                        cell.imageView.image = image
-                    }
-                }
-            }
-            task.resume()
-        }
+//        if let imageURL = photoReference.imageURL.usingHTTPS {
+//
+//            let task = URLSession.shared.dataTask(with: imageURL) { (data, _, error) in
+//                if let error = error {
+//                    print("Error fetching image: \(error)")
+//                    return
+//                }
+//                guard let data = data else {
+//                    print("No data returned from fetch")
+//                    return
+//                }
+//
+//                // this updates the dictionary
+//                self.cashe.cache(value: data, for: photoReference.id)
+//
+//                let image = UIImage(data: data)
+//                DispatchQueue.main.async {
+//                    if self.collectionView.indexPath(for: cell) == indexPath {
+//                        cell.imageView.image = image
+//                    }
+//                }
+//            }
+//            task.resume()
+//        }
         // TODO: Implement image loading here
     }
     
@@ -117,6 +161,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+
+    private var photoFetchQueue = OperationQueue()
     
     @IBOutlet var collectionView: UICollectionView!
 }
