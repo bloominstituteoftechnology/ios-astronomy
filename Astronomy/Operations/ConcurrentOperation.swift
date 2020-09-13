@@ -63,4 +63,38 @@ class ConcurrentOperation: Operation {
     
 }
 
-
+class FetchPhotoOperation: ConcurrentOperation {
+    
+    let photo: MarsPhotoReference
+    //  use a setter here
+    private (set) var imageData: Data?
+    
+    //  properties to assist in start / cancel functions
+    private let session: URLSession
+    private var dataTask: URLSessionDataTask?
+    
+    init(photo: MarsPhotoReference, session: URLSession = URLSession.shared) {
+        self.photo = photo
+        self.session = session
+        super.init()
+    }
+    
+    override func start() {
+        state = .isExecuting
+        //  append to pull from secure URL
+        guard let imageURL = photo.imageURL.usingHTTPS else { return }
+        let task = session.dataTask(with: imageURL) { (data, _, error) in
+            defer { self.state = .isFinished }
+            if let error = error {
+                NSLog("error fetching data for \(self.photo), \(error)")
+            }
+            guard let data = data else { return }
+            self.imageData = data
+        }
+        task.resume()
+    }
+    
+    override func cancel() {
+        dataTask?.cancel()
+    }
+}
