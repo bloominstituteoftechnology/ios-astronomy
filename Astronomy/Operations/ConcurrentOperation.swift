@@ -83,6 +83,7 @@ class FetchPhotoOperation: ConcurrentOperation {
         state = .isExecuting
         //  append to pull from secure URL
         guard let imageURL = photo.imageURL.usingHTTPS else { return }
+        //  create and run a data task to load the image data
         let task = session.dataTask(with: imageURL) { (data, _, error) in
             defer { self.state = .isFinished }
             if let error = error {

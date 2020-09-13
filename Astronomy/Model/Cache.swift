@@ -9,8 +9,8 @@
 import Foundation
 
 class Cache<Key: Hashable, Value> {
-    
-    //  set up the cache
+    //  Key is constrained to conform to Hashable
+    //  set up the cache, an empty dictionary
     private var cache = [Key : Value]()
     
     //  create a serial queue
@@ -23,7 +23,7 @@ class Cache<Key: Hashable, Value> {
         }
     }
     
-    //  return items from the cache of type dictionary
+    //  to return associated value from the cache
     func value(key: Key) -> Value? {
         //  decision to run sync
         return queue.sync {

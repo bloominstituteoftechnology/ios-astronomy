@@ -97,11 +97,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
+        //  access the MarsPhotoReference instance for the passed in indexPath from the array
         let photoReference = photoReferences[indexPath.item]
-        
+        //  check to see if the cache already contains data for the given photo reference's id
         if let cachedData = photoDataCache.value(key: photoReference.id),
             let image = UIImage(data: cachedData) {
+            //  if the data already exists:
             cell.imageView.image = image
             return
         }
@@ -119,11 +120,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             //  create a way to clear an operation from the dictionary
             defer {self.operations.removeValue(forKey: photoReference.id)}
             
+            //  check to see if the current index path for the cell is the same one
             if let currentIndexPath = self.collectionView.indexPath(for: cell),
                 currentIndexPath != indexPath {
                 print("image for reused cell")
+                //  abort setting the image
                 return
             }
+            
             if let data = fetchOperation.imageData {
                 cell.imageView.image = UIImage(data: data)
             }
