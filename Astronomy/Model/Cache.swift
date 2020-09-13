@@ -25,7 +25,7 @@ class Cache<Key: Hashable, Value> {
     
     //  to return associated value from the cache
     func value(key: Key) -> Value? {
-        //  decision to run sync
+        //  use a synchronous dispatch to retrieve the requested value
         return queue.sync {
             cache[key]
         }

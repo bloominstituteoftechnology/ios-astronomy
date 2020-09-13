@@ -94,6 +94,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    //  implement cancellation of operations
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let reference = photoReferences[indexPath.item]
+        operations[reference.id]?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
@@ -106,16 +112,16 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             cell.imageView.image = image
             return
         }
-        
+        //  to fetch image data from the network
         let fetchOperation = FetchPhotoOperation(photo: photoReference)
         
-        //  cache data from fetch
+        //  store received data in the cache
         let cacheOperation = BlockOperation {
             if let data = fetchOperation.imageData {
                 self.photoDataCache.cache(key: photoReference.id, value: data)
             }
         }
-        
+        //  check to see if the cell has been reused
         let displayImageOperation = BlockOperation {
             //  create a way to clear an operation from the dictionary
             defer {self.operations.removeValue(forKey: photoReference.id)}

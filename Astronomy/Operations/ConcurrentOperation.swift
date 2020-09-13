@@ -80,6 +80,7 @@ class FetchPhotoOperation: ConcurrentOperation {
     }
     
     override func start() {
+        //  this tells the operation queue machinery the operation has started running
         state = .isExecuting
         //  append to pull from secure URL
         guard let imageURL = photo.imageURL.usingHTTPS else { return }
