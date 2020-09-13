@@ -42,6 +42,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     @IBOutlet var collectionView: UICollectionView!
     
+    //  MARK: - view lifecycle
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -55,7 +57,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
     }
     
-    // UICollectionViewDataSource/Delegate
+    //  MARK: - UICollectionViewDataSource/Delegate
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         return 1
@@ -98,7 +100,41 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoReference = photoReferences[indexPath.item]
         
-        if let cachedData = photoDataCache.value
+        if let cachedData = photoDataCache.value(key: photoReference.id),
+            let image = UIImage(data: cachedData) {
+            cell.imageView.image = image
+            return
+        }
+        
+        let fetchOperation = FetchPhotoOperation(photo: photoReference)
+        
+        //  cache data from fetch
+        let cacheOperation = BlockOperation {
+            if let data = fetchOperation.imageData {
+                self.photoDataCache.cache(key: photoReference.id, value: data)
+            }
+        }
+        
+        let displayImageOperation = BlockOperation {
+            //  create a way to clear an operation from the dictionary
+            defer {self.operations.removeValue(forKey: photoReference.id)}
+            
+            if let currentIndexPath = self.collectionView.indexPath(for: cell),
+                currentIndexPath != indexPath {
+                print("image for reused cell")
+                return
+            }
+            if let data = fetchOperation.imageData {
+                cell.imageView.image = UIImage(data: data)
+            }
+        }
+        
+        photoFetchQueue.addOperation(fetchOperation)
+        photoFetchQueue.addOperation(cacheOperation)
+        cacheOperation.addDependency(fetchOperation)
+        displayImageOperation.addDependency(fetchOperation)
+        //  move finished images to the main queue :-)
+        OperationQueue.main.addOperation(displayImageOperation)
     }
     
     
