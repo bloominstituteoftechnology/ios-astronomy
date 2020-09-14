@@ -30,3 +30,5 @@ class Cache<Key: Hashable, Value> {
         }
     }
 }
+
+

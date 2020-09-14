@@ -11,6 +11,7 @@ import UIKit
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
 
     var cashe = Cache<Int, Data>()
+
     var operations : [Int : Operation] = [:]
 
     override func viewDidLoad() {
@@ -69,8 +70,6 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
          let photoReference = photoReferences[indexPath.item]
 
-
-
         if let id = cashe.getValue(for: photoReference.id) {
             if self.collectionView.indexPath(for: cell) == indexPath {
                 cell.imageView.image = UIImage(data: id)
@@ -93,11 +92,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             if let currentPath = self.collectionView.indexPath(for: cell), currentPath != indexPath {
                 return
             }
+            if let someimage = photoOperation.imageData {
+                cell.imageView.image = UIImage(data: someimage)
+            }
         }
 
-        if let someimage = photoOperation.imageData {
-            cell.imageView.image = UIImage(data: someimage)
-        }
 
         storeCacheData.addDependency(photoOperation)
         completeOp.addDependency(photoOperation)
