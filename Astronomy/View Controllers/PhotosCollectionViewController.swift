@@ -41,6 +41,16 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
+    // Implements Cancellation of Operations
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        q.sync {
+            let operationToCancel = self.fetchDict[photoReference.id]
+            operationToCancel?.cancel()
+            //print("operation cancelled: \(String(describing: operationToCancel))")
+        }
+    }
+    
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -62,13 +72,92 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     // MARK: - Private
     
+    
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
-        
-        // TODO: Implement image loading here
-    }
     
+        let photoReference = photoReferences[indexPath.item]
+        let photoURL = photoReference.imageURL.usingHTTPS
+        let indexPathAtCall = indexPath
+        
+        // FetchPhoto ConcurrentOperation
+        let fetchPhotoOperation = FetchPhotoOperation(reference: photoReference)
+        fetchPhotoOperation.completionBlock = {
+            self.fetchDict[photoReference.id] = fetchPhotoOperation.self
+            print(self.fetchDict.count)
+        }
+        photoFetchQueue.addOperation(fetchPhotoOperation)
+        
+        // Cache Image Block Operation
+        let cacheImageBlockOperation = BlockOperation {
+            let imageToCache = UIImage(data: fetchPhotoOperation.imageData!)
+            self.cache.cache(value: imageToCache!, forKey: photoReference.id)
+        }
+        cacheImageBlockOperation.addDependency(fetchPhotoOperation)
+        
+        
+        // Completion Block Operation
+        let completionBlockOperation = BlockOperation {
+            if (self.cache.value(forKey: photoReference.id) != nil) {
+                guard indexPath == indexPathAtCall else { return }
+                print("image from cache!")
+                cell.imageView.image = self.cache.value(forKey: photoReference.id)
+            }else {
+                guard indexPath == indexPathAtCall else { return }
+                cell.imageView.loadImageFrom(url: photoURL!)
+            }
+        }
+        completionBlockOperation.addDependency(fetchPhotoOperation)
+        
+        photoFetchQueue.addOperation(cacheImageBlockOperation)
+        OperationQueue.main.addOperation(completionBlockOperation)
+
+        
+        //        //test
+//        let dummyOutside = self.cache.value(forKey: photoReference.id)
+//        print(dummyOutside)
+//
+//        // TODO: Implement image loading
+//        if (cache.value(forKey: photoReference.id) != nil) {
+//            guard indexPath == indexPathAtCall else { return }
+//            print("image from cache!")
+//            cell.imageView.image = cache.value(forKey: photoReference.id)
+//        }else {
+//
+////            let task = URLSession.shared.dataTask(with: photoURL!) {
+////
+////                data, _, error in
+////                //unwrap the data
+////                guard error == nil, let data = data else {
+////                    if let error = error {
+////                        NSLog("Error unwarapping data: \(error)")
+////                        return
+////                    }
+////                    NSLog("Unable to fetch data")
+////                    return
+////                }
+////                //test
+////                print("no error and have data: \(data)")
+////
+////                //test
+////                print("image from URL: \(photoReference.id), \(UIImage(data: data)!)")
+////
+////                //save image to cache
+////                let imageToCache = UIImage(data: data)!
+////                self.cache.cache(value: imageToCache, forKey: photoReference.id)
+////
+////                //test
+////                let dummyInside = self.cache.value(forKey: photoReference.id)
+////                print(dummyInside)
+////            }
+////            task.resume()
+//
+//            guard indexPath == indexPathAtCall else { return }
+//            cell.imageView.loadImageFrom(url: photoURL!)
+//
+//        }
+        
+    }
     // Properties
     
     private let client = MarsRoverClient()
@@ -94,6 +183,14 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    
+    
+    private var cache = Cache<Int, UIImage>()
+    private var fetchDict: [Int: Operation] = [:]
+    private let photoFetchQueue = OperationQueue()
+    private let q = DispatchQueue(label: "Cancelled Operation Fetch")
+    
+    
     
     @IBOutlet var collectionView: UICollectionView!
 }
