@@ -55,6 +55,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             
             self.roverInfo = rover
         }
+        
+        self.collectionView.prefetchDataSource = self
     }
     
     //=======================
@@ -134,5 +136,38 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             operations[photoReference.id] = fetchOp
         }
     }
+    
+}
+
+extension PhotosCollectionViewController: UICollectionViewDataSourcePrefetching {
+    func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+        for indexPath in indexPaths {
+            let photoReference = photoReferences[indexPath.item]
+            if cache.value(for: photoReference.id) == nil {
+                let fetchOp = PhotoFetchOperation(ref: photoReference)
+                let cacheOp = BlockOperation {
+                    if let data = fetchOp.imageData {
+                        self.cache.cache(value: data, for: photoReference.id)
+                    }
+                }
+                
+                cacheOp.addDependency(fetchOp)
+                
+                photoFetchQueue.addOperations([
+                    fetchOp,
+                    cacheOp
+                ], waitUntilFinished: false)
+                operations[photoReference.id] = fetchOp
+            }
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+        for indexPath in indexPaths {
+            let photoReference = photoReferences[indexPath.item]
+            operations[photoReference.id]?.cancel()
+        }
+    }
+    
     
 }
