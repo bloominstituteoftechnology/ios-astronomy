@@ -11,6 +11,7 @@ import Foundation
 class PhotoFetchOperation: ConcurrentOperation {
     //=======================
     // MARK: - Properties
+    private let queue = DispatchQueue(label: "PhotoFetchQueue")
     private var photoRef: MarsPhotoReference
     var imageData: Data?
     private var dataTask: URLSessionDataTask?
@@ -33,7 +34,7 @@ class PhotoFetchOperation: ConcurrentOperation {
     
     func fetchPhoto() {
         guard let url = photoRef.imageURL.usingHTTPS else { return }
-        dataTask = URLSession.shared.dataTask(with: url) { (data, _, error) in
+        dataTask = URLSession.shared.dataTask(with: url) { [unowned self] (data, _, error) in
             defer {
                 self.state = .isFinished
             }
@@ -45,7 +46,9 @@ class PhotoFetchOperation: ConcurrentOperation {
                 print("No data")
                 return
             }
-            self.imageData = data
+            self.queue.sync {
+                self.imageData = data
+            }
         }
     }
 }
