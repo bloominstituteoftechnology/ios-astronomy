@@ -60,16 +60,55 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = self.photoReferences[indexPath.item]
+        guard let fetchOperation = self.operations[photoReference.id] else { NSLog("Error canceling photo request"); return }
+        fetchOperation.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
         
-        // let photoReference = photoReferences[indexPath.item]
+        if let cachedData = self.cache.value(key: photoReference.id) {
+            cell.imageView.image = UIImage(data: cachedData)
+            return
+        }
         
-        // TODO: Implement image loading here
+        let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+        let cachedOperation = BlockOperation {
+            if let data = fetchPhotoOperation.imageData {
+                self.cache.cache(value: data, key: photoReference.id)
+            }
+        }
+        
+        let checkReuseOperation = BlockOperation {
+            if let currentIndexPath = self.collectionView.indexPath(for: cell),
+                currentIndexPath != indexPath {
+                return
+            }
+            if let imageData = fetchPhotoOperation.imageData {
+                cell.imageView.image = UIImage(data: imageData)
+            }
+        }
+        
+        cachedOperation.addDependency(fetchPhotoOperation)
+        checkReuseOperation.addDependency(fetchPhotoOperation)
+        
+        photoFetchQueue.addOperation(fetchPhotoOperation)
+        photoFetchQueue.addOperation(cachedOperation)
+        OperationQueue.main.addOperation(checkReuseOperation)
+        
+        self.operations[photoReference.id] = fetchPhotoOperation
     }
     
     // Properties
+    let cache = Cache<Int, Data>()
+    
+    private var operations = [Int : Operation]()
+    
+    private let photoFetchQueue = OperationQueue()
     
     private let client = MarsRoverClient()
     
@@ -78,6 +117,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             solDescription = roverInfo?.solDescriptions[3]
         }
     }
+    
     private var solDescription: SolDescription? {
         didSet {
             if let rover = roverInfo,
@@ -89,6 +129,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
         }
     }
+    
     private var photoReferences = [MarsPhotoReference]() {
         didSet {
             DispatchQueue.main.async { self.collectionView?.reloadData() }
