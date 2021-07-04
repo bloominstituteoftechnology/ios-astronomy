@@ -59,14 +59,51 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
+
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let fetchOperation = fetchOperations[indexPath.item]
+        fetchOperation?.cancel()
+    }
     
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
-        // let photoReference = photoReferences[indexPath.item]
-        
-        // TODO: Implement image loading here
+
+        let photoReference = photoReferences[indexPath.item]
+        let photoFetchOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+
+        if let imageData = cache.value(for: photoReference.id) {
+            let image = UIImage(data: imageData)
+            cell.imageView.image = image
+            return
+        }
+
+        let cacheImageOperation = BlockOperation {
+            guard let imageData = photoFetchOperation.imageData else { return }
+            self.cache.cache(value: imageData, for: photoReference.id)
+        }
+
+        let checkIfReusedOperation = BlockOperation {
+            if let imageData = photoFetchOperation.imageData {
+                cell.imageView.image = UIImage(data: imageData)
+                defer {
+                    self.fetchOperations.removeValue(forKey: photoReference.id) }
+                    if let currentIndexPath = self.collectionView?.indexPath(for: cell), currentIndexPath != indexPath {
+                        print("Got image for now-reused cell")
+                        return
+                }
+            }
+        }
+
+        cacheImageOperation.addDependency(photoFetchOperation)
+        checkIfReusedOperation.addDependency(photoFetchOperation)
+        photoFetchQueue.addOperation(photoFetchOperation)
+        photoFetchQueue.addOperation(cacheImageOperation)
+        OperationQueue.main.addOperation(checkIfReusedOperation)
+        fetchOperations[photoReference.id] = photoFetchOperation
+
+
+
     }
     
     // Properties
@@ -75,7 +112,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[105]
         }
     }
     private var solDescription: SolDescription? {
@@ -94,6 +131,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
-    
+    var cache = Cache<Int, Data>()
     @IBOutlet var collectionView: UICollectionView!
+    private var photoFetchQueue = OperationQueue()
+    private var fetchOperations: [Int: FetchPhotoOperation] = [:]
+
 }

@@ -6,9 +6,11 @@
 //  Copyright © 2018 Lambda School. All rights reserved.
 //
 
-import Foundation
+import UIKit
 
 class MarsRoverClient {
+
+    
     
     func fetchMarsRover(named name: String,
                         using session: URLSession = URLSession.shared,
