@@ -10,6 +10,10 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    let cache = Cache<Int,Data>()
+    private let photoFetchQueue = OperationQueue()
+    var photoDictionary: [Int: Operation] = [:]
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -64,11 +68,56 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
+        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
         
-        // TODO: Implement image loading here
+        if let cache = cache.value(for: photoReference.id) {
+            cell.imageView.image = UIImage(data: cache)
+            return
+        } else {
+            let fetchedPhoto = PhotoFetchOperation(marsPhotoReference: photoReference)
+            let cachePhotoData = BlockOperation {
+                        if let imageData = fetchedPhoto.imageData {
+                            self.cache.cache(value: imageData, for: photoReference.id)
+                        }
+                    }
+                    let cellPhotoData = BlockOperation {
+                        guard let imageData = fetchedPhoto.imageData else { return }
+                        DispatchQueue.main.async {
+                            if self.collectionView.indexPath(for: cell) == indexPath {
+                                cell.imageView.image = UIImage(data: imageData)
+                            } else {
+                                return
+                            }
+                        }
+                    }
+                cachePhotoData.addDependency(fetchedPhoto)
+                cellPhotoData.addDependency(fetchedPhoto)
+
+                photoFetchQueue.addOperations([cachePhotoData, cellPhotoData, fetchedPhoto], waitUntilFinished: false)
+                photoDictionary[photoReference.id] = fetchedPhoto
+        
+//        URLSession.shared.dataTask(with: imageURL) { data, _, error in
+//            if let error = error {
+//                NSLog("Error loading image: \(error)")
+//                return
+//            }
+//
+//            guard let data = data else {
+//                NSLog("Data not loaded from API.")
+//                return
+//            }
+//
+//            guard let image = UIImage(data: data) else {
+//                NSLog("Couldn't fetch image from data.")
+//                return
+//            }
+//            DispatchQueue.main.async {
+//                cell.imageView.image = image
+//            }
+//        }.resume()
     }
-    
+}
     // Properties
     
     private let client = MarsRoverClient()
@@ -92,6 +141,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private var photoReferences = [MarsPhotoReference]() {
         didSet {
             DispatchQueue.main.async { self.collectionView?.reloadData() }
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+         let photoReference = photoReferences[indexPath.item]
+        if let operationAction = photoDictionary[photoReference.id] {
+        operationAction.cancel()
         }
     }
     
