@@ -60,22 +60,66 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    // this is cancelling fetching of images if cell is scrolled off screen. 
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        
+        let photoReference = photoReferences[indexPath.item]
+        
+        storedFetchedOperations[photoReference.id]?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        if let image = cache.value(for: photoReference.id) {
+            
+            cell.imageView.image = image
+        } else {
+            
+            let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+            
+            let cacheOperation = BlockOperation {
+                guard let data = fetchPhotoOperation.imageData,
+                    let image = UIImage(data: data) else { return }
+                
+                self.cache.cache(value: image, for: photoReference.id)
+            }
+            
+            let cellReusedOperation = BlockOperation {
+                guard let data = fetchPhotoOperation.imageData,
+                    let image = UIImage(data: data) else { return }
+                
+                if self.collectionView.indexPath(for: cell) == indexPath {
+                    cell.imageView.image = image
+                }
+            }
+            
+            cacheOperation.addDependency(fetchPhotoOperation)
+            cellReusedOperation.addDependency(fetchPhotoOperation)
+            
+            photoFetchQueue.addOperations([fetchPhotoOperation, cacheOperation], waitUntilFinished: false)
+            OperationQueue.main.addOperation(cellReusedOperation)
+            
+            storedFetchedOperations[photoReference.id] = fetchPhotoOperation
+        }
     }
     
     // Properties
+    
+    private var storedFetchedOperations: [Int : FetchPhotoOperation] = [:]
+    
+    private let photoFetchQueue = OperationQueue()
+    
+    private var cache: Cache<Int, UIImage> = Cache()
     
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
