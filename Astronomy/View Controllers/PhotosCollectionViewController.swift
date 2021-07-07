@@ -60,13 +60,54 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReferenceID = photoReferences[indexPath.item].id
+        if let operation = fetchPhotoOperations[photoReferenceID] {
+            operation.cancel()
+        }
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        if let imageData = cache.value(for: photoReference.id),
+            let image = UIImage(data: imageData) {
+            // Load image from cache
+            DispatchQueue.main.async { cell.imageView.image = image }
+            return
+        }
+
+        let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+        
+        let cacheStoreOperation = BlockOperation {
+            if let imageData = fetchPhotoOperation.imageData {
+                self.cache.cache(value: imageData, for: photoReference.id)
+            }
+        }
+        
+        cacheStoreOperation.addDependency(fetchPhotoOperation)
+        
+        let setImageOperation = BlockOperation {
+            if let currentIndexPath = self.collectionView.indexPath(for: cell) {
+                guard currentIndexPath == indexPath else { return }
+            }
+            
+            if let imageData = fetchPhotoOperation.imageData,
+                let image = UIImage(data: imageData) {
+                DispatchQueue.main.async { cell.imageView.image = image }
+            }
+        }
+        
+        setImageOperation.addDependency(fetchPhotoOperation)
+        
+        fetchPhotoQueue.addOperations([fetchPhotoOperation, cacheStoreOperation], waitUntilFinished: false) // false = async
+        
+        OperationQueue.main.addOperations([setImageOperation], waitUntilFinished: false)
+
+        fetchPhotoOperations[photoReference.id] = fetchPhotoOperation
     }
     
     // Properties
@@ -94,6 +135,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    
+    private var cache = Cache<Int, Data>()
+    
+    private let fetchPhotoQueue = OperationQueue()
+    
+    private var fetchPhotoOperations = [Int:Operation]()
     
     @IBOutlet var collectionView: UICollectionView!
 }
