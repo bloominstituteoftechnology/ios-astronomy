@@ -10,7 +10,6 @@ import Foundation
 
 struct MarsRover: Codable {
     let name: String
-    
     let launchDate: Date
     let landingDate: Date
     
@@ -23,7 +22,6 @@ struct MarsRover: Codable {
     let maxDate: Date
     
     let numberOfPhotos: Int
-    
     let solDescriptions: [SolDescription]
     
     enum CodingKeys: String, CodingKey {
