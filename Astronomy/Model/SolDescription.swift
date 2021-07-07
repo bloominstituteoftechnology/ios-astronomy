@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct SolDescription: Codable {
+struct SolDescription: Codable, Equatable {
     let sol: Int
     let totalPhotos: Int
     let cameras: [String]

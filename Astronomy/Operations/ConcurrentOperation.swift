@@ -62,3 +62,4 @@ class ConcurrentOperation: Operation {
     }
     
 }
+

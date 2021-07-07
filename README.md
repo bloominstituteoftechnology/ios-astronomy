@@ -29,6 +29,8 @@ To view the API documentation on NASA's website, follow these steps:
 
 ## Part 1 - Implement Basic Collection View
 
+//WORKED BUT ONLY LOADED ONE IMAGE OVER AND OVER
+
 A collection view and associated view controller have already been set up for you, and data is already being loaded from the API. However, loading images from the Mars Rover API is a multi-step process:
 
 1. Load mission manifest (`MarsRover`) for a given Rover. (Done for you already)
@@ -51,6 +53,7 @@ Test your app. It should load images and display them.
 
 ## Part 2 - Test Scrolling Performance
 
+// IT RAN FINE
 Your app should work at this point, however, you should evaulate its performance, especially with a slow network. Apple provides a tool called *Network Link Conditioner* that you can install on your Mac and use to simulate a slow or unreliable network for the purposes of testing your apps. 
 
 You can download it (along with a number of other supplemental Apple developer tools) here: [Download Additional Tools for Xcode](https://developer.apple.com/download/more/?q=Additional%20Tools) (Make sure you download the correct tools for your version of Xcode). You can read a good article on the Network Link Conditioner on [NSHipster](https://nshipster.com/network-link-conditioner/).
@@ -81,8 +84,12 @@ Implement a simple cache in your app:
 3. The generic `Key` type will need to be constrained to conform to `Hashable`.
 4. Create a private property that is a dictionary to be used to actually store the cached items. The type of the dictionary should be `[Key : Value]`. Make sure you initialize it with an empty dictionary.
 5. Implement `cache(value:, for:)` to add items to the cache and `value(for:)` to return the associated value from the cache.
+
+// NOT SURE
 6. Add a `cache` proeprty to `PhotosCollectionViewController`. Its keys should be `Int`s as you'll use `MarsPhotoReference` `id`s for the keys. Its values should be `Data` objects, as you'll be caching image data. (You could also cache `UIImage`s directly.)
 6. In your `PhotosCollectionViewController.loadImage(forCell:, forItemAt:)` method, before starting a data task, first check to see if the cache already contains data for the given photo reference's id. If it exists, set the cell's image immediately without doing a network request.
+
+// DONT HAVE A COMPLETION HANDLER
 7. In your network request completion handler, save the just-received image data to the cache so it is available later.
 
 ### Test for Thread Safety
@@ -100,6 +107,8 @@ You can make `Cache` thread-safe, that is safe to use from multiple threads simu
 You could use an instance of `NSLock` for this. However, Grand Central Dispatch serial queues are designed to only allow one closure or unit of code to run at a time. They make for a great way to implement synchronized access to a shared resource without using a lock.
 
 1. Create a private `queue` property and initialize it with a serial `DispatchQueue`. Give it an appropriate label.
+
+// DID WHAT I COULD
 2. In `cache(value:, for:)`, dispatch the actual setting of the dictionary key/value pair so that it occurs on the `queue`.
 3. In `value(for:)`, use a _synchronous_ dispatch to retrieve the requested value from the dictionary before returning it. Note that `DispatchQueue.sync()`'s closure can return a value which will subsequently be returned from `DispatchQueue.sync()` itself. This means you don't need to create a temporary variable outside the dispatched closure.
 4. Run your app again. Verify that thread sanitizer no longer flags any issues.
@@ -116,9 +125,13 @@ To fix this, you'll want to implement cancellation of in-flight network requests
 2. Add properties to store an instance of `MarsPhotoReference` for which an image should be loaded as well as `imageData` that has been loaded. `imageData` should be optional since it won't be set until after data has been loaded from the network.
 3. Implement an initializer that takes a `MarsPhotoReference`.
 4. Override `start()`. You should begin by setting `state` to `.isExecuting`. This tells the operation queue machinery that the operation has started running.
+
+
 5. Create a data task to load the image. You should store the task itself in a private property so you can cancel it if need be.
 6. In the data task's completion handler, check for an error and bail out if one occurs. Otherwise, set `imageData` with the received data.
 7. Make sure you set `state` to `.isFinished` before exiting the completion closure. This is a good use case for `defer`.
+
+// DOESNT TELL ME TO DO ANYTHING INSIDE CANCEL OVERRIDE
 8. Override `cancel()`, which will be called if the operation is cancelled. In your implementation, call `cancel()` on the `dataTask`.
 
 *`ConcurrentOperation` is a nice "boilerplate" class that makes it easier to implement concurrent/asynchonous `Operation` subclasses in Swift. Feel free to keep it in your personal code library so you can use it in other apps you write.
@@ -130,12 +143,16 @@ Now that you've created an operation to fetch images, you should rewrite `Photos
 1. Add a private property called `photoFetchQueue`, which is an instance of `OperationQueue`.
 2. In `PhotosCollectionViewController.loadImage(forCell:, forItemAt:)`, delete the code that creates a data task.
 3. Create three operations:
+
+//DONT KNOW WHAT TO PUT IN THESE
 	- One should be a `PhotoFetchOperation` to fetch the image data from the network.
 	- One should be used to store received data in the cache.
 	- The last should check if the cell has been reused, and if not, set its image view's image.  
 	The last two of these can be instances of `BlockOperation`.
 4. Make the cache and completion operations both depend on completion of the fetch operation.
 5. Add each operation to the appropriate queue. Note that the last operation above uses UIKit API and must run on the main queue.
+
+// NO CLUE ON 6 OR 7
 6. Add a dictionary property that you'll use to store fetch operations by the associated photo reference id.
 7. When you finish creating and starting the operations for a cell, add the fetch operation to your dictionary. This way you can retrieve it later to cancel it if need be.
 
