@@ -64,9 +64,48 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
-        
+        let photoReference = photoReferences[indexPath.item]
+        let url = photoReference.imageURL.usingHTTPS
         // TODO: Implement image loading here
+        let request = URLRequest(url: url!)
+        
+        if let cache = cache {
+            guard let data = cache.value(for: indexPath.row) else { return }
+            cell.imageView.image = UIImage(data: data)
+        } else {
+        
+        URLSession.shared.dataTask(with: request) { (data, response, error) in
+            if let error = error {
+                NSLog("Error fetching image: \(error)")
+                return
+            }
+            guard let data = data else {
+                NSLog("Error returning data")
+                return
+            }
+//            if let response = response {
+//                print(response)
+//            }
+//            do {
+//                let decoder = JSONDecoder()
+//                let fetchedReference = try decoder.decode(MarsPhotoReference.self, from: data)
+//                let imageData = try? Data(contentsOf: fetchedReference.imageURL)
+//                let image = UIImage(data: imageData!)
+//                cell.imageView.image = image
+//            } catch {
+//                NSLog("Error decoding MarsPhotoReference")
+//                return
+//            }
+            
+            let image = UIImage(data: data)
+            DispatchQueue.main.async {
+                if self.collectionView.indexPath(for: cell) == indexPath {
+                    cell.imageView.image = image
+                    self.cache?.cache(value: data, for: indexPath.row)
+                }
+            }
+        }.resume()
+        }
     }
     
     // Properties
@@ -75,7 +114,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[105]
         }
     }
     private var solDescription: SolDescription? {
@@ -94,6 +133,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
+    
+    var cache: Cache<Int, Data>?
     
     @IBOutlet var collectionView: UICollectionView!
 }
