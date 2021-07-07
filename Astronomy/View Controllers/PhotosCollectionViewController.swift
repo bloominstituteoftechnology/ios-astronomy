@@ -1,10 +1,3 @@
-//
-//  PhotosCollectionViewController.swift
-//  Astronomy
-//
-//  Created by Andrew R Madsen on 9/5/18.
-//  Copyright © 2018 Lambda School. All rights reserved.
-//
 
 import UIKit
 
@@ -64,18 +57,67 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
+        
+        let photoReferenceImageURL = photoReference.imageURL.usingHTTPS!
         
         // TODO: Implement image loading here
+        
+        // Check if cache already contains data for given photo reference's id
+        if let value = cache.value(forKey: photoReference.id) {
+            
+            // if it does, set cell's image
+            let imageData = value
+            cell.imageView.image = UIImage(data: imageData)
+            
+        } else {
+            
+            
+            
+            
+            URLSession.shared.dataTask(with: photoReferenceImageURL) { (data, _, error) in
+                if let error = error {
+                    NSLog("Error loading image: \(error)")
+                    return
+                }
+
+                guard let data = data else { return }
+
+                // Save retrieved image data to cache
+                self.cache.cache(value: data, forKey: photoReference.id)
+
+                // create UIImage from received data
+                let newImage = UIImage(data: data)
+
+                DispatchQueue.main.async {
+
+                    // if index path is visibly on screen
+                    if self.collectionView.visibleCells.contains(cell) {
+                        cell.imageView.image = newImage
+                    }
+
+                    // Alternative
+                    // if indexPath == self.collectionView.indexPath(for: cell)
+
+                    // Alternative that didn't work
+                    // if self.collectionView.indexPathsForVisibleItems.contains(indexPath)
+
+                }
+            }.resume()
+        }
     }
     
     // Properties
+    
+    var cache = Cache<Int, Data>()
+    
+    private var photoFetchQueue: OperationQueue
     
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[3] //3
         }
     }
     private var solDescription: SolDescription? {
