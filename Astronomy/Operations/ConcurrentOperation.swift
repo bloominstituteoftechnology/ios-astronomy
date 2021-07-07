@@ -10,7 +10,7 @@ import Foundation
 
 class ConcurrentOperation: Operation {
     
-    // MARK: Types
+    // MARK: - Types
     
     enum State: String {
         case isReady, isExecuting, isFinished
@@ -60,5 +60,48 @@ class ConcurrentOperation: Operation {
     override var isAsynchronous: Bool {
         return true
     }
+}
+
+class FetchPhotoOperation: ConcurrentOperation {
+    let id: Int
+    let sol: Int
+    let camera: Camera
+    let earthDate: Date
+    let imageURL: URL
+    var imageData: Data?
+    let marsSession = URLSession()
+    var marsDataTask = URLSessionDataTask()
     
+    init(photoReference: MarsPhotoReference) {
+        self.id        = photoReference.id
+        self.sol       = photoReference.sol
+        self.camera    = photoReference.camera
+        self.earthDate = photoReference.earthDate
+        self.imageURL  = photoReference.imageURL
+    }
+    
+    override func start() {
+        state = .isExecuting
+        let task = marsSession.dataTask(with: imageURL) { data, _, error in
+            if let error = error {
+                NSLog("error in fetchPhotoOperation:\(error)")
+                self.state = .isFinished
+                return
+            }
+            
+            guard let data = data else {
+                NSLog("Bad data in FetchPhotoOperation:\(error)")
+                self.state = .isFinished
+                return
+            }
+            self.imageData = data
+            self.state = .isFinished
+        }
+        task.resume()
+        marsDataTask = task
+    }
+
+    override func cancel() {
+        marsDataTask.cancel()
+    }
 }
