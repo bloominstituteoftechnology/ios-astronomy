@@ -10,6 +10,10 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    private let cache = Cache<Int, UIImage>()
+    private let operationCache = Cache<Int, Operation>()
+    private let photoFetchQueue = OperationQueue()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -60,13 +64,45 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        let fetchOp = operationCache.value(for: photoReference.id)
+        fetchOp?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        // check to see if the cache already contains data for the given photo reference's id
+        if let image = cache.value(for: photoReference.id) {
+            cell.imageView.image = image
+            return
+        }
+        
+        let fetchOp = FetchPhotoOperation(model: photoReference)
+        
+        let cacheOp = BlockOperation {
+            if let image = fetchOp.image {
+                self.cache.cache(value: image, for: photoReference.id)
+            }
+        }
+        
+        let setOp = BlockOperation {
+            DispatchQueue.main.async {
+                if self.collectionView.indexPath(for: cell) == indexPath {
+                    cell.imageView.image = fetchOp.image
+                }
+            }
+        }
+        
+        setOp.addDependency(fetchOp)
+        cacheOp.addDependency(fetchOp)
+        photoFetchQueue.addOperations([fetchOp, cacheOp, setOp], waitUntilFinished: false)
+        
+        self.operationCache.cache(value: fetchOp, for: photoReference.id)
     }
     
     // Properties
