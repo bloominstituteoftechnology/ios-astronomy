@@ -10,8 +10,40 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    // Properties
+    
+    private let client = MarsRoverClient()
+    
+    private var roverInfo: MarsRover? {
+        didSet {
+            solDescription = roverInfo?.solDescriptions[3]
+        }
+    }
+    private var solDescription: SolDescription? {
+        didSet {
+            if let rover = roverInfo,
+                let sol = solDescription?.sol {
+                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
+                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
+                    self.photoReferences = photoRefs ?? []
+                }
+            }
+        }
+    }
+    private var photoReferences = [MarsPhotoReference]() {
+        didSet {
+            DispatchQueue.main.async { self.collectionView?.reloadData() }
+        }
+    }
+    
+    private var cache = Cache<Int, Data>()
+    private var photoFetchQueue = OperationQueue()
+    var photoDictionary = [Int : FetchPhotoOperation]()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        print("no")
         
         client.fetchMarsRover(named: "curiosity") { (rover, error) in
             if let error = error {
@@ -36,7 +68,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
         
+        print("ITS ABOUT TO LOAD IMAGE")
         loadImage(forCell: cell, forItemAt: indexPath)
+        print("OK ITS LOADED")
         
         return cell
     }
@@ -64,34 +98,40 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
-        
-        // TODO: Implement image loading here
-    }
-    
-    // Properties
-    
-    private let client = MarsRoverClient()
-    
-    private var roverInfo: MarsRover? {
-        didSet {
-            solDescription = roverInfo?.solDescriptions[3]
-        }
-    }
-    private var solDescription: SolDescription? {
-        didSet {
-            if let rover = roverInfo,
-                let sol = solDescription?.sol {
-                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
-                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
-                    self.photoReferences = photoRefs ?? []
+        if let image = self.cache.value(for: indexPath.item) {
+            cell.imageView.image = UIImage(data: image)
+        } else {
+               let photoReference = photoReferences[indexPath.item]
+                let loadOperation = FetchPhotoOperation(reference: photoReference)
+                let updateCache = BlockOperation {
+                    print("it called this update block")
+                    self.cache.cache(value: loadOperation.imageData!, for: indexPath.item)
                 }
-            }
+                let setImages = BlockOperation {
+                    print("CALLS THE IMAGE BLOCK")
+                    if self.collectionView.indexPath(for: cell) == indexPath {
+                    if let image = self.cache.value(for: indexPath.item) {
+                        cell.imageView.image = UIImage(data: image)
+                    }
+                    }
+                }
+                
+                updateCache.addDependency(loadOperation)
+                setImages.addDependency(loadOperation)
+                
+                photoFetchQueue.addOperation(loadOperation)
+                photoFetchQueue.addOperation(updateCache)
+                OperationQueue.main.addOperation(setImages)
+            
+            photoDictionary[indexPath.item] = loadOperation
         }
+        
     }
-    private var photoReferences = [MarsPhotoReference]() {
-        didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        if let operation = photoDictionary[indexPath.item] {
+            print("it found the operation")
+            operation.cancel()
         }
     }
     
