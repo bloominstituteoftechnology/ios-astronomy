@@ -6,9 +6,48 @@
 //  Copyright © 2018 Lambda School. All rights reserved.
 //
 
+
 import UIKit
 
+/// Uses operations to do image loading
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+    
+    // MARK: - Properties
+    
+    /// Keys are MarsPhotoReference ids. Values are image data (also could've been UIImage)
+    let cache = Cache<Int, Data>()
+    
+    private let photoFetchQueue = OperationQueue()
+    
+    var operations: [Int : Operation] = [ : ]
+    
+    private let client = MarsRoverClient()
+    
+    private var roverInfo: MarsRover? {
+        didSet {
+            solDescription = roverInfo?.solDescriptions[3]
+        }
+    }
+    
+    private var solDescription: SolDescription? {
+        didSet {
+            if let rover = roverInfo,
+                let sol = solDescription?.sol {
+                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
+                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
+                    self.photoReferences = photoRefs ?? []
+                }
+            }
+        }
+    }
+    
+    private var photoReferences = [MarsPhotoReference]() {
+        didSet {
+            DispatchQueue.main.async { self.collectionView?.reloadData() }
+        }
+    }
+    
+    @IBOutlet var collectionView: UICollectionView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -55,45 +94,71 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return CGSize(width: width, height: width)
     }
     
-    // Add margins to the left and right side
+    /// Add margins to the left and right side
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    /// Called when an item scrolls off screen. Gets fetch operation and cancels it
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        let key = photoReference.id
+        operations[key]?.cancel()
+    }
+    
     // MARK: - Private
     
+    /// Loads images using 3 operations: Fetch, Cache, and Complete
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
-    }
-    
-    // Properties
-    
-    private let client = MarsRoverClient()
-    
-    private var roverInfo: MarsRover? {
-        didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+        // Checks for image in cache
+        if let cachedImageData = cache.value(for: photoReference.id),
+            let image = UIImage(data: cachedImageData) {
+            cell.imageView.image = image
+            return
         }
-    }
-    private var solDescription: SolDescription? {
-        didSet {
-            if let rover = roverInfo,
-                let sol = solDescription?.sol {
-                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
-                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
-                    self.photoReferences = photoRefs ?? []
-                }
+        
+        // 1. Starts operation to fetch image data
+        let fetchOp = FetchPhotoOperation(reference: photoReference)
+        
+        // 2. Stores received data in the cache
+        let cacheOp = BlockOperation {
+            if let data = fetchOp.imageData {
+                self.cache.cache(value: data, for: photoReference.id)
             }
         }
-    }
-    private var photoReferences = [MarsPhotoReference]() {
-        didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
+        
+        // 3. Should check if the cell has been reused, and if not, set its image view's image.
+        let completionOp = BlockOperation {
+            // Removes photo from operations at the end of this operation
+            defer {
+                self.operations.removeValue(forKey: photoReference.id)
+            }
+            
+            // Reused
+            if let currentIndexPath = self.collectionView?.indexPath(for: cell),
+                currentIndexPath != indexPath {
+                print("Got image for now-reused cell")
+                return // Cell has been reused
+            }
+            // NOT reused
+            if let data = fetchOp.imageData {
+                cell.imageView.image = UIImage(data: data)
+            }
         }
+        
+        // Cache and completion operations both depend on completion of the fetch operation.
+        cacheOp.addDependency(fetchOp)
+        completionOp.addDependency(fetchOp)
+        
+        // Adds each operation to the appropriate queue. Last operation uses UIKit API and MUST run on the MAIN queue.
+        photoFetchQueue.addOperation(fetchOp)
+        photoFetchQueue.addOperation(cacheOp)
+        OperationQueue.main.addOperation(completionOp)
+        
+        // Adds the fetch operation to your dictionary. This way you can retrieve it later to cancel it if need be
+        operations[photoReference.id] = fetchOp
     }
-    
-    @IBOutlet var collectionView: UICollectionView!
 }
