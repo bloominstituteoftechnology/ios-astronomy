@@ -62,3 +62,70 @@ class ConcurrentOperation: Operation {
     }
     
 }
+
+class FetchPhotoOperation: ConcurrentOperation {
+    
+   // var marsPhotoReference
+    
+    var imageData: Data?
+    var session: URLSession
+    var dataTask: URLSessionDataTask?
+    
+    
+    let id: Int
+    let sol: Int
+    let camera: Camera
+    let earthDate: Date
+    let imageURL: URL
+    
+    
+    //init(marsPhotoReference: MarsPhotoReference) {
+
+    init(marsPhotoReference: MarsPhotoReference, session: URLSession) {
+        self.id = marsPhotoReference.id
+        self.sol = marsPhotoReference.sol
+        self.camera = marsPhotoReference.camera
+        self.earthDate = marsPhotoReference.earthDate
+        self.imageURL = marsPhotoReference.imageURL
+        self.session = session
+        //super.init()
+    }
+    
+    
+    override func start() {
+        state = .isExecuting
+        
+        let url = imageURL.usingHTTPS!
+            let task = session.dataTask(with: url) { (data, response, error) in
+                
+                defer { self.state = .isFinished }
+                if self.isCancelled { return }
+
+                if let error = error {
+                    NSLog("Error fetching image data: \(error)")
+                    return
+                }
+                
+                if let data = data {
+                    self.imageData = data
+                }
+                
+                defer { self.state = .isFinished }
+                if self.isCancelled { return }
+
+            }
+            task.resume()
+            dataTask? = task
+        }
+
+
+        override func cancel() {
+            dataTask?.cancel()
+        }
+//    }
+//
+//    let task = URLSession.shared.dataTask(with: URL(imageData), completionHandler: <#T##(Data?, URLResponse?, Error?) -> Void#>)
+    
+    
+    
+}

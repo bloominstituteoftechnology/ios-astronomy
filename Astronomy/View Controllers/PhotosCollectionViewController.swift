@@ -10,6 +10,10 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    //var cache: Cache<Int, Data>?
+    var cache = Cache<Int, Data>()
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -64,9 +68,49 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
+        //let marsPhotoReference = photoReference.imageURL.usingHTTPS
         
-        // TODO: Implement image loading here
+        guard let imageURL = photoReference.imageURL.usingHTTPS else { return }
+       // guard let cache = cache.value(for: photoReference.id) else { guard }
+        
+        if let cachedImage = cache.value(key: photoReference.id as Int) as? Data {
+            cell.imageView.image = UIImage(data: cachedImage)
+            return
+        }
+        
+        //func fetchImage(with imageURL: URL, completion: @escaping (Error?) -> Void) {
+            
+            URLSession.shared.dataTask(with: imageURL) { data, _, error in
+                if let error = error {
+                    NSLog("Error fetching image: \(error)")
+                    //completion(error)
+                    return
+                }
+                
+                DispatchQueue.main.async {
+                    if let currentIndexPath = self.collectionView.indexPath(for: cell),
+                        currentIndexPath != indexPath {
+                       // completion(error)
+                        return
+                    }
+                    
+                    if let data = data {
+                        // Implement image loading here
+                        cell.imageView.image = UIImage(data: data)
+                      //  completion(error)
+                        
+                        self.cache.cache(value: data, key: photoReference.id)
+                    }
+                }
+            }.resume()
+//        }
+        
+        
+        
+        
+        
+        
     }
     
     // Properties
