@@ -64,12 +64,80 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
-        
         // TODO: Implement image loading here
+        
+        let photoReference = photoReferences[indexPath.item]
+        let photoURL = photoReference.imageURL.usingHTTPS
+        
+        if let cacheImage = cache.value(for: photoReference.id){
+            
+            cell.imageView = UIImageView(image: UIImage(data: cacheImage))
+            
+        } else {
+            
+            let fetchPhotoOp = FetchPhotoOperation(marsPR: photoReference)
+            
+            let storeDataOp = BlockOperation {
+                self.cache.cache(value: fetchPhotoOp.imageData!, for: photoReference.id)
+            }
+            
+            let reuseOp = BlockOperation {
+                guard let currentIndex = self.collectionView.indexPath(for: cell) else { return }
+                
+                
+                if currentIndex == indexPath {
+                    
+                    cell.imageView.image = UIImage(data: fetchPhotoOp.imageData!)
+                    
+                } else {
+                    return
+                }
+            }
+            
+            storeDataOp.addDependency(fetchPhotoOp)
+            reuseOp.addDependency(fetchPhotoOp)
+            
+            photoFetchQueue.addOperation(fetchPhotoOp)
+            photoFetchQueue.addOperation(storeDataOp)
+            OperationQueue.main.addOperation(reuseOp)
+            
+            
+            
+           /* let dataTask = URLSession.shared.dataTask(with: photoURL!) { (photoData, _, error) in
+                
+                if let error = error {
+                    print("Error: \(error)")
+                    return
+                }
+                
+                guard let photoData = photoData else { return }
+                
+                let photo = UIImage(data: photoData)
+                
+                self.cache.cache(value: photoData, for: photoReference.id)
+                
+                DispatchQueue.main.async {
+                    guard let currentIndex = self.collectionView.indexPath(for: cell) else { return }
+                    
+                    if currentIndex == indexPath {
+                        
+                        cell.imageView.image = photo
+                        
+                    } else {
+                        return
+                    }
+                }
+            }
+            dataTask.resume()*/
+        }
+     
     }
     
     // Properties
+    
+    let photoFetchQueue = OperationQueue()
+    
+    let cache = Cache<Int, Data>()
     
     private let client = MarsRoverClient()
     
