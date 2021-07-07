@@ -60,22 +60,58 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        activeOperations[photoReferences[indexPath.item].id]?.cancel()
+    }
+    
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        guard let url = photoReference.imageURL.usingHTTPS else { return }
+        
+        if let image = cache.value(for: photoReference.id) {
+            cell.imageView.image = image
+        } else {
+            let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+            let storeOperation = BlockOperation {
+                guard let imageData = fetchPhotoOperation.imageData else { return }
+                guard let image = UIImage(data: imageData) else { return }
+                // save the just-received image data to the cache so it is available later
+                self.cache.cache(value: image, for: photoReference.id)
+            }
+            let notReusedOperation = BlockOperation {
+                if indexPath == self.collectionView.indexPath(for: cell) {
+                    guard let imageData = fetchPhotoOperation.imageData else { return }
+                    guard let image = UIImage(data: imageData) else { return }
+                    cell.imageView.image = image
+                }
+            }
+            storeOperation.addDependency(fetchPhotoOperation)
+            notReusedOperation.addDependency(fetchPhotoOperation)
+            
+            photoFetchQueue.addOperations([fetchPhotoOperation, storeOperation], waitUntilFinished: false)
+            OperationQueue.main.addOperation(notReusedOperation)
+            
+            activeOperations[photoReference.id] = fetchPhotoOperation
+        }
     }
     
     // Properties
+    
+    private var cache: Cache<Int, UIImage> = Cache()
+
+    private var photoFetchQueue = OperationQueue()
+    
+    private var activeOperations: [Int: FetchPhotoOperation] = [:]
     
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
