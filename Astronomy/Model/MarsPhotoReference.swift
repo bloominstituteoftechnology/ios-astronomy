@@ -6,6 +6,8 @@
 //  Copyright © 2018 Lambda School. All rights reserved.
 //
 
+//Initial Commit comment
+
 import Foundation
 
 struct MarsPhotoReference: Codable {
