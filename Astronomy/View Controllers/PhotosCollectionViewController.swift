@@ -12,6 +12,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     override func viewDidLoad() {
         super.viewDidLoad()
+		solSelectorVC.delegate = self
         
         client.fetchMarsRover(named: "curiosity") { (rover, error) in
             if let error = error {
@@ -22,6 +23,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             self.roverInfo = rover
         }
     }
+
+	override func viewWillAppear(_ animated: Bool) {
+		super.viewWillAppear(animated)
+		collectionView.reloadData()
+	}
     
     // UICollectionViewDataSource/Delegate
     
@@ -35,12 +41,27 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
-        
-        loadImage(forCell: cell, forItemAt: indexPath)
-        
+		loadImage(forCell: cell, forItemAt: indexPath)
+
         return cell
     }
-    
+
+	func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+		guard indexPath.item < photoReferences.count else { return }
+		let reference = photoReferences[indexPath.item]
+		let operation = storedFetchOperations[reference.id]
+		queue.sync {
+			operation?.cancel()
+		}
+	}
+
+	override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+		if segue.identifier == "ShowSolSelectorModalSegue" {
+			guard let solSelectVC = segue.destination as? SolSelectViewController else { return }
+			solSelectVC.delegate = self
+		}
+	}
+
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -63,21 +84,71 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
-        // let photoReference = photoReferences[indexPath.item]
-        
-        // TODO: Implement image loading here
-    }
+
+		let photoReference = photoReferences[indexPath.item]
+		let photoURL = photoReference.imageURL.usingHTTPS
+		guard let url = photoURL else { return }
+
+		if let imageData = cache.value(for: url) {
+			let image = UIImage(data: imageData)
+			cell.imageView.image = image
+			return
+		}
+
+		let fetchPhotoOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+
+		let storeDataInCache = BlockOperation {
+			guard let imageData = fetchPhotoOperation.imageData else { return }
+			self.cache.cache(value: imageData, for: url)
+		}
+
+		let setImage = BlockOperation {
+			defer {
+				self.storedFetchOperations.removeValue(forKey: photoReference.id)
+			}
+
+			if let currentIndexPath = self.collectionView.indexPath(for: cell),
+				currentIndexPath != indexPath {
+				return
+			}
+			guard let imageData = fetchPhotoOperation.imageData else { return }
+			cell.imageView.image = UIImage(data: imageData)
+		}
+
+
+		storeDataInCache.addDependency(fetchPhotoOperation)
+		setImage.addDependency(fetchPhotoOperation)
+
+		photoFetchQueue.addOperation(fetchPhotoOperation)
+		photoFetchQueue.addOperation(storeDataInCache)
+		OperationQueue.main.addOperation(setImage)
+
+		storedFetchOperations[photoReference.id] = fetchPhotoOperation
+
+	}
+
+
     
     // Properties
+
+	let cache = Cache<URL, Data>()
+
+	let solSelectorVC = SolSelectViewController()
+
+	private let photoFetchQueue = OperationQueue()
+
+	let queue = DispatchQueue(label: "CancelOperationQueue")
+
+	var storedFetchOperations: [Int: FetchPhotoOperation] = [:]
     
     private let client = MarsRoverClient()
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[1007]
         }
     }
+
     private var solDescription: SolDescription? {
         didSet {
             if let rover = roverInfo,
@@ -96,4 +167,12 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     @IBOutlet var collectionView: UICollectionView!
+}
+
+extension PhotosCollectionViewController: SolSelectViewControllerDelegate {
+	func didSelect(solarDay: Int) {
+		print(solarDay)
+		solDescription = roverInfo?.solDescriptions[solarDay]
+		collectionView.reloadData()
+	}
 }
