@@ -18,9 +18,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 NSLog("Error fetching info for curiosity: \(error)")
                 return
             }
-            
             self.roverInfo = rover
+
         }
+		photoFetchQueue.name = "com.Astronomy.PhotoFetchQueue"
     }
     
     // UICollectionViewDataSource/Delegate
@@ -30,17 +31,64 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return photoReferences.count
+		return photoReferences.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
+      //  let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
+		
+		let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath)
+		guard let imageCell = cell as? ImageCollectionViewCell else { return cell}
+		
+		
+		
+        loadImage(forCell: imageCell, forItemAt: indexPath)
         
-        loadImage(forCell: cell, forItemAt: indexPath)
-        
-        return cell
+        return imageCell
     }
-    
+	
+	// MARK: - Private
+	
+	private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
+		let photoReference = photoReferences[indexPath.item]
+		
+		if let imageData = imageCache.value(for: photoReference.id) {
+			cell.imageView.image = UIImage(data: imageData)
+			return
+		}
+		
+		let fetchImageOP = FetchPhotoOperation(marsPhotoReference: photoReference)
+
+		let storeToCache = BlockOperation {
+			if let imageDate = fetchImageOP.imageData {
+				self.imageCache.cache(value: imageDate, for: photoReference.id)
+			}
+		}
+		
+		let cellReusedCheck = BlockOperation {
+			if  self.collectionView.indexPath(for: cell)  == indexPath {
+				print("here \(indexPath.item)")
+				guard let imageData = fetchImageOP.imageData else { return }
+				cell.imageView.image = UIImage(data: imageData)
+			}
+		}
+		
+		storeToCache.addDependency(fetchImageOP)
+		cellReusedCheck.addDependency(fetchImageOP)
+		
+		photoFetchQueue.addOperations([fetchImageOP, storeToCache], waitUntilFinished: false)
+		OperationQueue.main.addOperation(cellReusedCheck)
+		fetchPhotoOperations[photoReference.id] = fetchImageOP
+	}
+	
+	
+	func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+		let photoReference = photoReferences[indexPath.item]
+		fetchPhotoOperations[photoReference.id]?.cancel()
+	}
+	
+	
+	
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -60,14 +108,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return UIEdgeInsets(top: 0, left: 10.0, bottom: 0, right: 10.0)
     }
     
-    // MARK: - Private
-    
-    private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
-        // let photoReference = photoReferences[indexPath.item]
-        
-        // TODO: Implement image loading here
-    }
+	
     
     // Properties
     
@@ -91,9 +132,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     private var photoReferences = [MarsPhotoReference]() {
         didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
+			DispatchQueue.main.async { self.collectionView?.reloadData() }
         }
     }
     
     @IBOutlet var collectionView: UICollectionView!
+	
+	var imageCache = Cache<Int, Data>()
+	private let photoFetchQueue = OperationQueue()
+	var fetchPhotoOperations: [Int: FetchPhotoOperation] = [:]
 }
