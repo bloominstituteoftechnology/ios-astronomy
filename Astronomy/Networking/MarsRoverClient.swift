@@ -61,6 +61,7 @@ class MarsRoverClient {
                 completion(decodedObject, nil)
             } catch {
                 completion(nil, error)
+				
             }
         }.resume()
     }

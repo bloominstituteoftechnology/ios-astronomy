@@ -17,6 +17,7 @@ struct MarsRover: Codable {
     enum Status: String, Codable {
         case active, complete
     }
+	
     let status: Status
     
     let maxSol: Int

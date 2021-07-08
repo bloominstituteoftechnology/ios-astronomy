@@ -18,8 +18,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 NSLog("Error fetching info for curiosity: \(error)")
                 return
             }
-            
-            self.roverInfo = rover
+			self.roverInfo = rover
+			
         }
     }
     
@@ -35,9 +35,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
-        
-        loadImage(forCell: cell, forItemAt: indexPath)
-        
+		
+		loadImage(forCell: cell, forItemAt: indexPath)
+
         return cell
     }
     
@@ -63,9 +63,42 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Private
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
-        
-        // let photoReference = photoReferences[indexPath.item]
-        
+		
+		let op = OperationQueue()
+		op.name = "Network Operation"
+		
+		
+		if let imageIndexPath = self.collectionView.indexPath(for: cell),
+			imageIndexPath.item != indexPath.item { return }
+		
+		if iscached(indexPath.item, cell) { return }
+		
+        let photoReference = photoReferences[indexPath.item]
+		
+		let task = URLSession.shared.dataTask(with: photoReference.imageURL.usingHTTPS!) { (data, response, error) in
+			if let response = response as? HTTPURLResponse , response.statusCode != 200{
+				print("Response code: \(response.statusCode)")
+			}
+			
+			if let error = error {
+				print("Error getting image: \(error)")
+				return
+			}
+			
+			guard let data = data else {
+				print("Error fetching image data.")
+				return
+			}
+			
+			let image = UIImage(data: data)
+			DispatchQueue.main.sync {
+				cell.imageView.image = image
+				self.cache.cache(value: data, for: indexPath.item)
+			}
+		}
+		
+		task.resume()
+		
         // TODO: Implement image loading here
     }
     
@@ -78,6 +111,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             solDescription = roverInfo?.solDescriptions[3]
         }
     }
+	
     private var solDescription: SolDescription? {
         didSet {
             if let rover = roverInfo,
@@ -89,11 +123,46 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             }
         }
     }
+	
     private var photoReferences = [MarsPhotoReference]() {
         didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
+            DispatchQueue.main.async { self.collectionView?.reloadData()
+				//print(self.photoReferences.count)
+			}
         }
     }
     
     @IBOutlet var collectionView: UICollectionView!
+	var cache = Cache<Int, Data>()
+	
+	
+	
+}
+
+extension PhotosCollectionViewController {
+	func iscached(_ item: Int, _ cell: ImageCollectionViewCell) -> Bool {
+		if let getData = cache.value(for: item) {
+			cell.imageView.image = UIImage(data: getData)
+			//print("Found cache")
+			return true
+		}
+
+		return false
+	}
+	
+}
+
+class ImageViewConcurrentOperation: ConcurrentOperation {
+	init(marsPhotoReference: MarsPhotoReference) {
+		self.marsPhotoReference = marsPhotoReference
+	}
+	
+	override func start() {
+		super.start()
+		
+		state = .isExecuting
+	}
+	
+	var marsPhotoReference: MarsPhotoReference
+	var imageData: Data?
 }
