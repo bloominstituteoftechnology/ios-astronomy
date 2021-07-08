@@ -10,6 +10,10 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    let cache = Cache<Int, Data>()
+    let photoFetchQueue = OperationQueue()
+    var imageLoadOperations: [Int: FetchPhotoOperation] = [:]
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -64,9 +68,47 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+         let photoReference = photoReferences[indexPath.item]
+        
         
         // TODO: Implement image loading here
+        
+        let loadOperation = FetchPhotoOperation(marsPhotoReference: photoReference)
+        let updateCacheOperation = BlockOperation {
+            if let data = loadOperation.imageData {
+                self.cache.cache(value: data, for: photoReference.id)
+            }
+        }
+        
+        let cellReuseOperation = BlockOperation {
+            defer { self.imageLoadOperations.removeValue(forKey: photoReference.id) }
+            if let currentIndexPath = self.collectionView.indexPath(for: cell), currentIndexPath != indexPath {
+                print("Got image for now-reused cell")
+                return // Cell has been reused
+                
+                
+            }
+            
+            if let data = self.cache.value(for: photoReference.id) {
+                cell.imageView.image = UIImage(data: data)
+                
+            }
+        }
+        
+        updateCacheOperation.addDependency(loadOperation)
+        cellReuseOperation.addDependency(updateCacheOperation)
+        photoFetchQueue.addOperations([loadOperation, updateCacheOperation], waitUntilFinished: false)
+        OperationQueue.main.addOperation(cellReuseOperation)
+        
+        imageLoadOperations[photoReference.id] = loadOperation
+        
+        
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.row]
+        let fetchOperation = imageLoadOperations[photoReference.id]
+        fetchOperation?.cancel()
     }
     
     // Properties
