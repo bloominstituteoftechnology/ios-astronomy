@@ -41,6 +41,15 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        
+        if let fetchPhotoOperation = fetchOperations[photoReference.id] {
+            fetchPhotoOperation.cancel()
+            print("Cancelled photo operation")
+        }
+    }
+    
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -64,10 +73,39 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         
-        // TODO: Implement image loading here
+        if let imageData = cache.value(for: photoReference.id) {
+            let image = UIImage(data: imageData)
+            cell.imageView.image = image
+            return
+        }
+        
+        let fetchPhotoOperation = FetchPhotoOperation(photoReference: photoReference)
+        guard let imageData = fetchPhotoOperation.imageData else { return }
+        let cachePhotoOperation = BlockOperation {
+            self.cache.cache(value: imageData, for: photoReference.id)
+        }
+        
+        let updateUIOpteration = BlockOperation {
+            if let imageData = fetchPhotoOperation.imageData {
+                let image = UIImage(data: imageData)
+                cell.imageView.image = image
+            }
+        }
+        
+        cachePhotoOperation.addDependency(fetchPhotoOperation)
+        updateUIOpteration.addDependency(fetchPhotoOperation)
+        
+        fetchOperations[photoReference.id] = fetchPhotoOperation
+        
+        photoFetchQueue.addOperation(fetchPhotoOperation)
+        photoFetchQueue.addOperation(cachePhotoOperation)
+        OperationQueue.main.addOperation(updateUIOpteration)
+            
     }
+        
+    
     
     // Properties
     
@@ -75,7 +113,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private var roverInfo: MarsRover? {
         didSet {
-            solDescription = roverInfo?.solDescriptions[3]
+            solDescription = roverInfo?.solDescriptions[100]
         }
     }
     private var solDescription: SolDescription? {
@@ -96,4 +134,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     @IBOutlet var collectionView: UICollectionView!
+    var cache = Cache<Int,Data>()
+    private var photoFetchQueue =  OperationQueue()
+    private var fetchOperations: [Int: FetchPhotoOperation] = [:]
+    
 }
