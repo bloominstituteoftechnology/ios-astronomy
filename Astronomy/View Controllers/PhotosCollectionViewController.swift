@@ -64,9 +64,49 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        // let photoReference = photoReferences[indexPath.item]
         
+        let photoReference = photoReferences[indexPath.item]
+        
+        if let cached = cache.value(key: photoReference.id)
+        {
+            DispatchQueue.main.async() {
+                cell.imageView.image = UIImage(data: cached)
+                return
+            }
+        }
         // TODO: Implement image loading here
+        
+        let url = photoReference
+        
+        let fetchQueue = PhotoFetchOperation(marsReference: url)
+        fetchQueue.start()
+        
+        let cacheOperation = OperationQueue()
+        cacheOperation.name = "com.leastudios.Astronomy.StoreQueue"
+        let operation1 = BlockOperation
+        {
+            guard let fetchedImage = fetchQueue.imageData else {return}
+            self.cache.cache(value: fetchedImage, key: photoReference.id)
+        }
+        
+        let operation2 = BlockOperation
+        {
+            DispatchQueue.main.async() {
+//                if self.collectionView.indexPath(for: cell) == indexPath
+//                {
+                    cell.imageView.image = UIImage(data: fetchQueue.imageData!)
+//                }
+            }
+        }
+        operation1.addDependency(fetchQueue)
+        operation2.addDependency(fetchQueue)
+        cacheOperation.addOperations([operation1, operation2], waitUntilFinished: false)
+
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath)
+    {
+        photoFetchQueue.cancelAllOperations()
     }
     
     // Properties
@@ -96,4 +136,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     @IBOutlet var collectionView: UICollectionView!
+    
+    var cache = Cache<Int, Data>()
+    
+    private let photoFetchQueue: OperationQueue = OperationQueue.main
+    
+    var fetchedPhotos: [Int : Data] = [:]
+    
 }
